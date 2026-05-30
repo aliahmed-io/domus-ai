@@ -1,26 +1,411 @@
+/* ─── Google Fonts ──────────────────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap");
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ─── Design Tokens (Tailwind v4 theme) ─────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Fonts */
+  --font-jakarta: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-inter: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Colors — Standard Architectural Brown, Cream, and White Palette */
+  --color-alabaster: #FAF8F5; /* Cozy architectural creamy white background */
+  --color-surface: #ffffff; /* Clean pure white card surfaces */
+  --color-dark-surface: #2C2621; /* Rich warm dark oak/charcoal background */
+  --color-dark-surface-alt: #1E1A17; /* Deeper dark oak/ebony */
+
+  --color-charcoal: #2C2621; /* Primary text / dark headings */
+  --color-stone: #8A7E74; /* Warm stone-gray */
+  --color-muted: #B5AEA6; /* Soft warm gray-sand */
+  --color-on-dark: #FAF8F5; /* Cream text on dark backgrounds */
+  --color-on-dark-muted: #C5BDB5; /* Muted creamy sand text on dark */
+
+  --color-indigo: #8C7662; /* Refined architectural clay brown (Primary Brand Color) */
+  --color-indigo-dark: #5A4A3A; /* Rich deep wood oak */
+  --color-indigo-light: #FAF7F2; /* Luxury soft cream tint */
+  --color-indigo-mid: #E6DFD5; /* Creamy sand border tint */
+
+  --color-gold: #C2A585; /* Brushed warm gold/brass accent */
+  --color-gold-light: #FAF4EB; /* Brushed brass warm tint */
+
+  --color-teal: #A88E75; /* Elegant metallic bronze accent */
+  --color-teal-light: #FAF5EF; /* Subtle warm bronze tint */
+  --color-amber: #D1A172; /* Warm amber wood */
+  --color-amber-light: #FAF6F0; /* Soft amber tint */
+  --color-error: #B23B3B; /* Muted deep architectural red */
+  --color-error-light: #FDF5F5; /* Soft red tint */
+  --color-success: #8C7662; /* Primary brand brown */
+  --color-success-light: #FAF7F2; /* Creamy brand tint */
+
+  --color-hairline: #EAE5DF; /* Refined creamy warm hairline borders */
+  --color-hairline-dark: #3D3631; /* Warm dark wood hairline borders */
+
+  /* Spacing — 8pt grid */
+  --spacing-0: 0px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+  --spacing-32: 128px;
+
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* Shadows */
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.05);
+  --shadow-card-hover: 0 20px 50px rgba(0, 0, 0, 0.09);
+  --shadow-card-lift: 0 24px 64px rgba(0, 0, 0, 0.12);
+  --shadow-hero: 0 32px 80px rgba(0, 0, 0, 0.1);
+  --shadow-button: 0 4px 14px rgba(91, 106, 240, 0.25);
+  --shadow-button-charcoal: 0 4px 14px rgba(42, 42, 42, 0.2);
+  --shadow-sidebar: 2px 0 16px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 48px 100px rgba(0, 0, 0, 0.18);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── CSS Custom Properties ──────────────────────────────────────────────────── */
+:root {
+  --nav-height: 64px;
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 64px;
+  --max-content-width: 1280px;
+  --section-py: 96px;
+  --easing-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Base Styles ────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f9f9f8;
+  color: #2a2a2a;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+  min-height: 100dvh;
+}
+
+/* ─── Typography Utilities ───────────────────────────────────────────────────── */
+.font-headline {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.font-body {
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.text-display-2xl {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 96px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.text-display-xl {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 80px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+.text-display-lg {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.text-display-md {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+}
+
+.text-display-sm {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.text-heading-xl {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.text-heading-lg {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.text-heading-md {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.text-label-caps {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ─── Card Component ─────────────────────────────────────────────────────────── */
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e8e8e6;
+  transition:
+    box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.09);
+  transform: translateY(-2px);
+}
+
+/* ─── Button Components ──────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: #2a2a2a;
+  color: #ffffff;
+  border-radius: 12px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 200ms,
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  background: #1a1a1a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(42, 42, 42, 0.2);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: transparent;
+  color: #2a2a2a;
+  border-radius: 12px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border: 1.5px solid #2a2a2a;
+  cursor: pointer;
+  transition:
+    background 200ms,
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover {
+  background: rgba(42, 42, 42, 0.04);
+  transform: translateY(-1px);
+}
+
+.btn-indigo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: #8c7662;
+  color: #ffffff;
+  border-radius: 12px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 200ms,
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-indigo:hover {
+  background: #5a4a3a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(140, 118, 98, 0.25);
+}
+
+/* ─── Navbar Frosted Glass ───────────────────────────────────────────────────── */
+.nav-frosted {
+  background: rgba(249, 249, 248, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(232, 232, 230, 0.6);
+}
+
+/* ─── Section Layout ─────────────────────────────────────────────────────────── */
+.section-py {
+  padding-top: 96px;
+  padding-bottom: 96px;
+}
+
+.section-px {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.content-max {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ─── Gradient Accents ───────────────────────────────────────────────────────── */
+.gradient-indigo {
+  background: linear-gradient(135deg, #8c7662 0%, #5a4a3a 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(135deg, #2c2621 0%, #1e1a17 100%);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #8c7662 0%, #5a4a3a 60%, #a88e75 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Focus Styles ───────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #8c7662;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e8e8e6;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* ─── Motion Preferences ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Dark section text overrides ────────────────────────────────────────────── */
+.dark-section {
+  background: #2c2621;
+  color: #faf8f5;
+}
+
+.dark-section h1,
+.dark-section h2,
+.dark-section h3,
+.dark-section h4,
+.dark-section p {
+  color: inherit;
+}
+
+/* ─── Indigo tinted section ──────────────────────────────────────────────────── */
+.indigo-tint {
+  background: #faf7f2;
+  border: 1px solid #e6dfd5;
+}
+
+/* ─── 3D Canvas container ────────────────────────────────────────────────────── */
+.canvas-container {
+  position: relative;
+  background: #2c2621;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.canvas-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }

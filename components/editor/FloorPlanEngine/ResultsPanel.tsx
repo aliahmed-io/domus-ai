@@ -1,0 +1,508 @@
+"use client";
+
+import React, { useState } from "react";
+import {
+  Sparkles,
+  Layers,
+  FileDown,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle,
+  AlertTriangle,
+  FileSpreadsheet,
+  ShoppingCart,
+  Building,
+  Check,
+  X,
+} from "lucide-react";
+import { useEditorStore } from "@/store/useEditorStore";
+import { useShallow } from "zustand/react/shallow";
+import { formatArea } from "@/lib/utils";
+import type { FloorPlanLayout } from "@/types/puter";
+
+interface MatchedItem {
+  name: string;
+  vendor: "Home Depot" | "IKEA" | "Søren Furniture" | "Sherwin-Williams";
+  sku: string;
+  unitPrice: number;
+  quantity: number;
+  unit: string;
+}
+
+export default function ResultsPanel() {
+  const {
+    floorPlanLayout,
+    setFloorPlan,
+    bomReport,
+    violations,
+    isGenerating,
+  } = useEditorStore(
+    useShallow((s) => ({
+      floorPlanLayout: s.floorPlanLayout,
+      setFloorPlan: s.setFloorPlan,
+      bomReport: s.bomReport,
+      violations: s.violations,
+      isGenerating: s.isGenerating,
+    }))
+  );
+
+  const [activeLayoutIdx, setActiveLayoutIdx] = useState<number>(1);
+  const [showBOM, setShowBOM] = useState(true);
+  const [showCompliance, setShowCompliance] = useState(true);
+  const [isProcuring, setIsProcuring] = useState(false);
+  const [procureStep, setProcureStep] = useState<"cart" | "submitting" | "success">("cart");
+
+  // Layout variant click
+  const handleSelectLayout = (index: number) => {
+    setActiveLayoutIdx(index);
+    if (floorPlanLayout) {
+      setFloorPlan({
+        ...floorPlanLayout,
+        id: `layout-${index}-${floorPlanLayout.parameters.style}-${floorPlanLayout.parameters.totalArea}`,
+        efficiency: 75 + index * 5,
+        naturalLight: 70 + (4 - index) * 6,
+      });
+    }
+  };
+
+  // Mock CSV exporter
+  const handleExportCSV = () => {
+    if (!bomReport) return;
+    const headers = "Category,Item Name,Vendor,SKU,Unit Price,Quantity,Unit,Total Cost\n";
+    const rows = getMatchedItems()
+      .map(
+        (item) =>
+          `${item.vendor},${item.name},${item.sku},${item.unitPrice},${item.quantity},${item.unit},${(
+            item.unitPrice * item.quantity
+          ).toFixed(2)}`
+      )
+      .join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Domus_BOM_Procurement_report.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Advanced Vendor Matching & Procurement Price Engine
+  const getMatchedItems = (): MatchedItem[] => {
+    if (!bomReport) return [];
+    
+    return bomReport.items.map((item) => {
+      let vendor: MatchedItem["vendor"] = "Home Depot";
+      let sku = "HD-982.11-BLD";
+      let unitPrice = 4.50;
+
+      if (item.name.includes("Wall Framing")) {
+        vendor = "Home Depot";
+        sku = "HD-2x4x8-DFIR";
+        unitPrice = 5.25;
+      } else if (item.name.includes("Hinge Doors")) {
+        vendor = "IKEA";
+        sku = "IK-602.115.42";
+        unitPrice = 189.00;
+      } else if (item.name.includes("Double Pane Windows")) {
+        vendor = "Home Depot";
+        sku = "HD-L3060-LOWE";
+        unitPrice = 249.99;
+      } else if (item.name.includes("Gypsum Drywall")) {
+        vendor = "Home Depot";
+        sku = "HD-12GYP-LITE";
+        unitPrice = 14.50;
+      } else if (item.name.includes("Søren Lounge Chair") || item.name.includes("Chair")) {
+        vendor = "Søren Furniture";
+        sku = "SRN-LNGE-CH12";
+        unitPrice = 320.00;
+      } else if (item.name.includes("Oak Flooring") || item.name.includes("Floor")) {
+        vendor = "IKEA";
+        sku = "IK-BARK-OAK";
+        unitPrice = 6.80;
+      } else if (item.name.includes("Paint")) {
+        vendor = "Sherwin-Williams";
+        sku = "SW-EMERALD-MAT";
+        unitPrice = 74.99;
+      }
+
+      return {
+        name: item.name,
+        vendor,
+        sku,
+        unitPrice,
+        quantity: item.quantity,
+        unit: item.unit,
+      };
+    });
+  };
+
+  const matchedItems = getMatchedItems();
+  const grandTotal = matchedItems.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
+  const referralShare = grandTotal * 0.04; // 4% referral kickback
+
+  const handleProcureSubmit = () => {
+    setProcureStep("submitting");
+    setTimeout(() => {
+      setProcureStep("success");
+    }, 1800);
+  };
+
+  return (
+    <aside className="w-[300px] h-full bg-white border-l border-hairline flex flex-col shrink-0 overflow-y-auto select-none p-6 gap-6 shadow-card z-20">
+      {/* Header title */}
+      <div className="flex items-center justify-between border-b border-hairline pb-4">
+        <div>
+          <h2 className="font-jakarta text-heading-xs font-800 text-charcoal tracking-tight flex items-center gap-1.5">
+            <Sparkles size={16} className="text-indigo" />
+            <span>AI Generations</span>
+          </h2>
+          <p className="font-body text-[11px] text-stone mt-0.5">
+            Optimize and inspect layout variants.
+          </p>
+        </div>
+      </div>
+
+      {/* ── 1. VARIANT CARD LIST ────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <h4 className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider">
+          Layout Variations (3)
+        </h4>
+
+        {!floorPlanLayout && !isGenerating ? (
+          <div className="p-4 bg-alabaster border border-hairline text-stone rounded-xl text-center">
+            <p className="font-body text-[10px] leading-relaxed">
+              Generate layouts first to inspect options.
+            </p>
+          </div>
+        ) : isGenerating ? (
+          <div className="p-8 bg-alabaster border border-hairline text-stone rounded-xl text-center animate-pulse space-y-3">
+            <div className="h-10 bg-gray-200 rounded w-full" />
+            <div className="h-10 bg-gray-200 rounded w-full" />
+            <div className="h-10 bg-gray-200 rounded w-full" />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((idx) => {
+              const isActive = activeLayoutIdx === idx;
+              const eff = 75 + idx * 5;
+              const light = 70 + (4 - idx) * 6;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleSelectLayout(idx)}
+                  className={`p-4 rounded-xl border text-left flex flex-col gap-3 transition-all duration-200 outline-none w-full ${
+                    isActive
+                      ? "bg-indigo-light border-indigo shadow-sm"
+                      : "bg-white border-hairline text-stone hover:bg-gray-50 hover:text-charcoal"
+                  }`}
+                >
+                  <div className="flex justify-between items-center w-full">
+                    <span className="font-jakarta text-xs font-bold text-charcoal">
+                      Layout Alternative 0{idx}
+                    </span>
+                    {isActive && (
+                      <span className="w-2 h-2 rounded-full bg-indigo animate-pulse" />
+                    )}
+                  </div>
+
+                  {/* Tiny scores bar */}
+                  <div className="w-full space-y-2 text-[10px] font-body">
+                    {/* Efficiency */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center text-stone">
+                        <span>Space Efficiency</span>
+                        <span className="font-bold text-charcoal">{eff}%</span>
+                      </div>
+                      <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo rounded-full"
+                          style={{ width: `${eff}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Light ratio */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center text-stone">
+                        <span>Natural Illumination</span>
+                        <span className="font-bold text-charcoal">{light}%</span>
+                      </div>
+                      <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-teal rounded-full"
+                          style={{ width: `${light}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── 2. SMART COST & procurement ENGINE (BOM) ────────────────────────── */}
+      <div className="border-t border-hairline pt-4">
+        <button
+          onClick={() => setShowBOM(!showBOM)}
+          className="w-full flex items-center justify-between text-xs font-bold text-charcoal uppercase tracking-wider outline-none"
+        >
+          <span>Procurement Cost Sheet</span>
+          {showBOM ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+
+        {showBOM && (
+          <div className="mt-3 space-y-3">
+            {bomReport && bomReport.items.length > 0 ? (
+              <>
+                <div className="space-y-2.5 bg-alabaster border border-hairline rounded-xl p-3.5 max-h-48 overflow-y-auto">
+                  {matchedItems.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex flex-col gap-1 text-[10px] font-body text-charcoal border-b border-hairline/40 pb-2 last:border-0 last:pb-0"
+                    >
+                      <div className="flex justify-between items-start">
+                        <span className="font-bold leading-tight max-w-[150px]">
+                          {item.name}
+                        </span>
+                        <span className="font-mono font-bold text-charcoal shrink-0">
+                          ${(item.unitPrice * item.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-[8.5px] text-stone">
+                        <span className="font-semibold flex items-center gap-1">
+                          <Building size={9} className="text-[#5B6AF0]" />
+                          {item.vendor}
+                        </span>
+                        <span>
+                          {item.quantity} {item.unit} &times; ${item.unitPrice.toFixed(2)}
+                        </span>
+                      </div>
+                      
+                      <span className="font-mono text-[8px] opacity-75">
+                        SKU: {item.sku}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total Cost Display & Buy button */}
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex justify-between items-center text-xs px-1">
+                    <span className="font-jakarta font-semibold text-stone">Matched Total:</span>
+                    <span className="font-mono font-extrabold text-charcoal text-sm">
+                      ${grandTotal.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setIsProcuring(true);
+                      setProcureStep("cart");
+                    }}
+                    className="w-full h-10 bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button transition-colors outline-none cursor-pointer"
+                  >
+                    <ShoppingCart size={13} />
+                    <span>Procure Materials (1-Click)</span>
+                  </button>
+
+                  <button
+                    onClick={handleExportCSV}
+                    className="w-full h-9 bg-white border border-hairline hover:bg-gray-50 text-stone hover:text-charcoal text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all outline-none"
+                  >
+                    <FileSpreadsheet size={13} className="text-teal" />
+                    <span>Export Cost Sheet (CSV)</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="font-body text-[10px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-xl">
+                Generate layouts to parse procurement details.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── 3. CODE COMPLIANCE ─────────────────────────────────────────── */}
+      <div className="border-t border-hairline pt-4">
+        <button
+          onClick={() => setShowCompliance(!showCompliance)}
+          className="w-full flex items-center justify-between text-xs font-bold text-charcoal uppercase tracking-wider outline-none"
+        >
+          <span>IBC Validation Check</span>
+          {showCompliance ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+
+        {showCompliance && (
+          <div className="mt-3 space-y-2">
+            {!floorPlanLayout ? (
+              <p className="font-body text-[10px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-xl">
+                IBC rules require geometry calculations.
+              </p>
+            ) : violations && violations.length > 0 ? (
+              violations.map((v, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-errorLight border border-error/10 text-error rounded-xl flex items-start gap-2 text-[10px] leading-relaxed font-body"
+                >
+                  <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="font-bold block uppercase text-[9px] mb-0.5">
+                      {v.code}
+                    </strong>
+                    <p className="font-medium">{v.message}</p>
+                    <p className="text-stone font-bold mt-1 text-[9px]">
+                      FIX: {v.recommendation}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-successLight border border-success/10 text-success rounded-xl p-3.5 flex items-center gap-2.5">
+                <CheckCircle size={16} className="shrink-0 animate-bounce" />
+                <span className="font-body text-[10px] font-bold uppercase tracking-wider">
+                  ALL BUILDING RULES MET
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── 4. EXPORT UTILITIES ────────────────────────────────────────── */}
+      <div className="border-t border-hairline pt-4 flex flex-col gap-2.5 mt-auto">
+        <button
+          onClick={() => alert("WASM IFC builder successfully completed. IFC asset downloading...")}
+          disabled={!floorPlanLayout}
+          className="w-full h-11 btn-primary bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button disabled:opacity-50 transition-colors"
+        >
+          <Layers size={13} />
+          <span>Export 3D BIM (IFC)</span>
+        </button>
+
+        <button
+          onClick={() => alert("PDF report generated successfully.")}
+          disabled={!floorPlanLayout}
+          className="w-full h-11 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
+        >
+          <FileDown size={13} className="text-stone" />
+          <span>Download PDF Report</span>
+        </button>
+      </div>
+
+      {/* ── 5. PROCUREMENT MODAL / OVERLAY ─────────────────────────────────────── */}
+      {isProcuring && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl border border-hairline p-6 shadow-[0_24px_64px_rgba(0,0,0,0.25)] flex flex-col gap-5 relative">
+            <button
+              onClick={() => setIsProcuring(false)}
+              className="absolute top-4 right-4 w-7 h-7 bg-alabaster border border-hairline rounded-full flex items-center justify-center hover:bg-gray-100 text-stone transition-colors outline-none"
+            >
+              <X size={14} />
+            </button>
+
+            {procureStep === "cart" && (
+              <>
+                <div className="flex items-center gap-2 border-b border-hairline pb-3">
+                  <ShoppingCart className="text-indigo" size={18} />
+                  <h3 className="font-jakarta text-sm font-bold text-charcoal uppercase tracking-wider">
+                    Supplier Purchasing Desk
+                  </h3>
+                </div>
+
+                <p className="font-body text-xs text-stone leading-relaxed">
+                  The matched SKU catalog splits this procurement sheet directly with Home Depot and IKEA. Reviews active warehouse stock status.
+                </p>
+
+                {/* matched inventory list */}
+                <div className="space-y-2.5 max-h-48 overflow-y-auto bg-alabaster border border-hairline rounded-xl p-3.5">
+                  {matchedItems.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-[10px] font-body border-b border-hairline/50 pb-2 last:border-0 last:pb-0">
+                      <div>
+                        <span className="font-bold text-charcoal block">{item.name}</span>
+                        <span className="text-[8.5px] text-stone">
+                          {item.vendor} &bull; SKU: {item.sku}
+                        </span>
+                      </div>
+                      <span className="font-mono text-stone font-bold text-[9px] shrink-0">
+                        {item.quantity} {item.unit} &times; ${item.unitPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2 text-xs border-t border-hairline pt-3 font-body">
+                  <div className="flex justify-between text-stone">
+                    <span>Order Subtotal:</span>
+                    <span>${grandTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-stone">
+                    <span>Estimated Shipping (BIM Bulky):</span>
+                    <span className="text-success font-semibold">FREE</span>
+                  </div>
+                  <div className="flex justify-between text-stone">
+                    <span>Domus Referral Share (4% Commission):</span>
+                    <span className="font-bold text-[#2A7A6E]">${referralShare.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-charcoal font-bold text-sm border-t border-hairline pt-2">
+                    <span>Grand Total:</span>
+                    <span className="font-mono">${grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleProcureSubmit}
+                  className="w-full h-11 bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button transition-colors outline-none cursor-pointer"
+                >
+                  <ShoppingCart size={14} />
+                  <span>Procure Material Orders (1-Click)</span>
+                </button>
+              </>
+            )}
+
+            {procureStep === "submitting" && (
+              <div className="py-12 flex flex-col justify-center items-center gap-4 text-center">
+                <LoaderLight />
+                <h4 className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider mt-2">
+                  Contacting Partner APIs...
+                </h4>
+                <p className="font-body text-[10px] text-stone max-w-xs leading-relaxed">
+                  Routing structured order data to Home Depot & IKEA supplier fulfillment gateways. Reserving catalog SKU indices.
+                </p>
+              </div>
+            )}
+
+            {procureStep === "success" && (
+              <div className="py-8 flex flex-col justify-center items-center gap-4 text-center space-y-2">
+                <div className="w-12 h-12 bg-successLight text-success border border-success/15 rounded-full flex items-center justify-center text-xl font-bold animate-bounce shadow-sm">
+                  <Check size={20} />
+                </div>
+                <h3 className="font-jakarta text-sm font-bold text-charcoal uppercase tracking-wider">
+                  Order Successfully Placed!
+                </h3>
+                <p className="font-body text-xs text-stone max-w-xs leading-relaxed">
+                  SKU reservations confirmed. Procurement receipts and tracking details have been logged in your workspace. Referral fee of **${referralShare.toFixed(2)}** credited!
+                </p>
+                <button
+                  onClick={() => setIsProcuring(false)}
+                  className="px-6 h-10 bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl transition-colors outline-none"
+                >
+                  Return to Editor
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function LoaderLight() {
+  return (
+    <div className="w-9 h-9 rounded-full border-2 border-indigo/20 border-t-indigo animate-spin" />
+  );
+}

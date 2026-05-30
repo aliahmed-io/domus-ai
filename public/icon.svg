@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Luxurious, warm white-sand background tile -->
+  <rect width="512" height="512" rx="140" fill="#FAF8F5" />
+  <rect width="504" height="504" x="4" y="4" rx="136" stroke="#EAE5DF" strokeWidth="8" />
+  
+  <!-- Left column/pillar of D -->
+  <rect x="128" y="96" width="52" height="320" rx="26" fill="#8C7662" />
+  
+  <!-- Dome Arch of D -->
+  <path d="M154 96 C336 96, 416 192, 416 256 C416 320, 336 416, 154 416" stroke="#8C7662" strokeWidth="40" strokeLinecap="round" />
+  
+  <!-- Minimal House Profile inside -->
+  <!-- Triangular Roof Pitch -->
+  <path d="M210 210 L272 162 L334 210 Z" stroke="#C2A585" strokeWidth="28" strokeLinejoin="round" strokeLinecap="round" fill="none" />
+  <!-- House base walls -->
+  <rect x="234" y="210" width="76" height="102" stroke="#8C7662" strokeWidth="20" rx="8" fill="none" />
+  <!-- Floating architectural light point -->
+  <circle cx="272" cy="261" r="18" fill="#C2A585" />
+</svg>
