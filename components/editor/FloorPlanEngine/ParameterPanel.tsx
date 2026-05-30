@@ -122,7 +122,7 @@ export default function ParameterPanel() {
   };
 
   return (
-    <aside className="w-[340px] h-full bg-white border-r border-hairline flex flex-col shrink-0 overflow-y-auto select-none p-6 gap-6 shadow-card z-20">
+    <aside className="w-full h-full bg-white/80 backdrop-blur-2xl border border-white/40 rounded-3xl flex flex-col shrink-0 overflow-y-auto select-none p-6 gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] z-20">
       {/* Header title */}
       <div className="flex items-center justify-between border-b border-hairline pb-4">
         <div>

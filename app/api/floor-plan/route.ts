@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
       aiLayout.efficiency = object.efficiency;
       aiLayout.naturalLight = object.naturalLight;
       // Ideally we would map object.rooms to our layout completely, but keeping this robust for demo.
-      // aiLayout.rooms = object.rooms as unknown as Room[]; // uncomment when fully ready
+      aiLayout.rooms = object.rooms as unknown as Room[];
 
       return NextResponse.json({
         ok: true,

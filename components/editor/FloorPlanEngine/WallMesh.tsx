@@ -1,23 +1,75 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import type { Mesh } from "three";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { feetToMeters } from "@/lib/utils";
 import type { Wall } from "@/types/puter";
 import PhysicsBoundary from "../PhysicsBoundary";
+import { useTexture } from "@react-three/drei";
+import { Geometry, Base, Subtraction } from "@react-three/csg";
 
 interface WallMeshProps {
   wall: Wall;
 }
 
+function WallMaterial({
+  materialId,
+  isSelected,
+  hovered,
+  isLoadBearing,
+}: {
+  materialId?: string;
+  isSelected: boolean;
+  hovered: boolean;
+  isLoadBearing: boolean;
+}) {
+  const materials = useEditorStore((s) => s.materials);
+  const activeMaterial = materialId ? materials[materialId] : null;
+
+  const mapUrl = activeMaterial?.texture.map || "";
+  const normalMapUrl = activeMaterial?.texture.normalMap || "";
+  const roughnessMapUrl = activeMaterial?.texture.roughnessMap || "";
+
+  // 1x1 transparent pixel base64 string to keep useTexture hooks unconditional
+  const dummyPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+  const textures = useTexture({
+    map: mapUrl || dummyPixel,
+    normalMap: normalMapUrl || dummyPixel,
+    roughnessMap: roughnessMapUrl || dummyPixel,
+  });
+
+  return (
+    <meshStandardMaterial
+      map={mapUrl ? textures.map : null}
+      normalMap={normalMapUrl ? textures.normalMap : null}
+      roughnessMap={roughnessMapUrl ? textures.roughnessMap : null}
+      color={
+        isSelected
+          ? "#5B6AF0"
+          : hovered
+            ? "#8B95F5"
+            : activeMaterial
+              ? "#FFFFFF"
+              : isLoadBearing
+                ? "#726555"
+                : "#AFAFA9"
+      }
+      roughness={activeMaterial ? activeMaterial.roughness : 0.7}
+      metalness={activeMaterial ? activeMaterial.metalness : 0.1}
+    />
+  );
+}
+
 export default function WallMesh({ wall }: WallMeshProps) {
   const meshRef = useRef<Mesh>(null);
-  const { selectedObjectId, setSelectedObject } = useEditorStore(
+  const { selectedObjectId, setSelectedObject, floorPlanLayout } = useEditorStore(
     useShallow((s) => ({
       selectedObjectId: s.selectedObjectId,
       setSelectedObject: s.setSelectedObject,
+      floorPlanLayout: s.floorPlanLayout,
     }))
   );
   const [hovered, setHovered] = useState(false);
@@ -45,6 +97,44 @@ export default function WallMesh({ wall }: WallMeshProps) {
   // Selected state
   const isSelected = selectedObjectId === wall.id;
 
+  // Find doors and windows belonging to this wall segment
+  const wallDoors = floorPlanLayout?.doors.filter((d) => d.wallId === wall.id) || [];
+  const wallWindows = floorPlanLayout?.windows.filter((w) => w.wallId === wall.id) || [];
+
+  // Memoize CSG geometry to prevent expensive recalculations on hover/re-render
+  const csgGeometry = useMemo(() => {
+    return (
+      <Geometry computeVertexNormals>
+        <Base>
+          <boxGeometry args={[length, wallHeight, wallThickness]} />
+        </Base>
+        {wallDoors.map((door) => {
+          const doorWidth = feetToMeters(door.width / 12);
+          const doorHeight = feetToMeters(6.8); // 80 inches
+          const localX = door.position * length - length / 2;
+          const localY = (doorHeight / 2) - (wallHeight / 2);
+          return (
+            <Subtraction key={door.id} position={[localX, localY, 0]}>
+              <boxGeometry args={[doorWidth, doorHeight, wallThickness * 1.5]} />
+            </Subtraction>
+          );
+        })}
+        {wallWindows.map((win) => {
+          const winWidth = feetToMeters(win.width / 12);
+          const winHeight = feetToMeters(win.height / 12);
+          const sillHeight = feetToMeters(win.sillHeight / 12);
+          const localX = win.position * length - length / 2;
+          const localY = (sillHeight + winHeight / 2) - (wallHeight / 2);
+          return (
+            <Subtraction key={win.id} position={[localX, localY, 0]}>
+              <boxGeometry args={[winWidth, winHeight, wallThickness * 1.5]} />
+            </Subtraction>
+          );
+        })}
+      </Geometry>
+    );
+  }, [length, wallHeight, wallThickness, JSON.stringify(wallDoors), JSON.stringify(wallWindows)]);
+
   // Render wall with its physical boundary
   return (
     <group>
@@ -64,23 +154,16 @@ export default function WallMesh({ wall }: WallMeshProps) {
         }}
         onPointerOut={() => setHovered(false)}
       >
-        <boxGeometry args={[length, wallHeight, wallThickness]} />
-        <meshStandardMaterial
-          color={
-            isSelected
-              ? "#5B6AF0" // active indigo
-              : hovered
-                ? "#8B95F5" // hover indigo-light
-                : wall.isLoadBearing
-                  ? "#726555" // brown load bearing
-                  : "#AFAFA9" // warm grey drywall
-          }
-          roughness={0.7}
-          metalness={0.1}
+        {csgGeometry}
+        <WallMaterial
+          materialId={(wall as any).materialId}
+          isSelected={isSelected}
+          hovered={hovered}
+          isLoadBearing={wall.isLoadBearing}
         />
       </mesh>
 
-      {/* Registers wall static collider box in Cannon engine */}
+      {/* Registers wall static collider box in Rapier physics engine */}
       <PhysicsBoundary
         position={[midX, wallHeight / 2, midZ]}
         rotation={[0, angle, 0]}

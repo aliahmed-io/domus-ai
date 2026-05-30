@@ -58,7 +58,12 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
         // Fallback or completed output loaded
         setStatusText("Streaming low-poly Draco GLTF model...");
         setTimeout(() => {
-          onAssetGenerated(prediction.output || "/models/armchair.glb", prompt);
+          onAssetGenerated(
+            prediction.output && !prediction.output.startsWith("/models/")
+              ? prediction.output
+              : "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf",
+            prompt
+          );
           toast.success("Asset ready — loading into scene", { id: "trellis" });
           setLoading(false);
           setPrompt("");
@@ -72,7 +77,10 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
           attempts += 1;
           if (attempts > 5) {
             clearInterval(interval);
-            onAssetGenerated("/models/chair.glb", prompt);
+            onAssetGenerated(
+              "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf",
+              prompt
+            );
             setLoading(false);
             setPrompt("");
             return;

@@ -30,17 +30,25 @@ export default function FloorPlanPage() {
   }, [setMode, setTool]);
 
   return (
-    <div className="flex-1 w-full h-full flex flex-col md:flex-row overflow-hidden bg-darkSurface select-none">
-      {/* Parameters Controls */}
-      <ParameterPanel />
-
-      {/* Primary CAD Visualizer Viewport */}
-      <div className="flex-1 h-full relative overflow-hidden flex flex-col">
+    <div className="relative flex-1 w-full h-full overflow-hidden bg-darkSurface select-none">
+      {/* Primary CAD Visualizer Viewport - FULL BLEED */}
+      <div className="absolute inset-0 z-0">
         <FloorPlanCanvas />
       </div>
 
-      {/* Generative Scores & Export panel */}
-      <ResultsPanel />
+      {/* Floating Parameters Controls */}
+      <div className="absolute left-6 top-24 bottom-6 w-80 z-20 pointer-events-none">
+        <div className="w-full h-full pointer-events-auto">
+          <ParameterPanel />
+        </div>
+      </div>
+
+      {/* Floating Generative Scores & Export panel */}
+      <div className="absolute right-6 top-24 bottom-6 w-80 z-20 pointer-events-none">
+        <div className="w-full h-full pointer-events-auto">
+          <ResultsPanel />
+        </div>
+      </div>
     </div>
   );
 }

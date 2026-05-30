@@ -33,13 +33,13 @@ export default function SettingsPage() {
   const [showSavedToast, setShowSavedToast] = useState(false);
 
   // Form State
-  const [displayName, setDisplayName] = useState("Adrian Hajdin");
-  const [username, setUsername] = useState("adrianhajdin");
+  const [displayName, setDisplayName] = useState("Ali Ahmed");
+  const [username, setUsername] = useState("aliahmed");
   const [bio, setBio] = useState("Design architect & full-stack spatial researcher.");
-  const [website, setWebsite] = useState("https://jsmastery.pro");
+  const [website, setWebsite] = useState("https://domus.ai");
   const [location, setLocation] = useState("New York, USA");
   const [role, setRole] = useState("Architect");
-  const [firmName, setFirmName] = useState("JS Mastery Studio");
+  const [firmName, setFirmName] = useState("Domus");
   const [experience, setExperience] = useState(8);
   const [specializations, setSpecializations] = useState<string[]>([
     "BIM Modeling",

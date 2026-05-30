@@ -3,8 +3,9 @@
 import React, { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import { Perf } from "r3f-perf";
 import { Leva } from "leva";
+import SunLight from "./SunLight";
+import { EffectComposer, N8AO, SMAA, Bloom } from "@react-three/postprocessing";
 
 // Dynamically import Three.js components to prevent SSR errors
 const Canvas = dynamic(
@@ -42,8 +43,18 @@ const Bvh = dynamic(
   { ssr: false }
 );
 
+const AccumulativeShadows = dynamic(
+  () => import("@react-three/drei").then((m) => m.AccumulativeShadows),
+  { ssr: false }
+);
+
+const RandomizedLight = dynamic(
+  () => import("@react-three/drei").then((m) => m.RandomizedLight),
+  { ssr: false }
+);
+
 const Physics = dynamic(
-  () => import("@react-three/cannon").then((m) => m.Physics),
+  () => import("@react-three/rapier").then((m) => m.Physics),
   { ssr: false }
 );
 
@@ -89,18 +100,30 @@ export default function EditorCanvas({
           }
         >
           {/* General Scene Lighting */}
-          <SoftShadows size={25} focus={0} samples={16} />
           <Environment preset="apartment" />
           <ambientLight intensity={0.5} />
-          <directionalLight
-            position={[12, 18, 12]}
-            intensity={1.2}
-            castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
-            shadow-bias={-0.0001}
-          />
+          <SunLight />
           <pointLight position={[-10, 10, -10]} intensity={0.4} />
+
+          {/* High Fidelity Baked Shadows */}
+          <AccumulativeShadows
+            temporal
+            frames={100}
+            color="black"
+            colorBlend={0.5}
+            alphaTest={0.9}
+            scale={50}
+            position={[0, -0.005, 0]}
+          >
+            <RandomizedLight
+              amount={8}
+              radius={4}
+              ambient={0.5}
+              intensity={1}
+              position={[5, 5, -10]}
+              bias={0.001}
+            />
+          </AccumulativeShadows>
 
           {/* Interactive controls */}
           <OrbitControls
@@ -133,8 +156,14 @@ export default function EditorCanvas({
             </Bvh>
           </Physics>
 
+          {/* Post-Processing Pipeline */}
+          <EffectComposer multisampling={0}>
+            <N8AO aoRadius={2} intensity={1} />
+            <Bloom luminanceThreshold={1} mipmapBlur intensity={0.4} />
+            <SMAA />
+          </EffectComposer>
+
           {/* Developer FPS stats */}
-          {isDev && <Perf position="top-left" />}
           {isDev && <Stats className="!absolute !left-auto !right-6 !bottom-6 !top-auto" />}
         </Canvas>
       </Suspense>
@@ -142,3 +171,4 @@ export default function EditorCanvas({
     </div>
   );
 }
+

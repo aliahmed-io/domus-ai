@@ -253,7 +253,7 @@ export default function Sidebar({ user }: SidebarProps) {
         ease: [0.4, 0, 0.2, 1],
       }}
       className={cn(
-        'fixed left-0 top-0 z-40 flex h-screen flex-col',
+        'relative z-40 flex h-screen flex-col flex-shrink-0',
         'bg-surface border-r border-hairline overflow-hidden',
       )}
       style={{ boxShadow: '2px 0 16px rgba(0,0,0,0.04)' }}

@@ -116,21 +116,21 @@ export async function POST(req: NextRequest) {
     // 3. SECURE FALLBACK: Procedural GLTF / GLB match for local testing
     // If no key is set, simulate a high-quality spatial mesh matching the user's description
     // This maps user furniture prompts to pre-bundled high-quality low-polygon Draco `.glb` models!
-    let matchedAsset = "/models/armchair.glb";
+    let matchedAsset = "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf";
     let message = "Procedural template loaded.";
 
     const lowercasePrompt = prompt.toLowerCase();
     if (lowercasePrompt.includes("chair") || lowercasePrompt.includes("seating") || lowercasePrompt.includes("stool")) {
-      matchedAsset = "/models/chair.glb";
+      matchedAsset = "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf";
       message = "Matched with premium lounge chair.";
     } else if (lowercasePrompt.includes("table") || lowercasePrompt.includes("desk") || lowercasePrompt.includes("dining")) {
-      matchedAsset = "/models/table.glb";
+      matchedAsset = "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/table-wood/model.gltf";
       message = "Matched with modular dining table.";
     } else if (lowercasePrompt.includes("couch") || lowercasePrompt.includes("sofa") || lowercasePrompt.includes("lounge")) {
-      matchedAsset = "/models/sofa.glb";
+      matchedAsset = "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/bench/model.gltf";
       message = "Matched with Søren fabric lounge.";
     } else if (lowercasePrompt.includes("lamp") || lowercasePrompt.includes("light") || lowercasePrompt.includes("fixture")) {
-      matchedAsset = "/models/lamp.glb";
+      matchedAsset = "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/lamp/model.gltf";
       message = "Matched with architectural floor lamp.";
     }
 

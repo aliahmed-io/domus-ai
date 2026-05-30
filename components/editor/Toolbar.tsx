@@ -10,8 +10,11 @@ import {
   Square,
   Armchair,
   Ruler,
+  Undo,
+  Redo,
 } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { useStore } from "zustand";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import type { EditorTool } from "@/types/puter";
@@ -20,6 +23,34 @@ export default function Toolbar() {
   const { tool, setTool } = useEditorStore(
     useShallow((s) => ({ tool: s.tool, setTool: s.setTool }))
   );
+
+  // Subscribe to temporal spatial layout state history actions
+  const { undo, redo, pastStates, futureStates } = useStore(useEditorStore.temporal, (s) => s);
+
+  // Setup standard professional CAD keyboard layout shortcuts
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      // Do not trigger undo/redo if typing inside inputs or textareas
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
 
   const toolGroups: {
     id: EditorTool;
@@ -87,6 +118,62 @@ export default function Toolbar() {
             </div>
           </React.Fragment>
         ))}
+
+        {/* Undo / Redo Actions grouping */}
+        <div className="h-px bg-hairline mx-1.5" />
+        <div className="flex flex-col gap-1">
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                onClick={() => undo()}
+                disabled={pastStates.length === 0}
+                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none text-stone hover:text-charcoal hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none"
+                aria-label="Undo last change"
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo size={18} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content
+                side="right"
+                sideOffset={12}
+                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
+              >
+                <span>Undo</span>
+                <span className="text-on-dark-muted font-bold bg-white/10 px-1 rounded uppercase">
+                  Ctrl+Z
+                </span>
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                onClick={() => redo()}
+                disabled={futureStates.length === 0}
+                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none text-stone hover:text-charcoal hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none"
+                aria-label="Redo change"
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo size={18} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content
+                side="right"
+                sideOffset={12}
+                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
+              >
+                <span>Redo</span>
+                <span className="text-on-dark-muted font-bold bg-white/10 px-1 rounded uppercase">
+                  Ctrl+Y
+                </span>
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+        </div>
       </aside>
     </Tooltip.Provider>
   );

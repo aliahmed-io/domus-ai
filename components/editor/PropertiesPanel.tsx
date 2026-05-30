@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
+import { PBR_PRESETS } from "@/lib/materials/pbr-preset-catalog";
+import { toast } from "sonner";
+import type { Material, ApiResult } from "@/types/puter";
 
 const SWATCHES = [
   { color: "#e3ded7", name: "Alabaster Drywall" },
@@ -24,13 +27,23 @@ const SWATCHES = [
 ];
 
 export default function PropertiesPanel() {
-  const { selectedObjectId, sceneObjects, updateSceneObject, bomReport, violations } = useEditorStore(
+  const {
+    selectedObjectId,
+    sceneObjects,
+    updateSceneObject,
+    bomReport,
+    violations,
+    floorPlanLayout,
+    setMaterial,
+  } = useEditorStore(
     useShallow((s) => ({
       selectedObjectId: s.selectedObjectId,
       sceneObjects: s.sceneObjects,
       updateSceneObject: s.updateSceneObject,
       bomReport: s.bomReport,
       violations: s.violations,
+      floorPlanLayout: s.floorPlanLayout,
+      setMaterial: s.setMaterial,
     }))
   );
   const [prompt, setPrompt] = useState("");
@@ -43,19 +56,81 @@ export default function PropertiesPanel() {
   const [showBOM, setShowBOM] = useState(true);
   const [showCompliance, setShowCompliance] = useState(true);
 
-  // Find currently selected object
-  const selectedObj = sceneObjects.find((o) => o.id === selectedObjectId);
+  // Find currently selected object (scene objects or floor plan elements)
+  const selectedObj =
+    sceneObjects.find((o) => o.id === selectedObjectId) ||
+    (floorPlanLayout?.walls.find((w) => w.id === selectedObjectId)
+      ? {
+          id: selectedObjectId!,
+          type: "wall" as const,
+          name: `Wall (${floorPlanLayout.walls.find((w) => w.id === selectedObjectId)?.isLoadBearing ? "Load Bearing" : "Interior"})`,
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+          materialId: (floorPlanLayout.walls.find((w) => w.id === selectedObjectId) as any).materialId,
+        }
+      : undefined) ||
+    (floorPlanLayout?.doors.find((d) => d.id === selectedObjectId)
+      ? {
+          id: selectedObjectId!,
+          type: "door" as const,
+          name: `Door (${floorPlanLayout.doors.find((d) => d.id === selectedObjectId)?.width}")`,
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+        }
+      : undefined) ||
+    (floorPlanLayout?.windows.find((w) => w.id === selectedObjectId)
+      ? {
+          id: selectedObjectId!,
+          type: "window" as const,
+          name: `Window (${floorPlanLayout.windows.find((w) => w.id === selectedObjectId)?.width}" x ${floorPlanLayout.windows.find((w) => w.id === selectedObjectId)?.height}")`,
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+        }
+      : undefined);
 
-  // Mock material generation
-  const handleGenerateMaterial = () => {
-    if (!prompt.trim()) return;
+  // Generative PBR texture creation via Replicate / Polyhaven APIs
+  const handleGenerateMaterial = async () => {
+    if (!prompt.trim() || !selectedObj) return;
     setIsGeneratingMat(true);
-    setTimeout(() => {
+    toast.loading("Generating PBR texture via TRELLIS API...", { id: "gen-mat" });
+    try {
+      const response = await fetch("/api/materials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const result = (await response.json()) as ApiResult<Material>;
+      if (!result.ok) {
+        toast.error(result.error || "Failed to generate material.", { id: "gen-mat" });
+      } else {
+        const generatedMat = result.data;
+        setMaterial(selectedObj.id, generatedMat);
+        setActiveMaterial(generatedMat.name);
+
+        if (selectedObj.type === "wall") {
+          const updatedWalls = floorPlanLayout?.walls.map(w =>
+            w.id === selectedObj.id ? { ...w, materialId: generatedMat.id } : w
+          ) || [];
+          useEditorStore.getState().setFloorPlan({
+            ...floorPlanLayout!,
+            walls: updatedWalls,
+          });
+        } else {
+          updateSceneObject(selectedObj.id, { materialId: generatedMat.id });
+        }
+
+        setPrompt("");
+        toast.success(`Generated and applied PBR material: "${generatedMat.name}"`, { id: "gen-mat" });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error connecting to the generative material service.", { id: "gen-mat" });
+    } finally {
       setIsGeneratingMat(false);
-      setActiveMaterial(prompt);
-      setPrompt("");
-      alert(`Generative PBR material "${prompt}" mapped successfully via TRELLIS API proxy.`);
-    }, 1500);
+    }
   };
 
   return (
@@ -188,7 +263,22 @@ export default function PropertiesPanel() {
                         key={sw.name}
                         onClick={() => {
                           setActiveMaterial(sw.name);
-                          updateSceneObject(selectedObj.id, { name: `${selectedObj.name} (${sw.name})` });
+                          const presetMat = PBR_PRESETS[sw.name];
+                          if (presetMat && selectedObj) {
+                            setMaterial(selectedObj.id, presetMat);
+                            if (selectedObj.type === "wall") {
+                              const updatedWalls = floorPlanLayout?.walls.map(w =>
+                                w.id === selectedObj.id ? { ...w, materialId: presetMat.id } : w
+                              ) || [];
+                              useEditorStore.getState().setFloorPlan({
+                                ...floorPlanLayout!,
+                                walls: updatedWalls,
+                              });
+                            } else {
+                              updateSceneObject(selectedObj.id, { materialId: presetMat.id });
+                            }
+                            toast.success(`Applied ${sw.name} PBR material preset!`);
+                          }
                         }}
                         className={`w-7 h-7 rounded-full border shadow-sm transition-all outline-none ${
                           activeMaterial === sw.name ? "ring-2 ring-indigo ring-offset-2 scale-110" : "border-hairline"

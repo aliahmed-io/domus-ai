@@ -19,8 +19,13 @@ import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { formatArea } from "@/lib/utils";
 import type { FloorPlanLayout } from "@/types/puter";
+import { jsPDF } from "jspdf";
+import { toast } from "sonner";
+import { generateFloorPlanDXF } from "@/lib/export/floor-plan-dxf";
+import { generateFloorPlanIFC } from "@/lib/export/floor-plan-ifc";
 
 interface MatchedItem {
+  category: string;
   name: string;
   vendor: "Home Depot" | "IKEA" | "Søren Furniture" | "Sherwin-Williams";
   sku: string;
@@ -86,6 +91,172 @@ export default function ResultsPanel() {
     URL.revokeObjectURL(url);
   };
 
+  // Real PDF Exporter using jsPDF (Bug B1 fix)
+  const handleExportPDF = async () => {
+    if (!floorPlanLayout) return;
+
+    try {
+      toast.loading("Generating PDF Report...", { id: "pdf-export" });
+      const doc = new jsPDF();
+
+      // Set Font & Theme
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.setTextColor(44, 38, 33); // charcoal
+      doc.text("DOMUS AI — BIM PROCUREMENT REPORT", 20, 30);
+
+      // Horizontal Divider
+      doc.setDrawColor(234, 229, 223); // hairline border
+      doc.setLineWidth(0.5);
+      doc.line(20, 35, 190, 35);
+
+      // Metadata Section
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(138, 126, 116); // stone text
+      doc.text(`Generated At: ${new Date().toLocaleString()}`, 20, 42);
+      doc.text(`Layout ID: ${floorPlanLayout.id}`, 20, 48);
+
+      // Core parameters
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(44, 38, 33);
+      doc.text("1. Project Specifications", 20, 60);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Bedrooms: ${floorPlanLayout.parameters.bedrooms}`, 25, 70);
+      doc.text(`Bathrooms: ${floorPlanLayout.parameters.bathrooms}`, 25, 77);
+      doc.text(`Total Footprint: ${floorPlanLayout.parameters.totalArea} sq ft`, 25, 84);
+      doc.text(`Layout Style: ${floorPlanLayout.parameters.style.toUpperCase()}`, 25, 91);
+      doc.text(`BIM Space Efficiency: ${floorPlanLayout.efficiency}%`, 25, 98);
+      doc.text(`Natural Light Score: ${floorPlanLayout.naturalLight}%`, 25, 105);
+
+      // BOM Table
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("2. Bill of Materials (BOM) & Estimated Costs", 20, 120);
+
+      let yPos = 130;
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "bold");
+      doc.text("Category", 20, yPos);
+      doc.text("Item Name", 50, yPos);
+      doc.text("Vendor", 95, yPos);
+      doc.text("Qty", 130, yPos);
+      doc.text("Unit Cost", 150, yPos);
+      doc.text("Total Cost", 170, yPos);
+
+      doc.line(20, yPos + 2, 190, yPos + 2);
+      yPos += 8;
+
+      doc.setFont("helvetica", "normal");
+      const matched = getMatchedItems();
+      matched.forEach((item) => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 30;
+        }
+        doc.text(item.category, 20, yPos);
+        doc.text(item.name.substring(0, 22), 50, yPos);
+        doc.text(item.vendor, 95, yPos);
+        doc.text(`${item.quantity} ${item.unit}`, 130, yPos);
+        doc.text(`$${item.unitPrice.toFixed(2)}`, 150, yPos);
+        const itemTotal = item.unitPrice * item.quantity;
+        doc.text(`$${itemTotal.toFixed(2)}`, 170, yPos);
+        yPos += 7;
+      });
+
+      doc.line(20, yPos - 3, 190, yPos - 3);
+      yPos += 5;
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Grand Total Estimate:", 120, yPos);
+      doc.text(`$${grandTotal.toFixed(2)}`, 170, yPos);
+
+      // Compliance
+      yPos += 15;
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 30;
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("3. IBC Code Compliance Checks", 20, yPos);
+      yPos += 10;
+
+      doc.setFontSize(9);
+      if (violations && violations.length > 0) {
+        violations.forEach((v) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 30;
+          }
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(180, 50, 50); // red-error
+          doc.text(`[${v.code}] ${v.severity.toUpperCase()}`, 20, yPos);
+          yPos += 5;
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(44, 38, 33);
+          doc.text(v.message, 25, yPos);
+          yPos += 5;
+          doc.setFont("helvetica", "oblique");
+          doc.text(`Recommendation: ${v.recommendation}`, 25, yPos);
+          yPos += 8;
+        });
+      } else {
+        doc.setTextColor(40, 150, 40); // green-success
+        doc.text("ALL INTERNATIONAL BUILDING CODE (IBC) CHECKS PASSED SUCCESSFULLY.", 20, yPos);
+      }
+
+      doc.save(`Domus_BIM_Report_${floorPlanLayout.id}.pdf`);
+      toast.success("PDF Report generated & downloaded successfully!", { id: "pdf-export" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF document.", { id: "pdf-export" });
+    }
+  };
+
+  const handleExportDXF = () => {
+    if (!floorPlanLayout) return;
+
+    try {
+      toast.loading("Generating CAD DXF layout...", { id: "dxf-export" });
+      const dxfContent = generateFloorPlanDXF(floorPlanLayout);
+      const blob = new Blob([dxfContent], { type: "application/dxf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Domus_Layout_${floorPlanLayout.id}.dxf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("CAD DXF Layout exported successfully!", { id: "dxf-export" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate DXF drawing.", { id: "dxf-export" });
+    }
+  };
+
+  const handleExportIFC = () => {
+    if (!floorPlanLayout) return;
+
+    try {
+      toast.loading("Generating 3D BIM IFC model...", { id: "ifc-export" });
+      const ifcContent = generateFloorPlanIFC(floorPlanLayout);
+      const blob = new Blob([ifcContent], { type: "application/x-step" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Domus_BIM_Model_${floorPlanLayout.id}.ifc`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("BIM IFC Model exported successfully!", { id: "ifc-export" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate IFC model.", { id: "ifc-export" });
+    }
+  };
+
   // Advanced Vendor Matching & Procurement Price Engine
   const getMatchedItems = (): MatchedItem[] => {
     if (!bomReport) return [];
@@ -126,6 +297,7 @@ export default function ResultsPanel() {
       }
 
       return {
+        category: item.category,
         name: item.name,
         vendor,
         sku,
@@ -148,7 +320,7 @@ export default function ResultsPanel() {
   };
 
   return (
-    <aside className="w-[300px] h-full bg-white border-l border-hairline flex flex-col shrink-0 overflow-y-auto select-none p-6 gap-6 shadow-card z-20">
+    <aside className="w-full h-full bg-white/80 backdrop-blur-2xl border border-white/40 rounded-3xl flex flex-col shrink-0 overflow-y-auto select-none p-6 gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] z-20">
       {/* Header title */}
       <div className="flex items-center justify-between border-b border-hairline pb-4">
         <div>
@@ -375,7 +547,7 @@ export default function ResultsPanel() {
       {/* ── 4. EXPORT UTILITIES ────────────────────────────────────────── */}
       <div className="border-t border-hairline pt-4 flex flex-col gap-2.5 mt-auto">
         <button
-          onClick={() => alert("WASM IFC builder successfully completed. IFC asset downloading...")}
+          onClick={handleExportIFC}
           disabled={!floorPlanLayout}
           className="w-full h-11 btn-primary bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button disabled:opacity-50 transition-colors"
         >
@@ -384,12 +556,21 @@ export default function ResultsPanel() {
         </button>
 
         <button
-          onClick={() => alert("PDF report generated successfully.")}
+          onClick={handleExportPDF}
           disabled={!floorPlanLayout}
           className="w-full h-11 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
         >
           <FileDown size={13} className="text-stone" />
           <span>Download PDF Report</span>
+        </button>
+
+        <button
+          onClick={handleExportDXF}
+          disabled={!floorPlanLayout}
+          className="w-full h-11 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
+        >
+          <FileSpreadsheet size={13} className="text-stone" />
+          <span>Download DXF Layout (CAD)</span>
         </button>
       </div>
 

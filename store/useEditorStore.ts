@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { temporal } from 'zundo';
 import type {
   EditorMode,
   EditorTool,
@@ -10,6 +11,11 @@ import type {
   Material,
   BomReport,
   ComplianceViolation,
+  DimensionLine,
+  BuildingStorey,
+  Staircase,
+  MEPNode,
+  MEPEdge,
 } from '@/types/puter';
 
 // ─── State Shape ──────────────────────────────────────────────────────────────
@@ -35,6 +41,17 @@ interface EditorState {
   // ── Async ─────────────────────────────────────────────────────────────────
   isGenerating: boolean;
 
+  // ── P2-P4 Advanced Spatial State ──────────────────────────────────────────
+  dimensionLines: DimensionLine[];
+  storeys: BuildingStorey[];
+  activeStoreyId: string;
+  mepNodes: MEPNode[];
+  mepEdges: MEPEdge[];
+  staircases: Staircase[];
+  sunAltitude: number;
+  sunAzimuth: number;
+  sunTime: string;
+
   // ── Actions ───────────────────────────────────────────────────────────────
   setMode(mode: EditorMode): void;
   setTool(tool: EditorTool): void;
@@ -50,12 +67,25 @@ interface EditorState {
   toggleGrid(): void;
   toggleMeasurements(): void;
   toggleCameraMode(): void;
+
+  addDimensionLine(line: DimensionLine): void;
+  removeDimensionLine(id: string): void;
+  setStoreys(storeys: BuildingStorey[]): void;
+  setActiveStoreyId(id: string): void;
+  addMepNode(node: MEPNode): void;
+  updateMepNode(id: string, updates: Partial<MEPNode>): void;
+  addMepEdge(edge: MEPEdge): void;
+  removeMepEdge(id: string): void;
+  addStaircase(stair: Staircase): void;
+  removeStaircase(id: string): void;
+  setSunTime(timeStr: string): void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useEditorStore = create<EditorState>()(
-  immer((set) => ({
+  temporal(
+    immer((set) => ({
     // ── Initial State ────────────────────────────────────────────────────────
     mode: '3d',
     tool: 'select',
@@ -72,6 +102,16 @@ export const useEditorStore = create<EditorState>()(
     violations: [],
 
     isGenerating: false,
+
+    dimensionLines: [],
+    storeys: [],
+    activeStoreyId: "",
+    mepNodes: [],
+    mepEdges: [],
+    staircases: [],
+    sunAltitude: 45,
+    sunAzimuth: 180,
+    sunTime: "12:00",
 
     // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -171,7 +211,101 @@ export const useEditorStore = create<EditorState>()(
           state.cameraMode === 'perspective' ? 'orthographic' : 'perspective';
       });
     },
-  })),
+
+    addDimensionLine(line) {
+      set((state) => {
+        state.dimensionLines.push(line);
+      });
+    },
+
+    removeDimensionLine(id) {
+      set((state) => {
+        state.dimensionLines = state.dimensionLines.filter((l) => l.id !== id);
+      });
+    },
+
+    setStoreys(storeys) {
+      set((state) => {
+        state.storeys = storeys;
+        if (storeys.length > 0 && !state.activeStoreyId) {
+          state.activeStoreyId = storeys[0]?.id || "";
+        }
+      });
+    },
+
+    setActiveStoreyId(id) {
+      set((state) => {
+        state.activeStoreyId = id;
+        const storey = state.storeys.find((s) => s.id === id);
+        if (storey) {
+          state.floorPlanLayout = storey.floorPlanLayout;
+        }
+      });
+    },
+
+    addMepNode(node) {
+      set((state) => {
+        state.mepNodes.push(node);
+      });
+    },
+
+    updateMepNode(id, updates) {
+      set((state) => {
+        const index = state.mepNodes.findIndex((n) => n.id === id);
+        if (index !== -1) {
+          Object.assign(state.mepNodes[index] as MEPNode, updates);
+        }
+      });
+    },
+
+    addMepEdge(edge) {
+      set((state) => {
+        state.mepEdges.push(edge);
+      });
+    },
+
+    removeMepEdge(id) {
+      set((state) => {
+        state.mepEdges = state.mepEdges.filter((e) => e.id !== id);
+      });
+    },
+
+    addStaircase(stair) {
+      set((state) => {
+        state.staircases.push(stair);
+      });
+    },
+
+    removeStaircase(id) {
+      set((state) => {
+        state.staircases = state.staircases.filter((s) => s.id !== id);
+      });
+    },
+
+    setSunTime(timeStr) {
+      set((state) => {
+        state.sunTime = timeStr;
+        const [hStr, mStr] = timeStr.split(':');
+        const hours = parseInt(hStr || '12', 10) + parseInt(mStr || '0', 10) / 60;
+        
+        const angle = (hours - 6) * Math.PI / 12;
+        const altitude = 60 * Math.sin(angle);
+        const azimuth = (hours / 24) * 360;
+        
+        state.sunAltitude = Math.round(altitude);
+        state.sunAzimuth = Math.round(azimuth);
+      });
+    },
+    })),
+    {
+      limit: 100,
+      partialize: (state) => ({
+        floorPlanLayout: state.floorPlanLayout,
+        sceneObjects: state.sceneObjects,
+        materials: state.materials,
+      }),
+    }
+  )
 );
 
 // ─── Atomic Selectors ─────────────────────────────────────────────────────────

@@ -18,7 +18,7 @@ export default function ModeToggle() {
   ];
 
   return (
-    <div className="bg-dark-surface/80 backdrop-blur-md border border-[#ffffff]/10 rounded-full p-1 flex gap-0.5 shadow-hero relative z-20">
+    <div className="bg-white/80 backdrop-blur-2xl border border-white/40 rounded-full p-1 flex gap-0.5 shadow-[0_8px_32px_rgba(0,0,0,0.08)] relative z-20">
       {options.map((opt) => {
         const isActive = mode === opt.id;
         return (
@@ -26,7 +26,7 @@ export default function ModeToggle() {
             key={opt.id}
             onClick={() => setMode(opt.id)}
             className={`relative px-4 py-1.5 rounded-full text-xs font-bold transition-colors select-none outline-none ${
-              isActive ? "text-white" : "text-[#A1A1AA] hover:text-white"
+              isActive ? "text-white" : "text-stone hover:text-charcoal"
             }`}
           >
             {isActive && (

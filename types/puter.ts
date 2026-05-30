@@ -62,6 +62,7 @@ export interface Room {
   bounds: Rect2D;
   area: number; // sq ft
   color?: string;
+  ceilingHeight?: number; // meters
 }
 
 export type RoomType =
@@ -240,3 +241,53 @@ export type EditorTool =
   | "place-furniture"
   | "measure"
   | "camera";
+
+// ─── Dimension Line ───────────────────────────────────────────────────────────
+
+export interface DimensionLine {
+  id: string;
+  start: Vec3D;
+  end: Vec3D;
+  label: string;
+}
+
+// ─── Staircase & Ramps ────────────────────────────────────────────────────────
+
+export interface Staircase {
+  id: string;
+  startStoreyId: string;
+  endStoreyId: string;
+  width: number; // inches
+  riserCount: number;
+  riserHeight: number; // inches
+  position: Vec3D;
+  rotation: Vec3D;
+  type: "straight" | "l-shape" | "spiral";
+}
+
+// ─── Building Storeys (Multi-floor) ──────────────────────────────────────────
+
+export interface BuildingStorey {
+  id: string;
+  name: string;
+  elevation: number; // feet
+  floorPlanLayout: FloorPlanLayout;
+}
+
+// ─── MEP (Mechanical, Electrical, Plumbing) Layers ──────────────────────────
+
+export interface MEPNode {
+  id: string;
+  type: "electrical" | "plumbing" | "hvac";
+  system: "power" | "data" | "supply" | "drain" | "air";
+  position: Vec3D; // in meters
+  label: string;
+}
+
+export interface MEPEdge {
+  id: string;
+  fromNodeId: string;
+  toNodeId: string;
+  type: "wire" | "pipe" | "duct";
+  path: Vec3D[]; // 3D path routing in meters
+}

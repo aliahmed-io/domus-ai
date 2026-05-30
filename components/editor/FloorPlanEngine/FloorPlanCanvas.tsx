@@ -9,7 +9,6 @@ import {
   Brain,
   Glasses,
   Zap,
-  HelpCircle,
   X,
   CheckCircle2,
 } from "lucide-react";
@@ -17,6 +16,17 @@ import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import EditorCanvas from "../EditorCanvas";
 import WallMesh from "./WallMesh";
+import DoorMesh from "./DoorMesh";
+import WindowMesh from "./WindowMesh";
+import WallDrawingManager from "./WallDrawingManager";
+import DimensionLineOverlay from "./DimensionLineOverlay";
+import SunController from "../SunController";
+import MepOverlay from "./MepOverlay";
+import StaircaseMesh from "./StaircaseMesh";
+import { MeshReflectorMaterial } from "@react-three/drei";
+import CeilingMesh from "./CeilingMesh";
+import BlueprintCanvas2D from "./BlueprintCanvas2D";
+import StoreySelector from "../StoreySelector";
 
 const ModeToggle = dynamic(() => import("../ModeToggle"), { ssr: false });
 
@@ -48,6 +58,7 @@ export default function FloorPlanCanvas() {
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between pointer-events-none z-30">
         <div className="pointer-events-auto">
           <ModeToggle />
+          <StoreySelector />
         </div>
 
         {/* Immersive controls segment */}
@@ -126,6 +137,9 @@ export default function FloorPlanCanvas() {
               </p>
             </div>
           </div>
+        ) : mode === "2d" ? (
+          /* Render Dedicated 2D Blueprint when mode is 2d */
+          <BlueprintCanvas2D />
         ) : (
           /* EditorCanvas container reacts dynamically to pathTracing state */
           <EditorCanvas cameraMode={cameraMode} showGrid={!pathTracing}>
@@ -142,16 +156,53 @@ export default function FloorPlanCanvas() {
               <WallMesh key={wall.id} wall={wall} />
             ))}
 
-            {/* Flat floor layout plane */}
+            {/* Render doors and windows along the walls */}
+            {floorPlanLayout.doors.map((door) => (
+              <DoorMesh key={door.id} door={door} walls={floorPlanLayout.walls} />
+            ))}
+            {floorPlanLayout.windows.map((win) => (
+              <WindowMesh key={win.id} window={win} walls={floorPlanLayout.walls} />
+            ))}
+
+            {/* Render interactive 3D wall drawing helper plane and previews */}
+            <WallDrawingManager />
+
+            {/* Custom 3D Dimension Lines & measurement overlay */}
+            <DimensionLineOverlay />
+
+            {/* Volumetric MEP networks conduit/pipe/wire layer */}
+            <MepOverlay />
+
+            {/* Procedural Staircases & handrails */}
+            <StaircaseMesh />
+
+            {/* Ceilings per room */}
+            <CeilingMesh />
+
+            {/* Flat floor layout plane with glossy reflections */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
               <planeGeometry args={[100, 100]} />
-              <meshStandardMaterial
-                color={pathTracing ? "#1E1A17" : "#2C2621"}
-                roughness={pathTracing ? 0.3 : 1.0}
-                metalness={pathTracing ? 0.1 : 0.0}
+              <MeshReflectorMaterial
+                blur={[300, 100]}
+                resolution={1024}
+                mixBlur={1}
+                mixStrength={40}
+                roughness={0.1}
+                depthScale={1.2}
+                minDepthThreshold={0.4}
+                maxDepthThreshold={1.4}
+                color={pathTracing ? "#151515" : "#1a1a1a"}
+                metalness={0.5}
+                mirror={1}
               />
             </mesh>
           </EditorCanvas>
+        )}
+
+        {floorPlanLayout && (
+          <div className="absolute bottom-6 right-6 z-20">
+            <SunController />
+          </div>
         )}
       </div>
 
