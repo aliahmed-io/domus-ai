@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import * as Slider from "@radix-ui/react-slider";
 import * as Switch from "@radix-ui/react-switch";
-import { Sparkles, Brain, Minus, Plus, Loader2 } from "lucide-react";
+import { Sparkles, Brain, Minus, Plus, Loader2, Cuboid, Scan, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryState, parseAsInteger, parseAsStringEnum } from "nuqs";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -12,13 +12,14 @@ import { formatArea } from "@/lib/utils";
 import type { FloorPlanLayout, ApiResult } from "@/types/puter";
 
 export default function ParameterPanel() {
-  const { setFloorPlan, setGenerating, isGenerating, setBomReport, setViolations } = useEditorStore(
+  const { setFloorPlan, setGenerating, isGenerating, setBomReport, setViolations, addSceneObject } = useEditorStore(
     useShallow((s) => ({
       setFloorPlan: s.setFloorPlan,
       setGenerating: s.setGenerating,
       isGenerating: s.isGenerating,
       setBomReport: s.setBomReport,
       setViolations: s.setViolations,
+      addSceneObject: s.addSceneObject,
     }))
   );
 
@@ -38,6 +39,8 @@ export default function ParameterPanel() {
   const [naturalLight, setNaturalLight] = useState(true);
   const [accessibility, setAccessibility] = useState(false);
   const [specialRooms, setSpecialRooms] = useState<string[]>(["Home Office"]);
+  const [modelPrompt, setModelPrompt] = useState("");
+  const [isGeneratingModel, setIsGeneratingModel] = useState(false);
 
   const specialOptions = [
     "Home Office",
@@ -118,6 +121,40 @@ export default function ParameterPanel() {
       toast.error("Error contacting the generative spatial edge service.", { id: "gen" });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerate3DModel = async () => {
+    if (!modelPrompt.trim()) return;
+    setIsGeneratingModel(true);
+    toast.loading("Synthesizing 3D model...", { id: "gen3d" });
+    try {
+      const response = await fetch("/api/generate-3d", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: modelPrompt }),
+      });
+      const result = await response.json();
+      if (result.ok && result.data.output) {
+        toast.success(result.data.message || "3D model synthesized!", { id: "gen3d" });
+        // Add to scene objects
+        addSceneObject({
+          id: `gen-mesh-${Date.now()}`,
+          type: "furniture",
+          name: modelPrompt,
+          position: { x: 0, y: 3, z: 0 }, // Drop from sky
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+          gltfPath: result.data.output,
+        });
+        setModelPrompt("");
+      } else {
+        toast.error(result.error || "Generation failed.", { id: "gen3d" });
+      }
+    } catch (err) {
+      toast.error("Error communicating with AI cluster.", { id: "gen3d" });
+    } finally {
+      setIsGeneratingModel(false);
     }
   };
 
@@ -305,6 +342,79 @@ export default function ParameterPanel() {
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Text-to-3D Generative Prompt */}
+      <div className="space-y-3 pt-2 border-t border-hairline flex-1">
+        <span className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider block flex items-center gap-2">
+          <Cuboid size={12} className="text-indigo" />
+          Generative 3D Asset
+        </span>
+        <div className="flex flex-col gap-2">
+          <input
+            type="text"
+            value={modelPrompt}
+            onChange={(e) => setModelPrompt(e.target.value)}
+            placeholder="e.g. Leather lounge chair"
+            className="w-full bg-white border border-hairline rounded-xl px-3 py-2 text-xs font-body text-charcoal outline-none focus:border-indigo"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleGenerate3DModel();
+            }}
+          />
+          <button
+            onClick={handleGenerate3DModel}
+            disabled={isGeneratingModel || !modelPrompt.trim()}
+            className="w-full h-9 bg-charcoal text-white hover:bg-black text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+          >
+            {isGeneratingModel ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Cuboid size={14} />
+            )}
+            <span>Synthesize 3D Model</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Upload Blueprint BIM Analysis */}
+      <div className="space-y-3 pt-2 border-t border-hairline flex-1">
+        <span className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider block flex items-center gap-2">
+          <Scan size={12} className="text-indigo" />
+          Vision Blueprint Parsing
+        </span>
+        <div className="flex flex-col gap-2">
+          <label className="w-full h-9 bg-white border border-hairline hover:border-indigo text-charcoal text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer">
+            {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+            <span>Upload Blueprint Image</span>
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/png, image/jpeg"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  setGenerating(true);
+                  toast.loading("Analyzing blueprint with GPT-4o Vision...", { id: "bim" });
+                  const formData = new FormData();
+                  formData.append("file", file);
+                  const res = await fetch("/api/bim-analysis", { method: "POST", body: formData });
+                  const data = await res.json();
+                  if (data.ok) {
+                    toast.success("Blueprint parsed successfully!", { id: "bim" });
+                    setFloorPlan(data.data);
+                  } else {
+                    toast.error(data.error || "Parsing failed.", { id: "bim" });
+                  }
+                } catch (err) {
+                  toast.error("Vision API Error.", { id: "bim" });
+                } finally {
+                  setGenerating(false);
+                }
+              }}
+            />
+          </label>
         </div>
       </div>
 

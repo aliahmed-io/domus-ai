@@ -18,7 +18,9 @@ export default function BlueprintCanvas2D() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const handleMounted = requestAnimationFrame(() => {
+      setMounted(true);
+    });
     const updateSize = () => {
       // Find the parent container
       const container = document.getElementById("blueprint-container");
@@ -32,7 +34,10 @@ export default function BlueprintCanvas2D() {
     
     updateSize();
     window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    return () => {
+      window.removeEventListener("resize", updateSize);
+      cancelAnimationFrame(handleMounted);
+    };
   }, []);
 
   if (!mounted || !floorPlanLayout) return null;

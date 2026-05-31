@@ -4,6 +4,7 @@ import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import type { FloorPlanLayout, Room, Wall, Door, Window2D, Vec2D, ApiResult } from "@/types/puter";
+import { solveLayoutGeometry } from "@/lib/geometry-solver";
 
 export const runtime = "edge";
 
@@ -74,78 +75,11 @@ function generateLayoutVariant(
       area: rW * rH,
     });
   }
-
-  // 2. GENERATE WALLS (From rooms boundaries)
-  // Simple boundary walls outer shell
-  const boundaryWalls = [
-    { start: { x: 0, y: 0 }, end: { x: width, y: 0 } },
-    { start: { x: width, y: 0 }, end: { x: width, y: height } },
-    { start: { x: width, y: height }, end: { x: 0, y: height } },
-    { start: { x: 0, y: height }, end: { x: 0, y: 0 } },
-  ];
-
-  boundaryWalls.forEach((w, wIdx) => {
-    walls.push({
-      id: `wall-outer-${wIdx}-${index}`,
-      start: w.start,
-      end: w.end,
-      thickness: 9, // inches
-      height: 9, // feet
-      isLoadBearing: true,
-    });
-  });
-
-  // Generates interior divider walls
-  rooms.forEach((r, rIdx) => {
-    if (rIdx === 0) return; // skip living room outer checks
-    walls.push({
-      id: `wall-interior-${r.id}`,
-      start: { x: r.bounds.x, y: r.bounds.y },
-      end: { x: r.bounds.x, y: r.bounds.y + r.bounds.height },
-      thickness: 5,
-      height: 9,
-      isLoadBearing: false,
-    });
-  });
-
-  // 3. GENERATE DOORS
-  walls.forEach((wall, wallIdx) => {
-    if (wallIdx > 3) {
-      doors.push({
-        id: `door-${wall.id}`,
-        wallId: wall.id,
-        position: 0.5,
-        width: 32, // standard interior doorway width
-        isExterior: false,
-      });
-    }
-  });
-
-  // Add front entry door
-  doors.push({
-    id: `door-entry-${index}`,
-    wallId: walls[0]?.id || `wall-outer-0-${index}`,
-    position: 0.2,
-    width: 36, // main door
-    isExterior: true,
-  });
-
-  // 4. GENERATE WINDOWS
-  for (let i = 0; i < 4; i++) {
-    const parentWall = walls[i % 4];
-    if (parentWall) {
-      windows.push({
-        id: `window-${i}-${index}`,
-        wallId: parentWall.id,
-        position: 0.4 + i * 0.1,
-        width: 48,
-        height: 60,
-        sillHeight: 30,
-      });
-    }
-  }
+  // 2. GENERATE STRUCTURAL WALLS & DOORS via Compiler
+  const geometry = solveLayoutGeometry(rooms);
 
   // Scoring
+
   const efficiency = 80 + index * 5 - Math.round(beds * 2);
   const naturalLight = 75 + (4 - index) * 6;
 
@@ -160,9 +94,9 @@ function generateLayoutVariant(
       features: ["Storage Priority", "Natural Light"],
     },
     rooms,
-    walls,
-    doors,
-    windows,
+    walls: geometry.walls,
+    doors: geometry.doors,
+    windows: geometry.windows,
     dimensions: { width, height },
     efficiency,
     naturalLight,
@@ -208,13 +142,22 @@ export async function POST(req: NextRequest) {
       });
 
       // Construct a layout variant based on AI output
-      // For simplicity, we just use the AI rooms and auto-generate walls/doors
-      // Or we can just fallback to our logic with the AI's efficiency scores for this demo:
-      const aiLayout = generateLayoutVariant(1, beds, baths, area, style);
-      aiLayout.efficiency = object.efficiency;
-      aiLayout.naturalLight = object.naturalLight;
-      // Ideally we would map object.rooms to our layout completely, but keeping this robust for demo.
-      aiLayout.rooms = object.rooms as unknown as Room[];
+      // We now solve the layout structurally using the geometry compiler!
+      const aiRooms = object.rooms as unknown as Room[];
+      const geometry = solveLayoutGeometry(aiRooms);
+      
+      const aiLayout: FloorPlanLayout = {
+        id: `layout-ai-${style}-${area}`,
+        parameters: { bedrooms: beds, bathrooms: baths, totalArea: area, floors: 1, style, features: [] },
+        rooms: aiRooms,
+        walls: geometry.walls,
+        doors: geometry.doors,
+        windows: geometry.windows,
+        dimensions: { width: Math.round(Math.sqrt(area)), height: Math.round(Math.sqrt(area)) },
+        efficiency: object.efficiency,
+        naturalLight: object.naturalLight,
+        generatedAt: new Date().toISOString()
+      };
 
       return NextResponse.json({
         ok: true,

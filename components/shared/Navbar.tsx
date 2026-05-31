@@ -62,7 +62,10 @@ export default function Navbar() {
 
   // ── Close menu on route change ──────────────────────────────────────────────
   useEffect(() => {
-    setIsMenuOpen(false);
+    const handle = requestAnimationFrame(() => {
+      setIsMenuOpen(false);
+    });
+    return () => cancelAnimationFrame(handle);
   }, [pathname]);
 
   // ── Close menu on Escape ────────────────────────────────────────────────────

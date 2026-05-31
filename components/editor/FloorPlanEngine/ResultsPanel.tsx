@@ -17,8 +17,6 @@ import {
 } from "lucide-react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
-import { formatArea } from "@/lib/utils";
-import type { FloorPlanLayout } from "@/types/puter";
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
 import { generateFloorPlanDXF } from "@/lib/export/floor-plan-dxf";

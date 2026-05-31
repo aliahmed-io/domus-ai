@@ -28,6 +28,7 @@ interface EditorState {
   cameraMode: 'perspective' | 'orthographic';
   showGrid: boolean;
   showMeasurements: boolean;
+  xrScale: number; // 1 for immersive, 0.05 for dollhouse
 
   // ── Scene Data ────────────────────────────────────────────────────────────
   floorPlanLayout: FloorPlanLayout | null;
@@ -67,6 +68,7 @@ interface EditorState {
   toggleGrid(): void;
   toggleMeasurements(): void;
   toggleCameraMode(): void;
+  toggleXrScale(): void;
 
   addDimensionLine(line: DimensionLine): void;
   removeDimensionLine(id: string): void;
@@ -93,6 +95,7 @@ export const useEditorStore = create<EditorState>()(
     cameraMode: 'perspective',
     showGrid: true,
     showMeasurements: false,
+    xrScale: 1,
 
     floorPlanLayout: null,
     sceneObjects: [],
@@ -209,6 +212,12 @@ export const useEditorStore = create<EditorState>()(
       set((state) => {
         state.cameraMode =
           state.cameraMode === 'perspective' ? 'orthographic' : 'perspective';
+      });
+    },
+
+    toggleXrScale() {
+      set((state) => {
+        state.xrScale = state.xrScale === 1 ? 0.05 : 1;
       });
     },
 

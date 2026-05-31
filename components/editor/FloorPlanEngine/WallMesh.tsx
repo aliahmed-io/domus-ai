@@ -20,7 +20,7 @@ function WallMaterial({
   hovered,
   isLoadBearing,
 }: {
-  materialId?: string;
+  materialId?: string | undefined;
   isSelected: boolean;
   hovered: boolean;
   isLoadBearing: boolean;
@@ -101,14 +101,20 @@ export default function WallMesh({ wall }: WallMeshProps) {
   const wallDoors = floorPlanLayout?.doors.filter((d) => d.wallId === wall.id) || [];
   const wallWindows = floorPlanLayout?.windows.filter((w) => w.wallId === wall.id) || [];
 
+  // Stringify complex arrays outside useMemo to comply with static dependency check rules
+  const wallDoorsStr = JSON.stringify(wallDoors);
+  const wallWindowsStr = JSON.stringify(wallWindows);
+
   // Memoize CSG geometry to prevent expensive recalculations on hover/re-render
   const csgGeometry = useMemo(() => {
+    const doors = JSON.parse(wallDoorsStr) as typeof wallDoors;
+    const windows = JSON.parse(wallWindowsStr) as typeof wallWindows;
     return (
       <Geometry computeVertexNormals>
         <Base>
           <boxGeometry args={[length, wallHeight, wallThickness]} />
         </Base>
-        {wallDoors.map((door) => {
+        {doors.map((door) => {
           const doorWidth = feetToMeters(door.width / 12);
           const doorHeight = feetToMeters(6.8); // 80 inches
           const localX = door.position * length - length / 2;
@@ -119,7 +125,7 @@ export default function WallMesh({ wall }: WallMeshProps) {
             </Subtraction>
           );
         })}
-        {wallWindows.map((win) => {
+        {windows.map((win) => {
           const winWidth = feetToMeters(win.width / 12);
           const winHeight = feetToMeters(win.height / 12);
           const sillHeight = feetToMeters(win.sillHeight / 12);
@@ -133,7 +139,7 @@ export default function WallMesh({ wall }: WallMeshProps) {
         })}
       </Geometry>
     );
-  }, [length, wallHeight, wallThickness, JSON.stringify(wallDoors), JSON.stringify(wallWindows)]);
+  }, [length, wallHeight, wallThickness, wallDoorsStr, wallWindowsStr]);
 
   // Render wall with its physical boundary
   return (
@@ -156,7 +162,7 @@ export default function WallMesh({ wall }: WallMeshProps) {
       >
         {csgGeometry}
         <WallMaterial
-          materialId={(wall as any).materialId}
+          materialId={(wall as { materialId?: string }).materialId}
           isSelected={isSelected}
           hovered={hovered}
           isLoadBearing={wall.isLoadBearing}

@@ -67,7 +67,7 @@ export default function PropertiesPanel() {
           position: { x: 0, y: 0, z: 0 },
           rotation: { x: 0, y: 0, z: 0 },
           scale: { x: 1, y: 1, z: 1 },
-          materialId: (floorPlanLayout.walls.find((w) => w.id === selectedObjectId) as any).materialId,
+          materialId: (floorPlanLayout.walls.find((w) => w.id === selectedObjectId) as { materialId?: string }).materialId,
         }
       : undefined) ||
     (floorPlanLayout?.doors.find((d) => d.id === selectedObjectId)

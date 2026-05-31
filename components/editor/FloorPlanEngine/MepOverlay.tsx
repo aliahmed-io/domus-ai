@@ -4,18 +4,20 @@ import React, { useState } from "react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { Line, Html } from "@react-three/drei";
-import { feetToMeters, metersToFeet, nanoid } from "@/lib/utils";
+import { nanoid } from "@/lib/utils";
 import type { MEPNode, MEPEdge, Vec3D } from "@/types/puter";
+import { calculateMepPath } from "@/lib/mep-router";
+
+import type { ThreeEvent } from "@react-three/fiber";
 
 export default function MepOverlay() {
-  const { tool, mepNodes, mepEdges, addMepNode, addMepEdge, removeMepEdge, floorPlanLayout } = useEditorStore(
+  const { tool, mepNodes, mepEdges, addMepNode, addMepEdge, floorPlanLayout } = useEditorStore(
     useShallow((s) => ({
       tool: s.tool,
       mepNodes: s.mepNodes,
       mepEdges: s.mepEdges,
       addMepNode: s.addMepNode,
       addMepEdge: s.addMepEdge,
-      removeMepEdge: s.removeMepEdge,
       floorPlanLayout: s.floorPlanLayout,
     }))
   );
@@ -26,7 +28,7 @@ export default function MepOverlay() {
   // Check if we are drawing or placing MEP entities
   const isMepActive = tool === "add-room"; // use add-room as our custom MEP placement trigger
 
-  const handleFloorClick = (e: any) => {
+  const handleFloorClick = (e: ThreeEvent<PointerEvent>) => {
     if (!isMepActive) return;
     e.stopPropagation();
 
@@ -52,13 +54,17 @@ export default function MepOverlay() {
     if (selectedNodeId) {
       const prevNode = mepNodes.find((n) => n.id === selectedNodeId);
       if (prevNode && prevNode.type === activeMepType) {
-        // Auto routing path (voxel style with intermediate right-angle elbows)
-        const path: Vec3D[] = [
-          prevNode.position,
-          // Voxel style right-angle elbow routing
-          { x: pos.x, y: prevNode.position.y, z: prevNode.position.z },
-          pos,
-        ];
+        // Use advanced A* pathfinding to route avoiding rooms and traveling through walls
+        let path: Vec3D[];
+        if (floorPlanLayout) {
+          path = calculateMepPath(prevNode.position, pos, floorPlanLayout);
+        } else {
+          path = [
+            prevNode.position,
+            { x: pos.x, y: prevNode.position.y, z: prevNode.position.z },
+            pos,
+          ];
+        }
 
         const edgeId = `edge-${nanoid()}`;
         const newEdge: MEPEdge = {

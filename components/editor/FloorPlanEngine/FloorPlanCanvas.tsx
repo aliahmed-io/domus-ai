@@ -27,16 +27,18 @@ import { MeshReflectorMaterial } from "@react-three/drei";
 import CeilingMesh from "./CeilingMesh";
 import BlueprintCanvas2D from "./BlueprintCanvas2D";
 import StoreySelector from "../StoreySelector";
+import PhysicsFurniture from "../PhysicsFurniture";
 
 const ModeToggle = dynamic(() => import("../ModeToggle"), { ssr: false });
 
 export default function FloorPlanCanvas() {
-  const { floorPlanLayout, mode, cameraMode, toggleCameraMode } = useEditorStore(
+  const { floorPlanLayout, mode, cameraMode, toggleCameraMode, sceneObjects } = useEditorStore(
     useShallow((s) => ({
       floorPlanLayout: s.floorPlanLayout,
       mode: s.mode,
       cameraMode: s.cameraMode,
       toggleCameraMode: s.toggleCameraMode,
+      sceneObjects: s.sceneObjects,
     }))
   );
   const [headsetOpen, setHeadsetOpen] = useState(false);
@@ -178,6 +180,16 @@ export default function FloorPlanCanvas() {
 
             {/* Ceilings per room */}
             <CeilingMesh />
+
+            {/* Render AI Synthesized 3D Models */}
+            {sceneObjects.map((obj) => (
+              <PhysicsFurniture
+                key={obj.id}
+                position={[obj.position.x, obj.position.y, obj.position.z]}
+                color="#8B95F5"
+                modelUrl={obj.gltfPath}
+              />
+            ))}
 
             {/* Flat floor layout plane with glossy reflections */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>

@@ -15,7 +15,7 @@ function getPuter(): typeof window.puter | null {
 
 // Timeout helper: races a promise against a time limit to prevent client UI freeze if cloud APIs hang
 function withTimeout<T>(promise: Promise<T>, timeoutMs = 1200, fallback: T): Promise<T> {
-  let timeoutId: any;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<T>((resolve) => {
     timeoutId = setTimeout(() => {
       console.warn(`Puter API call timed out after ${timeoutMs}ms. Invoking safe fallback.`);

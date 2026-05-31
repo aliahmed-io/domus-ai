@@ -40,7 +40,9 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
   useEffect(() => {
     if (permission !== "granted") return;
 
-    setDetecting(true);
+    const handleDetecting = requestAnimationFrame(() => {
+      setDetecting(true);
+    });
     let active = true;
     let frameId = 0;
 
@@ -107,6 +109,7 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
     return () => {
       active = false;
       cancelAnimationFrame(frameId);
+      cancelAnimationFrame(handleDetecting);
       
       // Release camera streams cleanly on unmount
       if (videoRef.current?.srcObject) {

@@ -64,6 +64,15 @@ const ASSET_CATALOG: FurnitureItem[] = [
   },
 ];
 
+// Helper utilities defined outside the React component to comply with strict hook purity rules
+function generateRandomOffset(): number {
+  return (Math.random() - 0.5) * 4;
+}
+
+function generateUniqueId(baseId: string): string {
+  return `${baseId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
 export default function FurnitureSwapPage() {
   const [selectedAsset, setSelectedAsset] = useState<string>("furn-chair-1");
   const [placedAssets, setPlacedAssets] = useState<FurnitureItem[]>([]);
@@ -71,14 +80,14 @@ export default function FurnitureSwapPage() {
 
   const handlePlaceAsset = (asset: FurnitureItem) => {
     // Determine random start offset near center so multiple placements don't land exactly overlapping
-    const offsetX = (Math.random() - 0.5) * 4;
-    const offsetZ = (Math.random() - 0.5) * 4;
+    const offsetX = generateRandomOffset();
+    const offsetZ = generateRandomOffset();
     
     setPlacedAssets([
       ...placedAssets,
       { 
         ...asset, 
-        id: `${asset.id}-${Date.now()}`,
+        id: generateUniqueId(asset.id),
         customPosition: [offsetX, 4.0, offsetZ]
       }
     ]);
@@ -86,7 +95,7 @@ export default function FurnitureSwapPage() {
 
   const handleAssetGenerated = (modelUrl: string, name: string) => {
     const customAsset: FurnitureItem = {
-      id: `custom-g-${Date.now()}`,
+      id: generateUniqueId("custom-g"),
       name: name,
       category: "Generative AI",
       modelUrl: modelUrl,
@@ -141,7 +150,7 @@ export default function FurnitureSwapPage() {
         ...prev,
         {
           ...asset,
-          id: `${asset.id}-${Date.now()}`,
+          id: generateUniqueId(asset.id),
           customPosition: [dropX, 4.0, dropZ]
         }
       ]);

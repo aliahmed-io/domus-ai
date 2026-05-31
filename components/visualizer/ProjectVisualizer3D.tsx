@@ -4,6 +4,7 @@ import React, { useState, useRef, Suspense, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Center, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Box, RotateCcw, LayoutGrid, Brain, Sparkles, Plus, Minus, Check, Code, Shield } from "lucide-react";
 import type { ProjectType } from "@/types/puter";
 
@@ -612,7 +613,7 @@ function SceneContent({ beds, baths, layoutStyle, wireframe }: SceneProps) {
 export default function ProjectVisualizer3D({ type, title }: VisualizerProps) {
   const [wireframe, setWireframe] = useState(false);
   const [viewMode, setViewMode] = useState<"3d" | "2d">("3d");
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
   // Dynamic parameters for live interactive generation
   const [beds, setBeds] = useState(1);

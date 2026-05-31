@@ -7,6 +7,8 @@ import { feetToMeters, metersToFeet, nanoid } from "@/lib/utils";
 import { snapToGrid, snapToWallEndpoints, snapToAngle } from "@/lib/snap";
 import type { Vec2D, Wall } from "@/types/puter";
 
+import type { ThreeEvent } from "@react-three/fiber";
+
 export default function WallDrawingManager() {
   const { tool, floorPlanLayout, setFloorPlan } = useEditorStore(
     useShallow((s) => ({
@@ -23,7 +25,7 @@ export default function WallDrawingManager() {
 
   const walls = floorPlanLayout.walls;
 
-  const handlePointerMove = (e: any) => {
+  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     // Intersect coordinate at floor level y = 0
     const rawX = metersToFeet(e.point.x);
@@ -42,7 +44,7 @@ export default function WallDrawingManager() {
     setCurrentPoint(snapped);
   };
 
-  const handlePointerDown = (e: any) => {
+  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     if (!currentPoint) return;
 

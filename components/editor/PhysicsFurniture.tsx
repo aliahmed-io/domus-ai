@@ -8,7 +8,7 @@ interface PhysicsFurnitureProps {
   position: [number, number, number];
   color: string;
   args?: [number, number, number];
-  modelUrl?: string;
+  modelUrl?: string | undefined;
 }
 
 // Progressive GLTF Loader Component

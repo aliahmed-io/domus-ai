@@ -6,10 +6,16 @@ import { Loader2 } from "lucide-react";
 import { Leva } from "leva";
 import SunLight from "./SunLight";
 import { EffectComposer, N8AO, SMAA, Bloom } from "@react-three/postprocessing";
+import { useEditorStore } from "@/store/useEditorStore";
 
 // Dynamically import Three.js components to prevent SSR errors
 const Canvas = dynamic(
   () => import("@react-three/fiber").then((m) => m.Canvas),
+  { ssr: false }
+);
+
+const XR = dynamic(
+  () => import("@react-three/xr").then((m) => m.XR),
   { ssr: false }
 );
 
@@ -28,10 +34,6 @@ const Stats = dynamic(
   { ssr: false }
 );
 
-const SoftShadows = dynamic(
-  () => import("@react-three/drei").then((m) => m.SoftShadows),
-  { ssr: false }
-);
 
 const Environment = dynamic(
   () => import("@react-three/drei").then((m) => m.Environment),
@@ -63,6 +65,17 @@ const Loader = dynamic(
   { ssr: false }
 );
 
+import type { XRStore } from "@react-three/xr";
+
+// We must create the XR store outside of the React render loop
+let xrStore: XRStore | null = null;
+if (typeof window !== "undefined") {
+  import("@react-three/xr").then((m) => {
+    xrStore = m.createXRStore() as unknown as XRStore;
+  });
+}
+export { xrStore };
+
 interface EditorCanvasProps {
   children?: React.ReactNode;
   cameraMode?: "perspective" | "orthographic";
@@ -75,6 +88,7 @@ export default function EditorCanvas({
   showGrid = true,
 }: EditorCanvasProps) {
   const isDev = process.env.NODE_ENV === "development";
+  const xrScale = useEditorStore((s) => s.xrScale);
 
   return (
     <div className="relative w-full h-full bg-dark-surface-alt">
@@ -150,11 +164,25 @@ export default function EditorCanvas({
           )}
 
           {/* Render children models inside high-speed Bvh raycaster and Physics simulator */}
-          <Physics gravity={[0, -9.81, 0]}>
-            <Bvh firstHitOnly>
-              {children}
-            </Bvh>
-          </Physics>
+          {xrStore ? (
+            <XR store={xrStore}>
+              <group scale={[xrScale, xrScale, xrScale]}>
+                <Physics gravity={[0, -9.81, 0]}>
+                  <Bvh firstHitOnly>
+                    {children}
+                  </Bvh>
+                </Physics>
+              </group>
+            </XR>
+          ) : (
+            <group scale={[xrScale, xrScale, xrScale]}>
+              <Physics gravity={[0, -9.81, 0]}>
+                <Bvh firstHitOnly>
+                  {children}
+                </Bvh>
+              </Physics>
+            </group>
+          )}
 
           {/* Post-Processing Pipeline */}
           <EffectComposer multisampling={0}>

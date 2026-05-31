@@ -10,11 +10,6 @@ import {
   Scan,
   Palette,
   Package,
-  SplitSquareHorizontal,
-  ChevronRight,
-  Check,
-  Building2,
-  Box,
 } from "lucide-react";
 import HeroVisualizer from "@/components/visualizer/HeroVisualizer";
 
@@ -279,7 +274,7 @@ export default function MarketingPage() {
             Ready to build the future?
           </h2>
           <p className="text-xl text-stone font-body mb-10 max-w-2xl mx-auto">
-            Join thousands of architects and designers shaping tomorrow's spaces today.
+            Join thousands of architects and designers shaping tomorrow&apos;s spaces today.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/editor" className="btn-primary px-10 py-5 text-[16px] shadow-lg shadow-indigo/20">

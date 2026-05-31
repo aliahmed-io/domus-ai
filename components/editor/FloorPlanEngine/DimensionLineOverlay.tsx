@@ -8,6 +8,8 @@ import { snapToGrid, snapToWallEndpoints } from "@/lib/snap";
 import { Line, Html } from "@react-three/drei";
 import type { Vec2D, DimensionLine } from "@/types/puter";
 
+import type { ThreeEvent } from "@react-three/fiber";
+
 export default function DimensionLineOverlay() {
   const { tool, dimensionLines, addDimensionLine, removeDimensionLine, floorPlanLayout } = useEditorStore(
     useShallow((s) => ({
@@ -25,7 +27,7 @@ export default function DimensionLineOverlay() {
   const walls = floorPlanLayout?.walls || [];
 
   // Handle pointer movements to update snapper
-  const handlePointerMove = (e: any) => {
+  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     const rawX = metersToFeet(e.point.x);
     const rawY = metersToFeet(e.point.z); // Maps 3D Z to 2D Y
@@ -38,7 +40,7 @@ export default function DimensionLineOverlay() {
   };
 
   // Handle clicking on the floor to anchor/commit the measurement line
-  const handlePointerDown = (e: any) => {
+  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     if (!currentPoint) return;
 
