@@ -28,6 +28,7 @@ import CeilingMesh from "./CeilingMesh";
 import BlueprintCanvas2D from "./BlueprintCanvas2D";
 import StoreySelector from "../StoreySelector";
 import PhysicsFurniture from "../PhysicsFurniture";
+import RoofMesh from "./RoofMesh";
 
 const ModeToggle = dynamic(() => import("../ModeToggle"), { ssr: false });
 
@@ -180,6 +181,9 @@ export default function FloorPlanCanvas() {
 
             {/* Ceilings per room */}
             <CeilingMesh />
+
+            {/* Procedural Generative Roof */}
+            <RoofMesh />
 
             {/* Render AI Synthesized 3D Models */}
             {sceneObjects.map((obj) => (

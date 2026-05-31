@@ -3,14 +3,16 @@
 import React, { useState } from "react";
 import * as Slider from "@radix-ui/react-slider";
 import * as Switch from "@radix-ui/react-switch";
-import { Sparkles, Brain, Minus, Plus, Loader2, Cuboid, Scan, UploadCloud } from "lucide-react";
+import * as Accordion from "@radix-ui/react-accordion";
+import { Sparkles, Brain, Minus, Plus, Loader2, Cuboid, Scan, UploadCloud, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryState, parseAsInteger, parseAsStringEnum } from "nuqs";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { formatArea } from "@/lib/utils";
-import type { FloorPlanLayout, ApiResult } from "@/types/puter";
-
+import { furnishRooms } from "@/lib/geometry-solver";
+import { StandardCatalog } from "@/lib/standard-catalog";
+import type { FloorPlanLayout, ApiResult, SceneObject } from "@/types/puter";
 export default function ParameterPanel() {
   const { setFloorPlan, setGenerating, isGenerating, setBomReport, setViolations, addSceneObject } = useEditorStore(
     useShallow((s) => ({
@@ -41,6 +43,7 @@ export default function ParameterPanel() {
   const [specialRooms, setSpecialRooms] = useState<string[]>(["Home Office"]);
   const [modelPrompt, setModelPrompt] = useState("");
   const [isGeneratingModel, setIsGeneratingModel] = useState(false);
+  const [autoFurnish, setAutoFurnish] = useState(false);
 
   const specialOptions = [
     "Home Office",
@@ -76,6 +79,12 @@ export default function ParameterPanel() {
         // Set first layout variant as active
         const activeLayout = result.data[0];
         setFloorPlan(activeLayout);
+
+        // Auto-furnish
+        if (autoFurnish) {
+          const furnishings = furnishRooms(activeLayout.rooms);
+          furnishings.forEach(f => addSceneObject(f));
+        }
 
         // Populate Mock BOM materials calculated from walls
         const wallQuantity = activeLayout.walls.length * 10; // linear feet approximation
@@ -159,28 +168,37 @@ export default function ParameterPanel() {
   };
 
   return (
-    <aside className="w-full h-full bg-white/80 backdrop-blur-2xl border border-white/40 rounded-3xl flex flex-col shrink-0 overflow-y-auto select-none p-6 gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] z-20">
+    <aside className="w-full h-full bg-white border border-hairline rounded-none flex flex-col shrink-0 select-none shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
       {/* Header title */}
-      <div className="flex items-center justify-between border-b border-hairline pb-4">
+      <div className="flex items-center justify-between border-b border-hairline p-5 bg-alabaster">
         <div>
-          <h2 className="font-jakarta text-heading-xs font-800 text-charcoal tracking-tight flex items-center gap-2">
-            <Brain size={18} className="text-indigo" />
+          <h2 className="font-jakarta text-[13px] font-800 text-charcoal tracking-tight flex items-center gap-2 uppercase">
+            <Brain size={14} className="text-indigo" />
             <span>AI Layout Engine</span>
           </h2>
-          <p className="font-body text-[11px] text-stone mt-0.5">
-            Configure generative spatial floor parameters.
+          <p className="font-mono text-[9px] text-stone mt-1 tracking-wider">
+            PARAMETERS // V1.0.GNN
           </p>
         </div>
-        <span className="px-2.5 py-0.5 bg-indigo-light text-indigo text-[10px] font-bold uppercase rounded-full border border-indigo/15">
-          v1.0 GNN
-        </span>
       </div>
 
-      {/* Steppers count */}
-      <div className="space-y-4">
-        <h4 className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider">
-          Room Configurations
-        </h4>
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <Accordion.Root type="single" collapsible defaultValue="structure" className="w-full">
+          
+          {/* ACCORDION 1: STRUCTURE */}
+          <Accordion.Item value="structure" className="border-b border-hairline overflow-hidden">
+            <Accordion.Header className="flex">
+              <Accordion.Trigger className="group flex-1 flex items-center justify-between px-5 py-4 bg-white hover:bg-alabaster transition-colors outline-none cursor-pointer">
+                <span className="font-jakarta text-[11px] font-bold text-charcoal uppercase tracking-widest">
+                  1. Structure & Topology
+                </span>
+                <ChevronDown size={14} className="text-stone transition-transform duration-300 group-data-[state=open]:rotate-180" />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Content className="px-5 pb-5 pt-1 space-y-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+              
+              {/* Steppers */}
+              <div className="space-y-3">
 
         {/* Bedrooms count */}
         <div className="flex items-center justify-between bg-alabaster border border-hairline p-3 rounded-xl">
@@ -287,38 +305,62 @@ export default function ParameterPanel() {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Natural light & accessibility switch */}
-      <div className="space-y-4 pt-2 border-t border-hairline">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <span className="font-jakarta text-xs font-bold text-charcoal">Natural Light</span>
-            <span className="font-body text-[10px] text-stone">Optimize window positions</span>
+      </div>        {/* Natural light & accessibility switch */}
+        <div className="space-y-3 border-t border-hairline pt-5">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-0.5">
+              <span className="font-jakarta text-[11px] font-bold text-charcoal tracking-wider uppercase">Natural Light Opt</span>
+            </div>
+            <Switch.Root
+              checked={naturalLight}
+              onCheckedChange={setNaturalLight}
+              className="w-10 h-5 bg-gray-200 rounded-none relative p-0.5 data-[state=checked]:bg-charcoal transition-colors outline-none cursor-pointer"
+            >
+              <Switch.Thumb className="block w-4 h-4 bg-white rounded-none transition-transform duration-200 translate-x-0 data-[state=checked]:translate-x-5 shadow-sm" />
+            </Switch.Root>
           </div>
-          <Switch.Root
-            checked={naturalLight}
-            onCheckedChange={setNaturalLight}
-            className="w-10 h-6 bg-gray-200 rounded-full relative p-0.5 data-[state=checked]:bg-indigo transition-colors outline-none cursor-pointer"
-          >
-            <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform duration-200 translate-x-0 data-[state=checked]:translate-x-4 shadow-sm" />
-          </Switch.Root>
-        </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <span className="font-jakarta text-xs font-bold text-charcoal">ADA Compliance</span>
-            <span className="font-body text-[10px] text-stone">Ensure handicap pathways</span>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-0.5">
+              <span className="font-jakarta text-[11px] font-bold text-charcoal tracking-wider uppercase">ADA Compliant</span>
+            </div>
+            <Switch.Root
+              checked={accessibility}
+              onCheckedChange={setAccessibility}
+              className="w-10 h-5 bg-gray-200 rounded-none relative p-0.5 data-[state=checked]:bg-charcoal transition-colors outline-none cursor-pointer"
+            >
+              <Switch.Thumb className="block w-4 h-4 bg-white rounded-none transition-transform duration-200 translate-x-0 data-[state=checked]:translate-x-5 shadow-sm" />
+            </Switch.Root>
           </div>
-          <Switch.Root
-            checked={accessibility}
-            onCheckedChange={setAccessibility}
-            className="w-10 h-6 bg-gray-200 rounded-full relative p-0.5 data-[state=checked]:bg-indigo transition-colors outline-none cursor-pointer"
-          >
-            <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform duration-200 translate-x-0 data-[state=checked]:translate-x-4 shadow-sm" />
-          </Switch.Root>
         </div>
-      </div>
+            </Accordion.Content>
+          </Accordion.Item>
+
+          {/* ACCORDION 2: FURNISHINGS */}
+          <Accordion.Item value="furnishings" className="border-b border-hairline overflow-hidden">
+            <Accordion.Header className="flex">
+              <Accordion.Trigger className="group flex-1 flex items-center justify-between px-5 py-4 bg-white hover:bg-alabaster transition-colors outline-none cursor-pointer">
+                <span className="font-jakarta text-[11px] font-bold text-charcoal uppercase tracking-widest">
+                  2. Interior & Furnishing
+                </span>
+                <ChevronDown size={14} className="text-stone transition-transform duration-300 group-data-[state=open]:rotate-180" />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Content className="px-5 pb-5 pt-1 space-y-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+              
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-jakarta text-[11px] font-bold text-charcoal uppercase tracking-wider">Auto-Furnish Rooms</span>
+                  <span className="font-mono text-[9px] text-stone">Standard Asset Snap</span>
+                </div>
+                <Switch.Root
+                  checked={autoFurnish}
+                  onCheckedChange={setAutoFurnish}
+                  className="w-10 h-5 bg-gray-200 rounded-none relative p-0.5 data-[state=checked]:bg-indigo transition-colors outline-none cursor-pointer"
+                >
+                  <Switch.Thumb className="block w-4 h-4 bg-white rounded-none transition-transform duration-200 translate-x-0 data-[state=checked]:translate-x-5 shadow-sm" />
+                </Switch.Root>
+              </div>
 
       {/* Special room multichip selection */}
       <div className="space-y-3 pt-2 border-t border-hairline flex-1">
@@ -345,10 +387,37 @@ export default function ParameterPanel() {
         </div>
       </div>
 
-      {/* Text-to-3D Generative Prompt */}
+      {/* Standard Furniture Catalog */}
       <div className="space-y-3 pt-2 border-t border-hairline flex-1">
-        <span className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider block flex items-center gap-2">
-          <Cuboid size={12} className="text-indigo" />
+        <span className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider block">
+          Standard Catalog
+        </span>
+        <div className="flex flex-wrap gap-1.5">
+          {Object.values(StandardCatalog).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                const f: SceneObject = {
+                  id: `furnish-${item.id}-${Date.now()}`,
+                  type: "furniture",
+                  name: item.name,
+                  position: { x: 0, y: 0.5, z: 0 },
+                  rotation: { x: 0, y: 0, z: 0 },
+                  scale: { x: 1, y: 1, z: 1 },
+                  materialId: `color-${item.color}`
+                };
+                addSceneObject(f);
+                toast.success(`Dropped ${item.name} into scene`);
+              }}
+              className="px-3 py-1.5 rounded-lg border text-[10px] font-bold tracking-wider transition-all outline-none bg-white text-stone border-hairline hover:bg-gray-50"
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+      </div>      <div className="space-y-3 pt-5 border-t border-hairline">
+        <span className="font-jakarta text-[11px] font-bold text-charcoal uppercase tracking-widest block flex items-center gap-2">
+          <Cuboid size={12} className="text-charcoal" />
           Generative 3D Asset
         </span>
         <div className="flex flex-col gap-2">
@@ -357,36 +426,36 @@ export default function ParameterPanel() {
             value={modelPrompt}
             onChange={(e) => setModelPrompt(e.target.value)}
             placeholder="e.g. Leather lounge chair"
-            className="w-full bg-white border border-hairline rounded-xl px-3 py-2 text-xs font-body text-charcoal outline-none focus:border-indigo"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleGenerate3DModel();
-            }}
+            className="w-full h-10 px-3 bg-white border border-hairline outline-none focus:border-charcoal transition-colors font-body text-xs rounded-none placeholder:text-gray-300"
           />
           <button
+            disabled={!modelPrompt.trim() || isGeneratingModel}
             onClick={handleGenerate3DModel}
-            disabled={isGeneratingModel || !modelPrompt.trim()}
-            className="w-full h-9 bg-charcoal text-white hover:bg-black text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+            className="w-full h-10 bg-charcoal hover:bg-black text-white rounded-none font-jakarta text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isGeneratingModel ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Cuboid size={14} />
-            )}
-            <span>Synthesize 3D Model</span>
+            {isGeneratingModel ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            Synthesize Model
           </button>
         </div>
       </div>
 
-      {/* Upload Blueprint BIM Analysis */}
-      <div className="space-y-3 pt-2 border-t border-hairline flex-1">
-        <span className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider block flex items-center gap-2">
-          <Scan size={12} className="text-indigo" />
-          Vision Blueprint Parsing
-        </span>
-        <div className="flex flex-col gap-2">
-          <label className="w-full h-9 bg-white border border-hairline hover:border-indigo text-charcoal text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer">
+            </Accordion.Content>
+          </Accordion.Item>
+
+          {/* ACCORDION 3: BIM VISION */}
+          <Accordion.Item value="bim" className="border-b border-hairline overflow-hidden">
+            <Accordion.Header className="flex">
+              <Accordion.Trigger className="group flex-1 flex items-center justify-between px-5 py-4 bg-white hover:bg-alabaster transition-colors outline-none cursor-pointer">
+                <span className="font-jakarta text-[11px] font-bold text-charcoal uppercase tracking-widest">
+                  3. BIM Vision
+                </span>
+                <ChevronDown size={14} className="text-stone transition-transform duration-300 group-data-[state=open]:rotate-180" />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Content className="px-5 pb-5 pt-1 space-y-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+            <label className="w-full h-10 bg-white border border-hairline hover:border-charcoal text-charcoal text-[10px] font-bold rounded-none flex items-center justify-center gap-2 transition-colors cursor-pointer uppercase tracking-widest">
             {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
-            <span>Upload Blueprint Image</span>
+            <span>{isGenerating ? "Analyzing..." : "Upload Blueprint"}</span>
             <input 
               type="file" 
               className="hidden" 
@@ -404,6 +473,10 @@ export default function ParameterPanel() {
                   if (data.ok) {
                     toast.success("Blueprint parsed successfully!", { id: "bim" });
                     setFloorPlan(data.data);
+                    if (autoFurnish) {
+                      const furnishings = furnishRooms(data.data.rooms);
+                      furnishings.forEach(f => addSceneObject(f));
+                    }
                   } else {
                     toast.error(data.error || "Parsing failed.", { id: "bim" });
                   }
@@ -415,27 +488,22 @@ export default function ParameterPanel() {
               }}
             />
           </label>
-        </div>
+            </Accordion.Content>
+          </Accordion.Item>
+        </Accordion.Root>
       </div>
 
-      {/* Generate button */}
-      <button
-        onClick={handleGenerate}
-        disabled={isGenerating}
-        className="w-full h-13 btn-primary bg-indigo hover:bg-indigoDark text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow-button transition-colors disabled:opacity-50 mt-auto"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 size={16} className="animate-spin" />
-            <span>Calculating Topology...</span>
-          </>
-        ) : (
-          <>
-            <Sparkles size={16} />
-            <span>Generate Layouts</span>
-          </>
-        )}
-      </button>
+      {/* Main Generate Action */}
+      <div className="p-5 border-t border-hairline bg-alabaster">
+        <button
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          className="w-full h-12 bg-charcoal text-white hover:bg-black rounded-none font-jakarta text-[11px] font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+        >
+          {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Brain size={16} />}
+          {isGenerating ? "Synthesizing Layout..." : "Generate Spatial Layout"}
+        </button>
+      </div>
     </aside>
   );
 }

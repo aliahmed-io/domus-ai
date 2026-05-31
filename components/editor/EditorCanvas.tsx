@@ -7,6 +7,7 @@ import { Leva } from "leva";
 import SunLight from "./SunLight";
 import { EffectComposer, N8AO, SMAA, Bloom } from "@react-three/postprocessing";
 import { useEditorStore } from "@/store/useEditorStore";
+import { useMultiplayerSync } from "@/lib/multiplayer";
 
 // Dynamically import Three.js components to prevent SSR errors
 const Canvas = dynamic(
@@ -29,10 +30,6 @@ const Grid = dynamic(
   { ssr: false }
 );
 
-const Stats = dynamic(
-  () => import("@react-three/drei").then((m) => m.Stats),
-  { ssr: false }
-);
 
 
 const Environment = dynamic(
@@ -89,6 +86,9 @@ export default function EditorCanvas({
 }: EditorCanvasProps) {
   const isDev = process.env.NODE_ENV === "development";
   const xrScale = useEditorStore((s) => s.xrScale);
+  
+  // Initialize WebRTC Y.js Multiplayer Synchronization
+  useMultiplayerSync();
 
   return (
     <div className="relative w-full h-full bg-dark-surface-alt">
@@ -191,8 +191,7 @@ export default function EditorCanvas({
             <SMAA />
           </EffectComposer>
 
-          {/* Developer FPS stats */}
-          {isDev && <Stats className="!absolute !left-auto !right-6 !bottom-6 !top-auto" />}
+          {/* Developer FPS stats disabled due to Turbopack woff.mjs compilation bug */}
         </Canvas>
       </Suspense>
       <Loader />

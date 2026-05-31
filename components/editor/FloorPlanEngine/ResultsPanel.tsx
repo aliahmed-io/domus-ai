@@ -18,6 +18,7 @@ import {
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { jsPDF } from "jspdf";
+import * as Accordion from "@radix-ui/react-accordion";
 import { toast } from "sonner";
 import { generateFloorPlanDXF } from "@/lib/export/floor-plan-dxf";
 import { generateFloorPlanIFC } from "@/lib/export/floor-plan-ifc";
@@ -318,37 +319,39 @@ export default function ResultsPanel() {
   };
 
   return (
-    <aside className="w-full h-full bg-white/80 backdrop-blur-2xl border border-white/40 rounded-3xl flex flex-col shrink-0 overflow-y-auto select-none p-6 gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] z-20">
+    <aside className="w-full h-full bg-white border-l border-hairline rounded-none flex flex-col shrink-0 overflow-y-auto select-none shadow-none z-20 custom-scrollbar">
       {/* Header title */}
-      <div className="flex items-center justify-between border-b border-hairline pb-4">
+      <div className="flex items-center justify-between border-b border-hairline p-5 bg-alabaster">
         <div>
-          <h2 className="font-jakarta text-heading-xs font-800 text-charcoal tracking-tight flex items-center gap-1.5">
-            <Sparkles size={16} className="text-indigo" />
-            <span>AI Generations</span>
+          <h2 className="font-jakarta text-[13px] font-800 text-charcoal tracking-tight flex items-center gap-2 uppercase">
+            <Sparkles size={14} className="text-indigo" />
+            <span>Generative Assessment</span>
           </h2>
-          <p className="font-body text-[11px] text-stone mt-0.5">
-            Optimize and inspect layout variants.
+          <p className="font-mono text-[9px] text-stone mt-1 tracking-wider uppercase">
+            Output Console
           </p>
         </div>
       </div>
 
-      {/* ── 1. VARIANT CARD LIST ────────────────────────────────────────── */}
-      <div className="space-y-3">
-        <h4 className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider">
-          Layout Variations (3)
-        </h4>
-
-        {!floorPlanLayout && !isGenerating ? (
-          <div className="p-4 bg-alabaster border border-hairline text-stone rounded-xl text-center">
-            <p className="font-body text-[10px] leading-relaxed">
-              Generate layouts first to inspect options.
-            </p>
-          </div>
-        ) : isGenerating ? (
-          <div className="p-8 bg-alabaster border border-hairline text-stone rounded-xl text-center animate-pulse space-y-3">
-            <div className="h-10 bg-gray-200 rounded w-full" />
-            <div className="h-10 bg-gray-200 rounded w-full" />
-            <div className="h-10 bg-gray-200 rounded w-full" />
+      {/* ── 1. LAYOUT TOPOLOGIES ───────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <Accordion.Root type="single" collapsible defaultValue="topologies" className="w-full">
+          
+          <Accordion.Item value="topologies" className="border-b border-hairline overflow-hidden">
+            <Accordion.Header className="flex">
+              <Accordion.Trigger className="group flex-1 flex items-center justify-between px-5 py-4 bg-white hover:bg-alabaster transition-colors outline-none cursor-pointer">
+                <span className="font-jakarta text-[11px] font-bold text-charcoal uppercase tracking-widest">
+                  1. Layout Variants
+                </span>
+                <ChevronDown size={14} className="text-stone transition-transform duration-300 group-data-[state=open]:rotate-180" />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Content className="px-5 pb-5 pt-1 space-y-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+        {isGenerating ? (
+          <div className="flex flex-col gap-3">
+            <div className="h-10 bg-gray-100 rounded-none w-full animate-pulse" />
+            <div className="h-10 bg-gray-100 rounded-none w-full animate-pulse" />
+            <div className="h-10 bg-gray-100 rounded-none w-full animate-pulse" />
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -360,7 +363,7 @@ export default function ResultsPanel() {
                 <button
                   key={idx}
                   onClick={() => handleSelectLayout(idx)}
-                  className={`p-4 rounded-xl border text-left flex flex-col gap-3 transition-all duration-200 outline-none w-full ${
+                  className={`p-4 rounded-none border text-left flex flex-col gap-3 transition-all duration-200 outline-none w-full ${
                     isActive
                       ? "bg-indigo-light border-indigo shadow-sm"
                       : "bg-white border-hairline text-stone hover:bg-gray-50 hover:text-charcoal"
@@ -410,23 +413,23 @@ export default function ResultsPanel() {
             })}
           </div>
         )}
-      </div>
+            </Accordion.Content>
+          </Accordion.Item>
 
-      {/* ── 2. SMART COST & procurement ENGINE (BOM) ────────────────────────── */}
-      <div className="border-t border-hairline pt-4">
-        <button
-          onClick={() => setShowBOM(!showBOM)}
-          className="w-full flex items-center justify-between text-xs font-bold text-charcoal uppercase tracking-wider outline-none"
-        >
-          <span>Procurement Cost Sheet</span>
-          {showBOM ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-
-        {showBOM && (
-          <div className="mt-3 space-y-3">
+          {/* ── 2. SMART COST & procurement ENGINE (BOM) ────────────────────────── */}
+          <Accordion.Item value="bom" className="border-b border-hairline overflow-hidden">
+            <Accordion.Header className="flex">
+              <Accordion.Trigger className="group flex-1 flex items-center justify-between px-5 py-4 bg-white hover:bg-alabaster transition-colors outline-none cursor-pointer">
+                <span className="font-jakarta text-[11px] font-bold text-charcoal uppercase tracking-widest">
+                  2. Procurement Cost Sheet
+                </span>
+                <ChevronDown size={14} className="text-stone transition-transform duration-300 group-data-[state=open]:rotate-180" />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Content className="px-5 pb-5 pt-1 space-y-3 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
             {bomReport && bomReport.items.length > 0 ? (
               <>
-                <div className="space-y-2.5 bg-alabaster border border-hairline rounded-xl p-3.5 max-h-48 overflow-y-auto">
+                <div className="space-y-2.5 bg-alabaster border border-hairline rounded-none p-3 max-h-48 overflow-y-auto">
                   {matchedItems.map((item, idx) => (
                     <div
                       key={idx}
@@ -450,104 +453,93 @@ export default function ResultsPanel() {
                           {item.quantity} {item.unit} &times; ${item.unitPrice.toFixed(2)}
                         </span>
                       </div>
-                      
-                      <span className="font-mono text-[8px] opacity-75">
-                        SKU: {item.sku}
-                      </span>
                     </div>
                   ))}
                 </div>
+                
+                <div className="flex justify-between items-center border-t border-hairline pt-3 font-mono text-[10px]">
+                  <span className="font-bold text-charcoal">EST. COST SUMMARY:</span>
+                  <span className="font-bold text-charcoal bg-indigo-light text-indigo px-1.5 py-0.5 rounded">
+                    ${grandTotal.toFixed(2)}
+                  </span>
+                </div>
 
-                {/* Total Cost Display & Buy button */}
-                <div className="flex flex-col gap-2.5">
-                  <div className="flex justify-between items-center text-xs px-1">
-                    <span className="font-jakarta font-semibold text-stone">Matched Total:</span>
-                    <span className="font-mono font-extrabold text-charcoal text-sm">
-                      ${grandTotal.toFixed(2)}
-                    </span>
-                  </div>
-
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   <button
-                    onClick={() => {
-                      setIsProcuring(true);
-                      setProcureStep("cart");
-                    }}
-                    className="w-full h-10 bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button transition-colors outline-none cursor-pointer"
+                    onClick={() => setIsProcuring(true)}
+                    className="w-full h-9 bg-charcoal hover:bg-black text-white text-[9px] font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-1.5 transition-colors outline-none"
                   >
-                    <ShoppingCart size={13} />
-                    <span>Procure Materials (1-Click)</span>
+                    <ShoppingCart size={12} />
+                    <span>Procure All</span>
                   </button>
-
                   <button
                     onClick={handleExportCSV}
-                    className="w-full h-9 bg-white border border-hairline hover:bg-gray-50 text-stone hover:text-charcoal text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all outline-none"
+                    className="w-full h-9 bg-white hover:bg-gray-50 border border-hairline text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-1.5 transition-colors outline-none"
                   >
-                    <FileSpreadsheet size={13} className="text-teal" />
-                    <span>Export Cost Sheet (CSV)</span>
+                    <FileSpreadsheet size={12} />
+                    <span>Export CSV</span>
                   </button>
                 </div>
               </>
             ) : (
-              <p className="font-body text-[10px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-xl">
-                Generate layouts to parse procurement details.
+              <p className="font-mono text-[9px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-none">
+                Awaiting generative layout selection to compile spatial BOM matrix.
               </p>
             )}
-          </div>
-        )}
-      </div>
+            </Accordion.Content>
+          </Accordion.Item>
 
-      {/* ── 3. CODE COMPLIANCE ─────────────────────────────────────────── */}
-      <div className="border-t border-hairline pt-4">
-        <button
-          onClick={() => setShowCompliance(!showCompliance)}
-          className="w-full flex items-center justify-between text-xs font-bold text-charcoal uppercase tracking-wider outline-none"
-        >
-          <span>IBC Validation Check</span>
-          {showCompliance ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-
-        {showCompliance && (
-          <div className="mt-3 space-y-2">
+          {/* ── 3. IBC VALIDATION ────────────────────────────────────────── */}
+          <Accordion.Item value="compliance" className="border-b border-hairline overflow-hidden">
+            <Accordion.Header className="flex">
+              <Accordion.Trigger className="group flex-1 flex items-center justify-between px-5 py-4 bg-white hover:bg-alabaster transition-colors outline-none cursor-pointer">
+                <span className="font-jakarta text-[11px] font-bold text-charcoal uppercase tracking-widest">
+                  3. IBC Validation Check
+                </span>
+                <ChevronDown size={14} className="text-stone transition-transform duration-300 group-data-[state=open]:rotate-180" />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Content className="px-5 pb-5 pt-1 space-y-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
             {!floorPlanLayout ? (
-              <p className="font-body text-[10px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-xl">
+              <p className="font-mono text-[9px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-none">
                 IBC rules require geometry calculations.
               </p>
             ) : violations && violations.length > 0 ? (
               violations.map((v, idx) => (
                 <div
                   key={idx}
-                  className="p-3 bg-errorLight border border-error/10 text-error rounded-xl flex items-start gap-2 text-[10px] leading-relaxed font-body"
+                  className="p-3 bg-red-50 border border-red-200 text-red-900 rounded-none flex items-start gap-2 text-[10px] leading-relaxed font-mono"
                 >
-                  <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                  <AlertTriangle size={14} className="shrink-0 mt-0.5 text-red-600" />
                   <div>
-                    <strong className="font-bold block uppercase text-[9px] mb-0.5">
+                    <strong className="font-bold block uppercase text-[9px] mb-0.5 text-red-700">
                       {v.code}
                     </strong>
                     <p className="font-medium">{v.message}</p>
-                    <p className="text-stone font-bold mt-1 text-[9px]">
+                    <p className="text-red-800 font-bold mt-1 text-[9px]">
                       FIX: {v.recommendation}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="bg-successLight border border-success/10 text-success rounded-xl p-3.5 flex items-center gap-2.5">
-                <CheckCircle size={16} className="shrink-0 animate-bounce" />
-                <span className="font-body text-[10px] font-bold uppercase tracking-wider">
+              <div className="bg-green-50 border border-green-200 text-green-900 rounded-none p-3.5 flex items-center gap-2.5">
+                <CheckCircle size={16} className="shrink-0 text-green-600" />
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider">
                   ALL BUILDING RULES MET
                 </span>
               </div>
             )}
-          </div>
-        )}
+            </Accordion.Content>
+          </Accordion.Item>
+        </Accordion.Root>
       </div>
-
-      {/* ── 4. EXPORT UTILITIES ────────────────────────────────────────── */}
-      <div className="border-t border-hairline pt-4 flex flex-col gap-2.5 mt-auto">
+      {/* ── 4. EXPORT UTILITIES (Sticky Bottom) ────────────────────────── */}
+      <div className="p-5 border-t border-hairline bg-alabaster grid grid-cols-2 gap-2 mt-auto">
         <button
           onClick={handleExportIFC}
           disabled={!floorPlanLayout}
-          className="w-full h-11 btn-primary bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button disabled:opacity-50 transition-colors"
+          className="col-span-2 w-full h-10 bg-indigo hover:bg-indigo-dark text-white text-[10px] font-bold uppercase tracking-widest rounded-none flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors shadow-sm"
         >
           <Layers size={13} />
           <span>Export 3D BIM (IFC)</span>
@@ -556,19 +548,19 @@ export default function ResultsPanel() {
         <button
           onClick={handleExportPDF}
           disabled={!floorPlanLayout}
-          className="w-full h-11 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
+          className="w-full h-10 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
         >
           <FileDown size={13} className="text-stone" />
-          <span>Download PDF Report</span>
+          <span>PDF Report</span>
         </button>
 
         <button
           onClick={handleExportDXF}
           disabled={!floorPlanLayout}
-          className="w-full h-11 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
+          className="w-full h-10 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
         >
           <FileSpreadsheet size={13} className="text-stone" />
-          <span>Download DXF Layout (CAD)</span>
+          <span>CAD DXF</span>
         </button>
       </div>
 

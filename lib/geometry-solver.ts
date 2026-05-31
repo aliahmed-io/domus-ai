@@ -1,4 +1,5 @@
-import type { Room, Wall, Door, Window2D, Vec2D, Rect2D } from "@/types/puter";
+import type { Room, Wall, Door, Window2D, Vec2D, Rect2D, SceneObject } from "@/types/puter";
+import { StandardCatalog } from "./standard-catalog";
 import { nanoid } from "./utils";
 
 /**
@@ -137,4 +138,52 @@ export function solveLayoutGeometry(rooms: Room[]): { walls: Wall[]; doors: Door
   }
 
   return { walls, doors, windows };
+}
+
+/**
+ * Auto-Furnishing Engine
+ * Populates rooms with standard catalog items based on semantic room type.
+ */
+export function furnishRooms(rooms: Room[]): SceneObject[] {
+  const objects: SceneObject[] = [];
+
+  rooms.forEach((room) => {
+    // Room center in meters (assuming bounds are in feet, so convert)
+    const cx = (room.bounds.x + room.bounds.width / 2) * 0.3048;
+    const cz = (room.bounds.y + room.bounds.height / 2) * 0.3048;
+    const yFloor = 0;
+
+    const spawn = (catalogId: string, offsetX: number = 0, offsetZ: number = 0, rotY: number = 0) => {
+      objects.push({
+        id: `furnish-${room.id}-${catalogId}-${nanoid()}`,
+        type: "furniture",
+        name: StandardCatalog[catalogId]?.name || catalogId,
+        position: { x: cx + offsetX, y: yFloor, z: cz + offsetZ },
+        rotation: { x: 0, y: rotY, z: 0 },
+        scale: { x: 1, y: 1, z: 1 },
+        materialId: `color-${StandardCatalog[catalogId]?.color || "#fff"}` // We can parse this later in UI
+      });
+    };
+
+    switch (room.type) {
+      case "bedroom":
+        spawn("bed-queen", 0, 0, 0);
+        spawn("wardrobe-2door", -1.5, 1.5, Math.PI / 2);
+        break;
+      case "living":
+        spawn("sofa-3seater", 0, -1, 0);
+        break;
+      case "dining":
+        spawn("dining-table-6", 0, 0, 0);
+        break;
+      case "kitchen":
+        spawn("kitchen-island", 0, 0, 0);
+        break;
+      case "bathroom":
+        spawn("bathtub", 0, 0, 0);
+        break;
+    }
+  });
+
+  return objects;
 }

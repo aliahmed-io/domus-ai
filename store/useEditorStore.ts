@@ -52,6 +52,7 @@ interface EditorState {
   sunAltitude: number;
   sunAzimuth: number;
   sunTime: string;
+  showRoof: boolean;
 
   // ── Actions ───────────────────────────────────────────────────────────────
   setMode(mode: EditorMode): void;
@@ -69,6 +70,7 @@ interface EditorState {
   toggleMeasurements(): void;
   toggleCameraMode(): void;
   toggleXrScale(): void;
+  toggleRoof(): void;
 
   addDimensionLine(line: DimensionLine): void;
   removeDimensionLine(id: string): void;
@@ -96,6 +98,7 @@ export const useEditorStore = create<EditorState>()(
     showGrid: true,
     showMeasurements: false,
     xrScale: 1,
+    showRoof: false,
 
     floorPlanLayout: null,
     sceneObjects: [],
@@ -218,6 +221,12 @@ export const useEditorStore = create<EditorState>()(
     toggleXrScale() {
       set((state) => {
         state.xrScale = state.xrScale === 1 ? 0.05 : 1;
+      });
+    },
+
+    toggleRoof() {
+      set((state) => {
+        state.showRoof = !state.showRoof;
       });
     },
 

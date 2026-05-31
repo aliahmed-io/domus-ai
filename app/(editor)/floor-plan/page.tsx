@@ -20,6 +20,11 @@ const ResultsPanel = dynamic(
   { ssr: false }
 );
 
+const MobileActionDrawer = dynamic(
+  () => import("@/components/editor/MobileActionDrawer"),
+  { ssr: false }
+);
+
 export default function FloorPlanPage() {
   const { setMode, setTool } = useEditorStore(useShallow((s) => ({ setMode: s.setMode, setTool: s.setTool })));
 
@@ -36,18 +41,23 @@ export default function FloorPlanPage() {
         <FloorPlanCanvas />
       </div>
 
-      {/* Floating Parameters Controls */}
-      <div className="absolute left-6 top-24 bottom-6 w-80 z-20 pointer-events-none">
+      {/* Floating Parameters Controls (Desktop Only) */}
+      <div className="absolute left-6 top-24 bottom-6 w-80 z-20 pointer-events-none hidden lg:block">
         <div className="w-full h-full pointer-events-auto">
           <ParameterPanel />
         </div>
       </div>
 
-      {/* Floating Generative Scores & Export panel */}
-      <div className="absolute right-6 top-24 bottom-6 w-80 z-20 pointer-events-none">
+      {/* Floating Generative Scores & Export panel (Desktop Only) */}
+      <div className="absolute right-6 top-24 bottom-6 w-80 z-20 pointer-events-none hidden lg:block">
         <div className="w-full h-full pointer-events-auto">
           <ResultsPanel />
         </div>
+      </div>
+
+      {/* Mobile Bottom Sheet Drawer (Mobile Only) */}
+      <div className="block lg:hidden">
+        <MobileActionDrawer />
       </div>
     </div>
   );

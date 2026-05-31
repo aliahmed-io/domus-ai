@@ -59,10 +59,10 @@ export default function ShowcasePage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="w-full h-[500px] md:h-[700px] rounded-3xl overflow-hidden shadow-card relative border border-hairline group"
           >
-            <img src="/atrium_tower_1780033150664.png" alt="Atrium Tower Main Render" className="w-full h-full object-cover" />
+            <img src="/atrium_tower.png" alt="Atrium Tower Main Render" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal/40 to-transparent" />
             <div className="absolute bottom-6 right-6">
-              <a href="/atrium_tower_1780033150664.png" target="_blank" className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg text-white font-bold text-xs hover:bg-white/30 transition-colors border border-white/20 shadow-sm">
+              <a href="/atrium_tower.png" target="_blank" className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg text-white font-bold text-xs hover:bg-white/30 transition-colors border border-white/20 shadow-sm">
                 <Download size={14} /> Download 8K Render
               </a>
             </div>

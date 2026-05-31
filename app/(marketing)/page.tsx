@@ -245,7 +245,7 @@ export default function MarketingPage() {
             className="w-full h-[400px] md:h-[600px] rounded-3xl overflow-hidden relative shadow-card group"
           >
             <img 
-              src="/atrium_tower_1780033150664.png" 
+              src="/atrium_tower.png" 
               alt="Atrium Tower"
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />

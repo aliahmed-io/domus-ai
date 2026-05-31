@@ -12,6 +12,7 @@ import {
   Ruler,
   Undo,
   Redo,
+  Home,
 } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useStore } from "zustand";
@@ -20,8 +21,8 @@ import { useShallow } from "zustand/react/shallow";
 import type { EditorTool } from "@/types/puter";
 
 export default function Toolbar() {
-  const { tool, setTool } = useEditorStore(
-    useShallow((s) => ({ tool: s.tool, setTool: s.setTool }))
+  const { tool, setTool, showRoof, toggleRoof } = useEditorStore(
+    useShallow((s) => ({ tool: s.tool, setTool: s.setTool, showRoof: s.showRoof, toggleRoof: s.toggleRoof }))
   );
 
   // Subscribe to temporal spatial layout state history actions
@@ -170,6 +171,36 @@ export default function Toolbar() {
                 <span className="text-on-dark-muted font-bold bg-white/10 px-1 rounded uppercase">
                   Ctrl+Y
                 </span>
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+        </div>
+
+        {/* View Toggles grouping */}
+        <div className="h-px bg-hairline mx-1.5 mt-2" />
+        <div className="flex flex-col gap-1 mt-2">
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                onClick={toggleRoof}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none ${
+                  showRoof
+                    ? "bg-indigo-light text-indigo shadow-sm"
+                    : "text-stone hover:text-charcoal hover:bg-gray-50"
+                }`}
+                aria-label="Toggle Roof"
+                title="Toggle Roof"
+              >
+                <Home size={18} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content
+                side="right"
+                sideOffset={12}
+                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
+              >
+                <span>{showRoof ? "Hide Roof" : "Show Roof"}</span>
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
