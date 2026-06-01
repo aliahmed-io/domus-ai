@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
+import * as THREE from "three";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { Leva } from "leva";
@@ -105,7 +106,7 @@ export default function EditorCanvas({
       >
         <Canvas
           frameloop="demand"
-          shadows
+          shadows={{ type: THREE.PCFShadowMap }}
           gl={{ antialias: true, preserveDrawingBuffer: true }}
           camera={
             cameraMode === "orthographic"

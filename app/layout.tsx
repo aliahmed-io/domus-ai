@@ -89,7 +89,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr" className={`${inter.variable} ${jakarta.variable} h-full antialiased`}>
+    <html lang="en" dir="ltr" className={`${inter.variable} ${jakarta.variable} h-full antialiased`} data-scroll-behavior="smooth">
       <head>
         {/* Puter.js SDK — loaded client-side only */}
         <script src="https://js.puter.com/v2/" async defer />

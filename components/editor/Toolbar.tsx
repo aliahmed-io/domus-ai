@@ -75,11 +75,11 @@ export default function Toolbar() {
 
   return (
     <Tooltip.Provider delayDuration={150}>
-      <aside className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur border border-hairline rounded-2xl p-2 flex flex-col gap-2.5 shadow-hero z-30">
+      <aside className="absolute top-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur border border-hairline rounded-2xl p-2 flex flex-row items-center gap-2.5 shadow-hero z-30">
         {toolGroups.map((group, groupIdx) => (
           <React.Fragment key={groupIdx}>
-            {groupIdx > 0 && <div className="h-px bg-hairline mx-1.5" />}
-            <div className="flex flex-col gap-1">
+            {groupIdx > 0 && <div className="w-px h-6 bg-hairline mx-1.5" />}
+            <div className="flex flex-row items-center gap-1">
               {group.map((item) => {
                 const Icon = item.icon;
                 const isActive = tool === item.id;
@@ -102,9 +102,9 @@ export default function Toolbar() {
                     </Tooltip.Trigger>
                     <Tooltip.Portal>
                       <Tooltip.Content
-                        side="right"
+                        side="bottom"
                         sideOffset={12}
-                        className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50 animate-in fade-in slide-in-from-left-1 duration-150"
+                        className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
                       >
                         <span>{item.label}</span>
                         <span className="text-on-dark-muted font-bold bg-white/10 px-1 rounded uppercase">
@@ -121,8 +121,8 @@ export default function Toolbar() {
         ))}
 
         {/* Undo / Redo Actions grouping */}
-        <div className="h-px bg-hairline mx-1.5" />
-        <div className="flex flex-col gap-1">
+        <div className="w-px h-6 bg-hairline mx-1.5" />
+        <div className="flex flex-row items-center gap-1">
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
               <button
@@ -137,7 +137,7 @@ export default function Toolbar() {
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content
-                side="right"
+                side="bottom"
                 sideOffset={12}
                 className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
               >
@@ -163,7 +163,7 @@ export default function Toolbar() {
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content
-                side="right"
+                side="bottom"
                 sideOffset={12}
                 className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
               >
@@ -177,8 +177,8 @@ export default function Toolbar() {
         </div>
 
         {/* View Toggles grouping */}
-        <div className="h-px bg-hairline mx-1.5 mt-2" />
-        <div className="flex flex-col gap-1 mt-2">
+        <div className="w-px h-6 bg-hairline mx-1.5" />
+        <div className="flex flex-row items-center gap-1">
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
               <button
@@ -196,7 +196,7 @@ export default function Toolbar() {
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content
-                side="right"
+                side="bottom"
                 sideOffset={12}
                 className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
               >

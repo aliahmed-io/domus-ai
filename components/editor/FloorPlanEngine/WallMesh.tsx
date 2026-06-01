@@ -4,7 +4,8 @@ import React, { useRef, useState, useMemo } from "react";
 import type { Mesh } from "three";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
-import { feetToMeters } from "@/lib/utils";
+import { feetToMeters, nanoid } from "@/lib/utils";
+import { toast } from "sonner";
 import type { Wall } from "@/types/puter";
 import PhysicsBoundary from "../PhysicsBoundary";
 import { useTexture } from "@react-three/drei";
@@ -65,11 +66,14 @@ function WallMaterial({
 
 export default function WallMesh({ wall }: WallMeshProps) {
   const meshRef = useRef<Mesh>(null);
-  const { selectedObjectId, setSelectedObject, floorPlanLayout } = useEditorStore(
+  const { selectedObjectId, setSelectedObject, floorPlanLayout, setFloorPlan, tool, setTool } = useEditorStore(
     useShallow((s) => ({
       selectedObjectId: s.selectedObjectId,
       setSelectedObject: s.setSelectedObject,
       floorPlanLayout: s.floorPlanLayout,
+      setFloorPlan: s.setFloorPlan,
+      tool: s.tool,
+      setTool: s.setTool,
     }))
   );
   const [hovered, setHovered] = useState(false);
@@ -152,6 +156,55 @@ export default function WallMesh({ wall }: WallMeshProps) {
         receiveShadow
         onClick={(e) => {
           e.stopPropagation();
+          
+          if (tool === "add-door" || tool === "add-window") {
+            if (!floorPlanLayout) return;
+            
+            // Calculate segment vectors in world meters
+            const dx = endX - startX;
+            const dz = endZ - startZ;
+            const lengthSq = dx * dx + dz * dz;
+            
+            if (lengthSq > 0) {
+              const apX = e.point.x - startX;
+              const apZ = e.point.z - startZ;
+              const t = (apX * dx + apZ * dz) / lengthSq;
+              const position = Math.max(0.1, Math.min(0.9, t)); // clamp between 10% and 90%
+              
+              if (tool === "add-door") {
+                const newDoor = {
+                  id: `door-${nanoid()}`,
+                  wallId: wall.id,
+                  position,
+                  width: 36, // 36 inches (3 feet) standard
+                  isExterior: false,
+                };
+                setFloorPlan({
+                  ...floorPlanLayout,
+                  doors: [...(floorPlanLayout.doors || []), newDoor],
+                });
+                toast.success("Door snapped to wall segment!");
+              } else {
+                const newWindow = {
+                  id: `window-${nanoid()}`,
+                  wallId: wall.id,
+                  position,
+                  width: 48, // 48 inches (4 feet)
+                  height: 48, // 48 inches high
+                  sillHeight: 36, // 36 inches from floor
+                };
+                setFloorPlan({
+                  ...floorPlanLayout,
+                  windows: [...(floorPlanLayout.windows || []), newWindow],
+                });
+                toast.success("Window snapped to wall segment!");
+              }
+              
+              setTool("select"); // return to select tool
+            }
+            return;
+          }
+
           setSelectedObject(wall.id);
         }}
         onPointerOver={(e) => {

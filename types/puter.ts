@@ -231,6 +231,7 @@ export type ApiResult<T> = ApiSuccess<T> | ApiError;
 // ─── Editor State ─────────────────────────────────────────────────────────────
 
 export type EditorMode = "2d" | "3d" | "ar";
+export type EditorWorkspace = "onboarding" | "manual" | "generative";
 export type EditorTool =
   | "select"
   | "move"
@@ -238,6 +239,8 @@ export type EditorTool =
   | "scale"
   | "draw-wall"
   | "add-room"
+  | "add-window"
+  | "add-door"
   | "place-furniture"
   | "measure"
   | "camera";

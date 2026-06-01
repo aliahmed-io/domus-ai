@@ -5,6 +5,7 @@ import { immer } from 'zustand/middleware/immer';
 import { temporal } from 'zundo';
 import type {
   EditorMode,
+  EditorWorkspace,
   EditorTool,
   FloorPlanLayout,
   SceneObject,
@@ -22,6 +23,7 @@ import type {
 
 interface EditorState {
   // ── View & Interaction ────────────────────────────────────────────────────
+  workspace: EditorWorkspace;
   mode: EditorMode;
   tool: EditorTool;
   selectedObjectId: string | null;
@@ -53,6 +55,8 @@ interface EditorState {
   sunAzimuth: number;
   sunTime: string;
   showRoof: boolean;
+  favoriteModelIds: string[];
+  userGeneratedAssets: { id: string; name: string; modelUrl: string; color: string }[];
 
   // ── Actions ───────────────────────────────────────────────────────────────
   setMode(mode: EditorMode): void;
@@ -63,8 +67,9 @@ interface EditorState {
   updateSceneObject(id: string, updates: Partial<SceneObject>): void;
   removeSceneObject(id: string): void;
   setMaterial(id: string, material: Material): void;
-  setBomReport(report: BomReport | null): void;
-  setViolations(violations: ComplianceViolation[]): void;
+  setBomReport: (report: BomReport | null) => void;
+  setViolations: (violations: ComplianceViolation[]) => void;
+  setWorkspace: (ws: EditorWorkspace) => void;
   setGenerating(isGenerating: boolean): void;
   toggleGrid(): void;
   toggleMeasurements(): void;
@@ -83,6 +88,8 @@ interface EditorState {
   addStaircase(stair: Staircase): void;
   removeStaircase(id: string): void;
   setSunTime(timeStr: string): void;
+  toggleFavoriteModel(id: string): void;
+  addUserGeneratedAsset(asset: { id: string; name: string; modelUrl: string; color: string }): void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -91,7 +98,8 @@ export const useEditorStore = create<EditorState>()(
   temporal(
     immer((set) => ({
     // ── Initial State ────────────────────────────────────────────────────────
-    mode: '3d',
+    workspace: 'onboarding',
+    mode: '2d',
     tool: 'select',
     selectedObjectId: null,
     cameraMode: 'perspective',
@@ -118,6 +126,8 @@ export const useEditorStore = create<EditorState>()(
     sunAltitude: 45,
     sunAzimuth: 180,
     sunTime: "12:00",
+    favoriteModelIds: [],
+    userGeneratedAssets: [],
 
     // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -196,6 +206,32 @@ export const useEditorStore = create<EditorState>()(
     setGenerating(isGenerating) {
       set((state) => {
         state.isGenerating = isGenerating;
+      });
+    },
+
+    setWorkspace(ws) {
+      set((state) => {
+        state.workspace = ws;
+      });
+    },
+
+    toggleFavoriteModel(id) {
+      set((state) => {
+        const idx = state.favoriteModelIds.indexOf(id);
+        if (idx === -1) {
+          state.favoriteModelIds.push(id);
+        } else {
+          state.favoriteModelIds.splice(idx, 1);
+        }
+      });
+    },
+
+    addUserGeneratedAsset(asset) {
+      set((state) => {
+        const exists = state.userGeneratedAssets.some((a) => a.id === asset.id);
+        if (!exists) {
+          state.userGeneratedAssets.push(asset);
+        }
       });
     },
 

@@ -159,7 +159,7 @@ export default function PropertiesPanel() {
         </div>
       ) : (
         <div className="flex flex-col">
-          {/* ── 1. TRANSFORM ──────────────────────────────────────────────── */}
+          {/* ── 1. CAD WALL OR MESH TRANSFORM PROPERTIES ─────────────────── */}
           <div className="border-b border-hairline">
             <button
               onClick={() => setShowTransform(!showTransform)}
@@ -167,73 +167,194 @@ export default function PropertiesPanel() {
             >
               <span className="flex items-center gap-2">
                 <Move size={14} className="text-stone" />
-                <span>Local Transform</span>
+                <span>{selectedObj.type === "wall" ? "Wall Parameters" : "Local Transform"}</span>
               </span>
               {showTransform ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
 
             {showTransform && (
-              <div className="px-5 pb-5 space-y-4">
-                {/* Position */}
-                <div>
-                  <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
-                    Position (x, y, z)
-                  </label>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-xs">
-                    {["x", "y", "z"].map((axis) => (
-                      <div key={axis} className="relative">
-                        <span className="absolute left-2.5 top-2 text-[10px] font-bold text-stone capitalize">
-                          {axis}
-                        </span>
-                        <input
-                          type="number"
-                          step={0.1}
-                          value={selectedObj.position[axis as "x" | "y" | "z"]}
-                          onChange={(e) =>
-                            updateSceneObject(selectedObj.id, {
-                              position: {
-                                ...selectedObj.position,
-                                [axis]: Number(e.target.value),
-                              },
-                            })
+              selectedObj.type === "wall" ? (
+                <div className="px-5 pb-5 space-y-4">
+                  {/* Wall Length */}
+                  <div>
+                    <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
+                      Wall Length (feet)
+                    </label>
+                    <input
+                      type="number"
+                      step={0.5}
+                      value={(() => {
+                        const wall = floorPlanLayout?.walls.find((w) => w.id === selectedObj.id);
+                        if (!wall) return 0;
+                        return Number(Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y).toFixed(1));
+                      })()}
+                      onChange={(e) => {
+                        const newLen = parseFloat(e.target.value);
+                        const wall = floorPlanLayout?.walls.find((w) => w.id === selectedObj.id);
+                        if (wall && !isNaN(newLen) && newLen > 0.5) {
+                          const dx = wall.end.x - wall.start.x;
+                          const dy = wall.end.y - wall.start.y;
+                          const currentLen = Math.hypot(dx, dy);
+                          if (currentLen > 0) {
+                            const unitX = dx / currentLen;
+                            const unitY = dy / currentLen;
+                            const updatedWalls = floorPlanLayout!.walls.map((w) =>
+                              w.id === wall.id
+                                ? {
+                                    ...w,
+                                    end: {
+                                      x: w.start.x + unitX * newLen,
+                                      y: w.start.y + unitY * newLen,
+                                    },
+                                  }
+                                : w
+                            );
+                            useEditorStore.getState().setFloorPlan({
+                              ...floorPlanLayout!,
+                              walls: updatedWalls,
+                            });
                           }
-                          className="pl-6 pr-2 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal outline-none focus:bg-white focus:border-indigo"
-                        />
-                      </div>
-                    ))}
+                        }
+                      }}
+                      className="px-3 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal font-mono text-xs outline-none focus:bg-white focus:border-indigo"
+                    />
                   </div>
-                </div>
 
-                {/* Rotation */}
-                <div>
-                  <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
-                    Rotation (x, y, z)
-                  </label>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-xs">
-                    {["x", "y", "z"].map((axis) => (
-                      <div key={axis} className="relative">
-                        <span className="absolute left-2.5 top-2 text-[10px] font-bold text-stone capitalize">
-                          {axis}
-                        </span>
-                        <input
-                          type="number"
-                          step={5}
-                          value={selectedObj.rotation[axis as "x" | "y" | "z"]}
-                          onChange={(e) =>
-                            updateSceneObject(selectedObj.id, {
-                              rotation: {
-                                ...selectedObj.rotation,
-                                [axis]: Number(e.target.value),
-                              },
-                            })
-                          }
-                          className="pl-6 pr-2 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal outline-none focus:bg-white focus:border-indigo"
-                        />
-                      </div>
-                    ))}
+                  {/* Wall Thickness */}
+                  <div>
+                    <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
+                      Wall Thickness (inches)
+                    </label>
+                    <input
+                      type="number"
+                      step={1}
+                      value={floorPlanLayout?.walls.find((w) => w.id === selectedObj.id)?.thickness || 5}
+                      onChange={(e) => {
+                        const thickness = parseFloat(e.target.value);
+                        if (!isNaN(thickness) && thickness > 1) {
+                          const updatedWalls = floorPlanLayout!.walls.map((w) =>
+                            w.id === selectedObj.id ? { ...w, thickness } : w
+                          );
+                          useEditorStore.getState().setFloorPlan({
+                            ...floorPlanLayout!,
+                            walls: updatedWalls,
+                          });
+                        }
+                      }}
+                      className="px-3 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal font-mono text-xs outline-none focus:bg-white focus:border-indigo"
+                    />
+                  </div>
+
+                  {/* Wall Height */}
+                  <div>
+                    <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
+                      Wall Height (feet)
+                    </label>
+                    <input
+                      type="number"
+                      step={0.5}
+                      value={floorPlanLayout?.walls.find((w) => w.id === selectedObj.id)?.height || 9}
+                      onChange={(e) => {
+                        const height = parseFloat(e.target.value);
+                        if (!isNaN(height) && height > 1) {
+                          const updatedWalls = floorPlanLayout!.walls.map((w) =>
+                            w.id === selectedObj.id ? { ...w, height } : w
+                          );
+                          useEditorStore.getState().setFloorPlan({
+                            ...floorPlanLayout!,
+                            walls: updatedWalls,
+                          });
+                        }
+                      }}
+                      className="px-3 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal font-mono text-xs outline-none focus:bg-white focus:border-indigo"
+                    />
+                  </div>
+
+                  {/* Load Bearing Toggle */}
+                  <div className="flex items-center justify-between py-1">
+                    <span className="font-body text-[10px] font-bold text-stone uppercase tracking-wider">
+                      Load Bearing Wall
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={floorPlanLayout?.walls.find((w) => w.id === selectedObj.id)?.isLoadBearing || false}
+                      onChange={(e) => {
+                        const isLoadBearing = e.target.checked;
+                        const updatedWalls = floorPlanLayout!.walls.map((w) =>
+                          w.id === selectedObj.id ? { ...w, isLoadBearing } : w
+                        );
+                        useEditorStore.getState().setFloorPlan({
+                          ...floorPlanLayout!,
+                          walls: updatedWalls,
+                        });
+                      }}
+                      className="w-4 h-4 text-indigo focus:ring-indigo border-hairline rounded accent-indigo"
+                    />
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="px-5 pb-5 space-y-4">
+                  {/* Position */}
+                  <div>
+                    <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
+                      Position (x, y, z)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2 font-mono text-xs">
+                      {["x", "y", "z"].map((axis) => (
+                        <div key={axis} className="relative">
+                          <span className="absolute left-2.5 top-2 text-[10px] font-bold text-stone capitalize">
+                            {axis}
+                          </span>
+                          <input
+                            type="number"
+                            step={0.1}
+                            value={selectedObj.position[axis as "x" | "y" | "z"]}
+                            onChange={(e) =>
+                              updateSceneObject(selectedObj.id, {
+                                position: {
+                                  ...selectedObj.position,
+                                  [axis]: Number(e.target.value),
+                                },
+                              })
+                            }
+                            className="pl-6 pr-2 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal outline-none focus:bg-white focus:border-indigo"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Rotation */}
+                  <div>
+                    <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
+                      Rotation (x, y, z)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2 font-mono text-xs">
+                      {["x", "y", "z"].map((axis) => (
+                        <div key={axis} className="relative">
+                          <span className="absolute left-2.5 top-2 text-[10px] font-bold text-stone capitalize">
+                            {axis}
+                          </span>
+                          <input
+                            type="number"
+                            step={5}
+                            value={selectedObj.rotation[axis as "x" | "y" | "z"]}
+                            onChange={(e) =>
+                              updateSceneObject(selectedObj.id, {
+                                rotation: {
+                                  ...selectedObj.rotation,
+                                  [axis]: Number(e.target.value),
+                                },
+                              })
+                            }
+                            className="pl-6 pr-2 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal outline-none focus:bg-white focus:border-indigo"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
             )}
           </div>
 
