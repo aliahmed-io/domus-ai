@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 self.onmessage = async (e: MessageEvent) => {
-  const { data, type } = e.data;
+  const { type } = e.data;
   if (type === "PARSE_IFC") {
     try {
       // In a real application, you would initialize web-ifc here and parse the array buffer

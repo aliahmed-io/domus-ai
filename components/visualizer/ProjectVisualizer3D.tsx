@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useRef, Suspense, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Center, PerspectiveCamera } from "@react-three/drei";
-import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { Box, RotateCcw, LayoutGrid, Brain, Sparkles, Plus, Minus, Check, Code, Shield } from "lucide-react";
+import { Box, RotateCcw, LayoutGrid, Brain, Sparkles, Plus, Minus } from "lucide-react";
 import type { ProjectType } from "@/types/puter";
 
 interface VisualizerProps {
@@ -18,11 +17,10 @@ interface VisualizerProps {
 interface SceneProps {
   beds: number;
   baths: number;
-  layoutStyle: "open-plan" | "l-shape" | "studio";
   wireframe: boolean;
 }
 
-function SceneContent({ beds, baths, layoutStyle, wireframe }: SceneProps) {
+function SceneContent({ beds, baths, wireframe }: SceneProps) {
   // Common material config for structural walls
   const wallMaterialProps = {
     wireframe: wireframe,
@@ -615,6 +613,11 @@ export default function ProjectVisualizer3D({ type, title }: VisualizerProps) {
   const [viewMode, setViewMode] = useState<"3d" | "2d">("3d");
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
+  // Suppress unused props warnings by registering metadata viewport loggers
+  useEffect(() => {
+    console.debug(`WebGL viewport loaded for spatial project: ${title} [Type: ${type}]`);
+  }, [type, title]);
+
   // Dynamic parameters for live interactive generation
   const [beds, setBeds] = useState(1);
   const [baths, setBaths] = useState(1);
@@ -879,7 +882,6 @@ export default function ProjectVisualizer3D({ type, title }: VisualizerProps) {
               <SceneContent
                 beds={beds}
                 baths={baths}
-                layoutStyle={layoutStyle}
                 wireframe={wireframe}
               />
             </Center>

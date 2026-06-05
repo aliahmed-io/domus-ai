@@ -17,7 +17,7 @@ export default function EditorLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-darkSurface select-none">
+    <div className="flex h-screen w-full overflow-hidden bg-dark-surface select-none">
       {/* Dynamic left sidebar navigation - default collapsed state will be managed within sidebar */}
       <Sidebar />
 

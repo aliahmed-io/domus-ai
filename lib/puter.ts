@@ -14,7 +14,7 @@ function getPuter(): typeof window.puter | null {
 }
 
 // Timeout helper: races a promise against a time limit to prevent client UI freeze if cloud APIs hang
-function withTimeout<T>(promise: Promise<T>, timeoutMs = 1200, fallback: T): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 5000, fallback: T): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<T>((resolve) => {
     timeoutId = setTimeout(() => {
@@ -81,8 +81,9 @@ export async function kvGet<T>(key: string): Promise<T | null> {
       if (!value) return null;
       return JSON.parse(value as string) as T;
     }).catch(() => null);
-    return await withTimeout(apiCall, 1200, null);
-  } catch {
+    return await withTimeout(apiCall, 5000, null);
+  } catch (e) {
+    console.error('[puter.kvGet] error:', e);
     return null;
   }
 }
@@ -92,8 +93,9 @@ export async function kvSet<T>(key: string, value: T): Promise<boolean> {
   if (!puter) return false;
   try {
     const apiCall = puter.kv.set(key, JSON.stringify(value)).then(() => true).catch(() => false);
-    return await withTimeout(apiCall, 1200, false);
-  } catch {
+    return await withTimeout(apiCall, 5000, false);
+  } catch (e) {
+    console.error('[puter.kvSet] error:', e);
     return false;
   }
 }
@@ -103,8 +105,9 @@ export async function kvDelete(key: string): Promise<boolean> {
   if (!puter) return false;
   try {
     const apiCall = puter.kv.del(key).then(() => true).catch(() => false);
-    return await withTimeout(apiCall, 1200, false);
-  } catch {
+    return await withTimeout(apiCall, 5000, false);
+  } catch (e) {
+    console.error('[puter.kvDelete] error:', e);
     return false;
   }
 }
@@ -116,8 +119,9 @@ export async function kvList(prefix: string): Promise<string[]> {
     const apiCall = puter.kv.list(prefix + "*").then((result) => {
       return (result as { key: string }[]).map((r) => r.key);
     }).catch(() => []);
-    return await withTimeout(apiCall, 1200, []);
-  } catch {
+    return await withTimeout(apiCall, 5000, []);
+  } catch (e) {
+    console.error('[puter.kvList] error:', e);
     return [];
   }
 }

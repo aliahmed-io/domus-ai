@@ -6,9 +6,7 @@ import {
   Plus,
   Info,
   CheckCircle,
-  HelpCircle,
   Armchair,
-  Tv,
   Move,
   Trash2,
 } from "lucide-react";
@@ -311,7 +309,7 @@ export default function FurnitureSwapPage() {
           {placedAssets.length > 0 ? (
             <div className="space-y-3">
               <div className="p-3.5 bg-alabaster border border-hairline rounded-xl space-y-2 text-[10px] font-body text-charcoal max-h-56 overflow-y-auto shadow-inner">
-                {placedAssets.map((asset, idx) => (
+                {placedAssets.map((asset) => (
                   <div key={asset.id} className="flex justify-between items-center border-b border-hairline/60 pb-1.5 last:border-0 last:pb-0">
                     <span className="font-bold truncate max-w-[130px]">{asset.name}</span>
                     <button

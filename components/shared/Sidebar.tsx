@@ -17,7 +17,6 @@ import {
   CreditCard,
   HelpCircle,
   ChevronLeft,
-  ChevronRight,
   Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -77,37 +76,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-/* ─── Motion variants ─────────────────────────────────────────────────────────── */
-
 const EASE = [0.4, 0, 0.2, 1] as const;
-
-const labelVariants = {
-  visible: {
-    opacity: 1,
-    width: 'auto',
-    transition: { duration: 0.18, ease: EASE },
-  },
-  hidden: {
-    opacity: 0,
-    width: 0,
-    transition: { duration: 0.14, ease: EASE },
-  },
-} as const;
-
-const sectionLabelVariants = {
-  visible: {
-    opacity: 1,
-    height: 'auto',
-    marginBottom: '8px',
-    transition: { duration: 0.18, ease: EASE },
-  },
-  hidden: {
-    opacity: 0,
-    height: 0,
-    marginBottom: 0,
-    transition: { duration: 0.14, ease: EASE },
-  },
-} as const;
 
 /* ─── Sub-components ─────────────────────────────────────────────────────────── */
 

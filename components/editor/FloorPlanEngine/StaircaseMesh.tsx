@@ -4,7 +4,6 @@ import React from "react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { feetToMeters } from "@/lib/utils";
-import type { Staircase } from "@/types/puter";
 
 export default function StaircaseMesh() {
   const { staircases } = useEditorStore(

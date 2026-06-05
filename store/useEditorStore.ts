@@ -58,6 +58,11 @@ interface EditorState {
   favoriteModelIds: string[];
   userGeneratedAssets: { id: string; name: string; modelUrl: string; color: string }[];
 
+  // ── Konva Stage Viewport State ──
+  stageScale: number;
+  stageX: number;
+  stageY: number;
+
   // ── Actions ───────────────────────────────────────────────────────────────
   setMode(mode: EditorMode): void;
   setTool(tool: EditorTool): void;
@@ -71,11 +76,13 @@ interface EditorState {
   setViolations: (violations: ComplianceViolation[]) => void;
   setWorkspace: (ws: EditorWorkspace) => void;
   setGenerating(isGenerating: boolean): void;
+  loadProjectData(layout: FloorPlanLayout | null, sceneObjects: SceneObject[], workspace: EditorWorkspace): void;
   toggleGrid(): void;
   toggleMeasurements(): void;
   toggleCameraMode(): void;
   toggleXrScale(): void;
   toggleRoof(): void;
+  setStageViewport(scale: number, x: number, y: number): void;
 
   addDimensionLine(line: DimensionLine): void;
   removeDimensionLine(id: string): void;
@@ -90,6 +97,7 @@ interface EditorState {
   setSunTime(timeStr: string): void;
   toggleFavoriteModel(id: string): void;
   addUserGeneratedAsset(asset: { id: string; name: string; modelUrl: string; color: string }): void;
+  deleteSelected(): void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -128,6 +136,11 @@ export const useEditorStore = create<EditorState>()(
     sunTime: "12:00",
     favoriteModelIds: [],
     userGeneratedAssets: [],
+
+    // ── Konva Stage Viewport Initial State ──
+    stageScale: 1,
+    stageX: 0,
+    stageY: 0,
 
     // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -182,6 +195,41 @@ export const useEditorStore = create<EditorState>()(
         if (state.selectedObjectId === id) {
           state.selectedObjectId = null;
         }
+      });
+    },
+
+    deleteSelected() {
+      set((state) => {
+        const id = state.selectedObjectId;
+        if (!id) return;
+
+        // Try scene objects
+        const initialSceneLen = state.sceneObjects.length;
+        state.sceneObjects = state.sceneObjects.filter((o) => o.id !== id);
+        if (state.sceneObjects.length < initialSceneLen) {
+          state.selectedObjectId = null;
+          return;
+        }
+
+        // Try floor plan elements
+        if (state.floorPlanLayout) {
+          const initialWallsLen = state.floorPlanLayout.walls.length;
+          state.floorPlanLayout.walls = state.floorPlanLayout.walls.filter((w) => w.id !== id);
+          if (state.floorPlanLayout.walls.length < initialWallsLen) {
+            state.selectedObjectId = null;
+            return;
+          }
+          const room = state.floorPlanLayout.rooms.find((r) => r.id === id);
+          if (room) {
+            room.noTexture = true;
+            state.selectedObjectId = null;
+            return;
+          }
+          state.floorPlanLayout.windows = state.floorPlanLayout.windows.filter((w) => w.id !== id);
+          state.floorPlanLayout.doors = state.floorPlanLayout.doors.filter((d) => d.id !== id);
+        }
+        
+        state.selectedObjectId = null;
       });
     },
 
@@ -348,6 +396,22 @@ export const useEditorStore = create<EditorState>()(
         
         state.sunAltitude = Math.round(altitude);
         state.sunAzimuth = Math.round(azimuth);
+      });
+    },
+
+    loadProjectData(layout, sceneObjects, workspace) {
+      set((state) => {
+        state.floorPlanLayout = layout;
+        state.sceneObjects = sceneObjects || [];
+        state.workspace = workspace;
+      });
+    },
+
+    setStageViewport(scale, x, y) {
+      set((state) => {
+        state.stageScale = scale;
+        state.stageX = x;
+        state.stageY = y;
       });
     },
     })),

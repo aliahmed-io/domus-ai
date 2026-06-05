@@ -6,12 +6,9 @@ import {
   Globe,
   Heart,
   Eye,
-  GitFork,
-  ArrowRight,
   TrendingUp,
   Award,
   Hash,
-  Loader2,
   FolderOpen,
 } from "lucide-react";
 import { listCommunityProjects } from "@/lib/puter";

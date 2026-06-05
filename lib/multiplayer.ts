@@ -14,7 +14,7 @@ const provider = new WebrtcProvider("domus-ai-room-alpha", ydoc, {
 });
 
 export function useMultiplayerSync() {
-  const { sceneObjects, addSceneObject, updateSceneObject, removeSceneObject } = useEditorStore();
+  const { sceneObjects } = useEditorStore();
 
   useEffect(() => {
     // 1. Listen for remote changes from other clients

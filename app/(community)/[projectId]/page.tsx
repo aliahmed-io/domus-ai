@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
@@ -28,7 +27,6 @@ interface PageProps {
 
 export default function ProjectDetailPage({ params }: PageProps) {
   const { projectId } = use(params);
-  const router = useRouter();
   
   const [project, setProject] = useState<PuterProject | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +50,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
             setError("The requested spatial project could not be found.");
           }
         }
-      } catch (err) {
+      } catch {
         if (active) {
           setError("Failed to communicate with Puter cloud database.");
         }

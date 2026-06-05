@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
-import type { FloorPlanLayout, Room, Wall, Door, Window2D, Vec2D, ApiResult } from "@/types/puter";
+import type { FloorPlanLayout, Room, ApiResult } from "@/types/puter";
 import { solveLayoutGeometry } from "@/lib/geometry-solver";
 
 export const runtime = "edge";
@@ -21,9 +21,6 @@ function generateLayoutVariant(
   const width = Math.round(area / height);
 
   const rooms: Room[] = [];
-  const walls: Wall[] = [];
-  const doors: Door[] = [];
-  const windows: Window2D[] = [];
 
   // 1. GENERATE ROOMS
   // Add main living area

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.67",
@@ -81,6 +82,7 @@
     "jsdom": "^28.1.0",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
+    "react-doctor": "^0.2.16",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.7"

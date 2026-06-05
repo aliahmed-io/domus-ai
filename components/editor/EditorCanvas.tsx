@@ -9,6 +9,39 @@ import SunLight from "./SunLight";
 import { EffectComposer, N8AO, SMAA, Bloom } from "@react-three/postprocessing";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useMultiplayerSync } from "@/lib/multiplayer";
+import { useThree } from "@react-three/fiber";
+
+// CameraSync aligns the Three.js camera to the Konva 2D stage position and zoom
+function CameraSync() {
+  const { camera, size } = useThree();
+  const mode = useEditorStore((s) => s.mode);
+  const stageScale = useEditorStore((s) => s.stageScale);
+  const stageX = useEditorStore((s) => s.stageX);
+  const stageY = useEditorStore((s) => s.stageY);
+
+  React.useEffect(() => {
+    if (mode === "2d") {
+      const SCALE = 50; // pixels per meter
+      // Convert Konva screen pan offsets to world meters
+      const panX = -(stageX - size.width / 2) / (SCALE * stageScale);
+      const panZ = -(stageY - size.height / 2) / (SCALE * stageScale);
+
+      camera.position.set(panX, 15, panZ);
+      camera.up.set(0, 0, -1);
+      camera.lookAt(panX, 0, panZ);
+
+      if (camera instanceof THREE.OrthographicCamera) {
+        camera.zoom = SCALE * stageScale;
+        camera.updateProjectionMatrix();
+      }
+    } else {
+      // Restore default upright camera orientation when returning to 3D mode
+      camera.up.set(0, 1, 0);
+    }
+  }, [mode, stageScale, stageX, stageY, camera, size]);
+
+  return null;
+}
 
 // Dynamically import Three.js components to prevent SSR errors
 const Canvas = dynamic(
@@ -86,8 +119,21 @@ export default function EditorCanvas({
   showGrid = true,
 }: EditorCanvasProps) {
   const isDev = process.env.NODE_ENV === "development";
+  const mode = useEditorStore((s) => s.mode);
   const xrScale = useEditorStore((s) => s.xrScale);
   
+  // Defer WebXR AR trigger until the Three.js canvas has mounted and bound successfully
+  React.useEffect(() => {
+    if (mode === "ar" && xrStore) {
+      const t = setTimeout(() => {
+        xrStore?.enterAR().catch((err) => {
+          console.warn("WebGL XR Session error, could not start AR:", err);
+        });
+      }, 800);
+      return () => clearTimeout(t);
+    }
+  }, [mode]);
+
   // Initialize WebRTC Y.js Multiplayer Synchronization
   useMultiplayerSync();
 
@@ -109,11 +155,14 @@ export default function EditorCanvas({
           shadows={{ type: THREE.PCFShadowMap }}
           gl={{ antialias: true, preserveDrawingBuffer: true }}
           camera={
-            cameraMode === "orthographic"
+            cameraMode === "orthographic" || mode === "2d"
               ? { position: [0, 15, 0], fov: 50, up: [0, 0, -1] }
               : { position: [8, 8, 8], fov: 45 }
           }
         >
+          {/* Synchronize camera viewport with 2D stage in 2D mode */}
+          <CameraSync />
+
           {/* General Scene Lighting */}
           <Environment preset="apartment" />
           <ambientLight intensity={0.5} />
@@ -142,6 +191,7 @@ export default function EditorCanvas({
 
           {/* Interactive controls */}
           <OrbitControls
+            enabled={mode !== "2d"}
             enableDamping
             dampingFactor={0.05}
             maxPolarAngle={cameraMode === "orthographic" ? Math.PI / 2.1 : Math.PI / 2}

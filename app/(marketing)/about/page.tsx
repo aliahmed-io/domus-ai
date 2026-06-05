@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Compass, Shield, Users, Layers, Award, Sparkles } from "lucide-react";
+import { Compass, Shield, Award, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About Us | Domus",

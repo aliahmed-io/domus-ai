@@ -38,7 +38,7 @@ const modules = [
     icon: Scan,
     title: "AR Room Scanner",
     desc: "Use WebXR passthrough on mobile devices to map exact room dimensions and output 3D spatial shells.",
-    color: "bg-darkSurface text-charcoal border-charcoal/10",
+    color: "bg-dark-surface text-charcoal border-charcoal/10",
     gradient: "from-gray-100 via-white to-white",
   },
   {

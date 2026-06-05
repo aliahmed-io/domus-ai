@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -244,9 +245,10 @@ export default function MarketingPage() {
             variants={fadeInUp}
             className="w-full h-[400px] md:h-[600px] rounded-3xl overflow-hidden relative shadow-card group"
           >
-            <img 
+            <Image 
               src="/atrium_tower.png" 
               alt="Atrium Tower"
+              fill
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-transparent" />

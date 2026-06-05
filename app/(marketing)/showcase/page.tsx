@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Layers, FileImage, Download, Activity, CheckCircle2 } from "lucide-react";
 
@@ -59,7 +60,7 @@ export default function ShowcasePage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="w-full h-[500px] md:h-[700px] rounded-3xl overflow-hidden shadow-card relative border border-hairline group"
           >
-            <img src="/atrium_tower.png" alt="Atrium Tower Main Render" className="w-full h-full object-cover" />
+            <Image src="/atrium_tower.png" alt="Atrium Tower Main Render" fill className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal/40 to-transparent" />
             <div className="absolute bottom-6 right-6">
               <a href="/atrium_tower.png" target="_blank" className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg text-white font-bold text-xs hover:bg-white/30 transition-colors border border-white/20 shadow-sm">

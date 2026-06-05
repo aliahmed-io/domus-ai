@@ -74,3 +74,47 @@ export function snapToAngle(start: Vec2D, end: Vec2D, snapAngles = [0, 45, 90, 1
     y: start.y + length * Math.sin(rad),
   };
 }
+
+/**
+ * Snaps any wall endpoints that are within `tolerance` feet of each other
+ * to the exact same coordinates to ensure clean CAD joins and eliminate visual gaps.
+ */
+export function snapCloseWallEndpoints(walls: Wall[], tolerance = 0.15): Wall[] {
+  // Make a deep copy of start/end coordinates to avoid mutating state directly
+  const snapped = walls.map(w => ({
+    ...w,
+    start: { x: w.start.x, y: w.start.y },
+    end: { x: w.end.x, y: w.end.y }
+  }));
+
+  for (let i = 0; i < snapped.length; i++) {
+    const w1 = snapped[i]!;
+    for (let j = 0; j < snapped.length; j++) {
+      if (i === j) continue;
+      const w2 = snapped[j]!;
+
+      // Start to Start
+      if (Math.hypot(w1.start.x - w2.start.x, w1.start.y - w2.start.y) < tolerance) {
+        w2.start.x = w1.start.x;
+        w2.start.y = w1.start.y;
+      }
+      // Start to End
+      if (Math.hypot(w1.start.x - w2.end.x, w1.start.y - w2.end.y) < tolerance) {
+        w2.end.x = w1.start.x;
+        w2.end.y = w1.start.y;
+      }
+      // End to Start
+      if (Math.hypot(w1.end.x - w2.start.x, w1.end.y - w2.start.y) < tolerance) {
+        w2.start.x = w1.end.x;
+        w2.start.y = w1.end.y;
+      }
+      // End to End
+      if (Math.hypot(w1.end.x - w2.end.x, w1.end.y - w2.end.y) < tolerance) {
+        w2.end.x = w1.end.x;
+        w2.end.y = w1.end.y;
+      }
+    }
+  }
+
+  return snapped;
+}

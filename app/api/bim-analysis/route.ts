@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { ApiResult, FloorPlanLayout, RoomType } from "@/types/puter";
+import type { ApiResult, FloorPlanLayout } from "@/types/puter";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";

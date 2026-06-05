@@ -1,11 +1,38 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { RigidBody, CuboidCollider } from "@react-three/rapier";
-import { Detailed, useGLTF } from "@react-three/drei";
+import { RigidBody } from "@react-three/rapier";
+import { useGLTF } from "@react-three/drei";
+
+// Robust WebGL/Three.js error boundary to catch GLTF remote loading/offline failures
+class ThreeErrorBoundary extends React.Component<{
+  children: React.ReactNode;
+  fallback: React.ReactNode;
+}, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.warn("ThreeErrorBoundary caught GLTF loading failure seamlessly:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
 
 interface PhysicsFurnitureProps {
   position: [number, number, number];
+  rotation?: [number, number, number];
   color: string;
   args?: [number, number, number];
   modelUrl?: string | undefined;
@@ -25,6 +52,7 @@ function GltfModel({ url }: { url: string }) {
  */
 export default function PhysicsFurniture({
   position,
+  rotation = [0, 0, 0],
   color,
   args = [1, 0.8, 1],
   modelUrl,
@@ -41,28 +69,16 @@ export default function PhysicsFurniture({
     </mesh>
   );
 
-  const halfExtents: [number, number, number] = [args[0] / 2, args[1] / 2, args[2] / 2];
-
   return (
-    <RigidBody position={position} colliders={false} mass={12}>
-      <CuboidCollider args={halfExtents} />
+    // kinematicPosition = stays exactly where placed, not affected by gravity
+    <RigidBody type="kinematicPosition" position={position} rotation={rotation} colliders="trimesh">
       <group>
         {modelUrl ? (
-          <Detailed distances={[0, 12, 28]}>
-            {/* HIGH LOD: Real-time Draco GLTF primitives */}
+          <ThreeErrorBoundary fallback={fallbackBox}>
             <Suspense fallback={fallbackBox}>
               <GltfModel url={modelUrl} />
             </Suspense>
-
-            {/* MEDIUM LOD: simplified colored box */}
-            {fallbackBox}
-
-            {/* LOW LOD: wireframe box helper to optimize draw calls for distant cameras */}
-            <mesh>
-              <boxGeometry args={args} />
-              <meshBasicMaterial color={color} wireframe />
-            </mesh>
-          </Detailed>
+          </ThreeErrorBoundary>
         ) : (
           fallbackBox
         )}

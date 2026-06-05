@@ -9,18 +9,15 @@ import {
   Brain,
   Layers,
   Scan,
-  Palette,
-  Package,
   FolderOpen,
   LogOut,
-  ChevronRight,
   TrendingUp,
 } from "lucide-react";
 import { useProjectStore } from "@/store/useProjectStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { listProjects, getUser, signOut } from "@/lib/puter";
 import ProjectCard from "./ProjectCard";
-import type { ProjectType, PuterProject } from "@/types/puter";
+import type { ProjectType } from "@/types/puter";
 
 export default function DashboardClient() {
   const router = useRouter();

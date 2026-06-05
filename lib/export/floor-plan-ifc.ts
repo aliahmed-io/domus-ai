@@ -29,15 +29,9 @@ DATA;
   
   const elementIds: number[] = [];
 
-  // 2. Export walls
   layout.walls.forEach((wall, idx) => {
     const wallId = entityId++;
     elementIds.push(wallId);
-    
-    // Geometry values
-    const dx = wall.end.x - wall.start.x;
-    const dy = wall.end.y - wall.start.y;
-    const length = Math.hypot(dx, dy);
     
     step += `#${wallId}=IFCWALL('${generateIfcGuid()}',#5,'Wall-${idx}','Thickness: ${wall.thickness}in, Height: ${wall.height}ft',$,$,$,$,$);\n`;
   });

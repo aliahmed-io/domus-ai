@@ -26,14 +26,14 @@ export default function ComparisonSlider({
   return (
     <div
       className={cn(
-        "relative w-full aspect-[16/9] max-h-[500px] border border-hairline rounded-2xl shadow-hero overflow-hidden bg-darkSurface select-none",
+        "relative w-full aspect-[16/9] max-h-[500px] border border-hairline rounded-2xl shadow-hero overflow-hidden bg-dark-surface select-none",
         className
       )}
     >
       {/* ── BEFORE CONTAINER ──────────────────────────────────────────────── */}
       <div className="absolute inset-0 w-full h-full z-10">
         {beforeContent || (
-          <div className="w-full h-full bg-gradient-to-br from-[#1e1e35] via-[#10101b] to-darkSurface flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-br from-[#1e1e35] via-[#10101b] to-dark-surface flex items-center justify-center">
             {/* Mock wireframe blueprint grid */}
             <div
               className="absolute inset-0 opacity-[0.03]"

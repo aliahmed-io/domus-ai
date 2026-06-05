@@ -6,7 +6,6 @@ import {
   Layers,
   FileDown,
   ChevronDown,
-  ChevronUp,
   CheckCircle,
   AlertTriangle,
   FileSpreadsheet,
@@ -51,8 +50,6 @@ export default function ResultsPanel() {
   );
 
   const [activeLayoutIdx, setActiveLayoutIdx] = useState<number>(1);
-  const [showBOM, setShowBOM] = useState(true);
-  const [showCompliance, setShowCompliance] = useState(true);
   const [isProcuring, setIsProcuring] = useState(false);
   const [procureStep, setProcureStep] = useState<"cart" | "submitting" | "success">("cart");
 
@@ -319,7 +316,7 @@ export default function ResultsPanel() {
   };
 
   return (
-    <aside className="w-full h-full bg-white border-l border-hairline rounded-none flex flex-col shrink-0 overflow-y-auto select-none shadow-none z-20 custom-scrollbar">
+    <aside className="w-full h-full bg-white border border-hairline rounded-2xl flex flex-col shrink-0 overflow-y-auto select-none shadow-card z-20 custom-scrollbar animate-in slide-in-from-right duration-200">
       {/* Header title */}
       <div className="flex items-center justify-between border-b border-hairline p-5 bg-alabaster">
         <div>
@@ -349,9 +346,9 @@ export default function ResultsPanel() {
             <Accordion.Content className="px-5 pb-5 pt-1 space-y-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
         {isGenerating ? (
           <div className="flex flex-col gap-3">
-            <div className="h-10 bg-gray-100 rounded-none w-full animate-pulse" />
-            <div className="h-10 bg-gray-100 rounded-none w-full animate-pulse" />
-            <div className="h-10 bg-gray-100 rounded-none w-full animate-pulse" />
+            <div className="h-10 bg-gray-100 rounded-xl w-full animate-pulse" />
+            <div className="h-10 bg-gray-100 rounded-xl w-full animate-pulse" />
+            <div className="h-10 bg-gray-100 rounded-xl w-full animate-pulse" />
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -363,7 +360,7 @@ export default function ResultsPanel() {
                 <button
                   key={idx}
                   onClick={() => handleSelectLayout(idx)}
-                  className={`p-4 rounded-none border text-left flex flex-col gap-3 transition-all duration-200 outline-none w-full ${
+                  className={`p-4 rounded-xl border text-left flex flex-col gap-3 transition-all duration-200 outline-none w-full cursor-pointer ${
                     isActive
                       ? "bg-indigo-light border-indigo shadow-sm"
                       : "bg-white border-hairline text-stone hover:bg-gray-50 hover:text-charcoal"
@@ -429,7 +426,7 @@ export default function ResultsPanel() {
             <Accordion.Content className="px-5 pb-5 pt-1 space-y-3 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
             {bomReport && bomReport.items.length > 0 ? (
               <>
-                <div className="space-y-2.5 bg-alabaster border border-hairline rounded-none p-3 max-h-48 overflow-y-auto">
+                <div className="space-y-2.5 bg-alabaster border border-hairline rounded-xl p-3 max-h-48 overflow-y-auto">
                   {matchedItems.map((item, idx) => (
                     <div
                       key={idx}
@@ -467,14 +464,14 @@ export default function ResultsPanel() {
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <button
                     onClick={() => setIsProcuring(true)}
-                    className="w-full h-9 bg-charcoal hover:bg-black text-white text-[9px] font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-1.5 transition-colors outline-none"
+                    className="w-full h-9 bg-charcoal hover:bg-black text-white text-[9px] font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 transition-colors outline-none cursor-pointer"
                   >
                     <ShoppingCart size={12} />
                     <span>Procure All</span>
                   </button>
                   <button
                     onClick={handleExportCSV}
-                    className="w-full h-9 bg-white hover:bg-gray-50 border border-hairline text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-1.5 transition-colors outline-none"
+                    className="w-full h-9 bg-white hover:bg-gray-50 border border-hairline text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 transition-colors outline-none cursor-pointer"
                   >
                     <FileSpreadsheet size={12} />
                     <span>Export CSV</span>
@@ -482,7 +479,7 @@ export default function ResultsPanel() {
                 </div>
               </>
             ) : (
-              <p className="font-mono text-[9px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-none">
+              <p className="font-mono text-[9px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-xl">
                 Awaiting generative layout selection to compile spatial BOM matrix.
               </p>
             )}
@@ -508,7 +505,7 @@ export default function ResultsPanel() {
               violations.map((v, idx) => (
                 <div
                   key={idx}
-                  className="p-3 bg-red-50 border border-red-200 text-red-900 rounded-none flex items-start gap-2 text-[10px] leading-relaxed font-mono"
+                  className="p-3 bg-red-50 border border-red-200 text-red-900 rounded-xl flex items-start gap-2 text-[10px] leading-relaxed font-mono"
                 >
                   <AlertTriangle size={14} className="shrink-0 mt-0.5 text-red-600" />
                   <div>
@@ -523,7 +520,7 @@ export default function ResultsPanel() {
                 </div>
               ))
             ) : (
-              <div className="bg-green-50 border border-green-200 text-green-900 rounded-none p-3.5 flex items-center gap-2.5">
+              <div className="bg-green-50 border border-green-200 text-green-900 rounded-xl p-3.5 flex items-center gap-2.5">
                 <CheckCircle size={16} className="shrink-0 text-green-600" />
                 <span className="font-mono text-[10px] font-bold uppercase tracking-wider">
                   ALL BUILDING RULES MET
@@ -535,11 +532,11 @@ export default function ResultsPanel() {
         </Accordion.Root>
       </div>
       {/* ── 4. EXPORT UTILITIES (Sticky Bottom) ────────────────────────── */}
-      <div className="p-5 border-t border-hairline bg-alabaster grid grid-cols-2 gap-2 mt-auto">
+      <div className="p-5 border-t border-hairline bg-alabaster grid grid-cols-2 gap-2 mt-auto rounded-b-2xl">
         <button
           onClick={handleExportIFC}
           disabled={!floorPlanLayout}
-          className="col-span-2 w-full h-10 bg-indigo hover:bg-indigo-dark text-white text-[10px] font-bold uppercase tracking-widest rounded-none flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors shadow-sm"
+          className="col-span-2 w-full h-10 bg-indigo hover:bg-indigo-dark text-white text-[10px] font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
         >
           <Layers size={13} />
           <span>Export 3D BIM (IFC)</span>
@@ -548,7 +545,7 @@ export default function ResultsPanel() {
         <button
           onClick={handleExportPDF}
           disabled={!floorPlanLayout}
-          className="w-full h-10 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
+          className="w-full h-10 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none cursor-pointer"
         >
           <FileDown size={13} className="text-stone" />
           <span>PDF Report</span>
@@ -557,7 +554,7 @@ export default function ResultsPanel() {
         <button
           onClick={handleExportDXF}
           disabled={!floorPlanLayout}
-          className="w-full h-10 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none"
+          className="w-full h-10 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-[9px] font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all outline-none cursor-pointer"
         >
           <FileSpreadsheet size={13} className="text-stone" />
           <span>CAD DXF</span>

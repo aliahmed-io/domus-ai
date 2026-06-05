@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import type { EditorMode } from "@/types/puter";
-import { xrStore } from "./EditorCanvas";
 
 export default function ModeToggle() {
   const { mode, setMode, xrScale, toggleXrScale } = useEditorStore(
@@ -28,9 +27,6 @@ export default function ModeToggle() {
               key={opt.id}
               onClick={() => {
                 setMode(opt.id);
-                if (opt.id === "ar" && xrStore) {
-                  xrStore.enterAR();
-                }
               }}
               className={`relative px-4 py-1.5 rounded-full text-xs font-bold transition-colors select-none outline-none ${
                 isActive ? "text-white" : "text-stone hover:text-charcoal"

@@ -17,9 +17,8 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const [permission, setPermission] = useState<"idle" | "granted" | "denied">("idle");
-  const [detecting, setDetecting] = useState(false);
   const [detectedObj, setDetectedObj] = useState<string | null>(null);
-
+ 
   // Request camera permissions locally
   const requestCamera = async () => {
     setPermission("idle");
@@ -32,23 +31,21 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-    } catch (err) {
+    } catch {
       setPermission("denied");
     }
   };
-
+ 
   useEffect(() => {
     if (permission !== "granted") return;
-
-    const handleDetecting = requestAnimationFrame(() => {
-      setDetecting(true);
-    });
+ 
+    const currentVideo = videoRef.current;
     let active = true;
     let frameId = 0;
-
+ 
     // Simulated local computer vision bounding-box loop
     const runDetectionLoop = () => {
-      if (!active || !canvasRef.current || !videoRef.current) return;
+      if (!active || !canvasRef.current || !currentVideo) return;
       
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) {
@@ -58,7 +55,7 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
         const time = Date.now() * 0.003;
         const x = 160 + Math.sin(time) * 40;
         const y = 120 + Math.cos(time * 1.5) * 20;
-
+ 
         ctx.strokeStyle = "#5B6AF0";
         ctx.lineWidth = 2.5;
         
@@ -88,7 +85,7 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
         ctx.lineTo(x - 20, y + 60);
         ctx.closePath();
         ctx.stroke();
-
+ 
         // Object label highlight
         ctx.fillStyle = "#5B6AF0";
         ctx.font = "bold 9px monospace";
@@ -100,20 +97,19 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
           setDetectedObj(null);
         }
       }
-
+ 
       frameId = requestAnimationFrame(runDetectionLoop);
     };
-
+ 
     runDetectionLoop();
-
+ 
     return () => {
       active = false;
       cancelAnimationFrame(frameId);
-      cancelAnimationFrame(handleDetecting);
       
       // Release camera streams cleanly on unmount
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
+      if (currentVideo?.srcObject) {
+        const stream = currentVideo.srcObject as MediaStream;
         stream.getTracks().forEach((track) => track.stop());
       }
     };

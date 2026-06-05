@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Shield, Eye, Lock, Globe } from "lucide-react";
+import { Shield, Eye } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Domus",

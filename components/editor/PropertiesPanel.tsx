@@ -70,6 +70,16 @@ export default function PropertiesPanel() {
           materialId: (floorPlanLayout.walls.find((w) => w.id === selectedObjectId) as { materialId?: string }).materialId,
         }
       : undefined) ||
+    (floorPlanLayout?.rooms.find((r) => r.id === selectedObjectId)
+      ? {
+          id: selectedObjectId!,
+          type: "room" as const,
+          name: `${floorPlanLayout.rooms.find((r) => r.id === selectedObjectId)?.label || "Room"}`,
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+        }
+      : undefined) ||
     (floorPlanLayout?.doors.find((d) => d.id === selectedObjectId)
       ? {
           id: selectedObjectId!,
@@ -173,7 +183,103 @@ export default function PropertiesPanel() {
             </button>
 
             {showTransform && (
-              selectedObj.type === "wall" ? (
+              selectedObj.type === "room" ? (
+                <div className="px-5 pb-5 space-y-4">
+                  {/* Room Label */}
+                  <div>
+                    <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
+                      Room Label
+                    </label>
+                    <input
+                      type="text"
+                      value={floorPlanLayout?.rooms.find((r) => r.id === selectedObj.id)?.label || ""}
+                      onChange={(e) => {
+                        const newLabel = e.target.value;
+                        if (floorPlanLayout) {
+                          const updatedRooms = floorPlanLayout.rooms.map((r) =>
+                            r.id === selectedObj.id ? { ...r, label: newLabel } : r
+                          );
+                          useEditorStore.getState().setFloorPlan({
+                            ...floorPlanLayout,
+                            rooms: updatedRooms,
+                          });
+                        }
+                      }}
+                      className="px-3 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal font-medium text-xs outline-none focus:bg-white focus:border-indigo"
+                    />
+                  </div>
+
+                  {/* Room Type */}
+                  <div>
+                    <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
+                      Room Type
+                    </label>
+                    <select
+                      value={floorPlanLayout?.rooms.find((r) => r.id === selectedObj.id)?.type || "living"}
+                      onChange={(e) => {
+                        const newType = e.target.value as any;
+                        if (floorPlanLayout) {
+                          const updatedRooms = floorPlanLayout.rooms.map((r) =>
+                            r.id === selectedObj.id ? { ...r, type: newType } : r
+                          );
+                          useEditorStore.getState().setFloorPlan({
+                            ...floorPlanLayout,
+                            rooms: updatedRooms,
+                          });
+                        }
+                      }}
+                      className="px-3 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal font-medium text-xs outline-none focus:bg-white focus:border-indigo"
+                    >
+                      <option value="living">Living Room</option>
+                      <option value="bedroom">Bedroom</option>
+                      <option value="bathroom">Bathroom</option>
+                      <option value="kitchen">Kitchen</option>
+                      <option value="dining">Dining Room</option>
+                      <option value="hallway">Hallway</option>
+                      <option value="office">Office</option>
+                      <option value="garage">Garage</option>
+                      <option value="storage">Storage</option>
+                      <option value="utility">Utility</option>
+                      <option value="outdoor">Outdoor Space</option>
+                    </select>
+                  </div>
+
+                  {/* Ceiling Height */}
+                  <div>
+                    <label className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1.5">
+                      Ceiling Height (meters)
+                    </label>
+                    <input
+                      type="number"
+                      step={0.1}
+                      value={floorPlanLayout?.rooms.find((r) => r.id === selectedObj.id)?.ceilingHeight || 2.7}
+                      onChange={(e) => {
+                        const h = parseFloat(e.target.value);
+                        if (floorPlanLayout && !isNaN(h) && h > 0) {
+                          const updatedRooms = floorPlanLayout.rooms.map((r) =>
+                            r.id === selectedObj.id ? { ...r, ceilingHeight: h } : r
+                          );
+                          useEditorStore.getState().setFloorPlan({
+                            ...floorPlanLayout,
+                            rooms: updatedRooms,
+                          });
+                        }
+                      }}
+                      className="px-3 py-1.5 w-full bg-alabaster border border-hairline rounded-lg text-charcoal font-mono text-xs outline-none focus:bg-white focus:border-indigo"
+                    />
+                  </div>
+
+                  {/* Calculated Area */}
+                  <div>
+                    <span className="font-body text-[10px] font-bold text-stone uppercase tracking-wider block mb-1">
+                      Calculated Area
+                    </span>
+                    <span className="font-mono text-xs font-bold text-indigo">
+                      {(floorPlanLayout?.rooms.find((r) => r.id === selectedObj.id)?.area || 0).toFixed(1)} sq ft
+                    </span>
+                  </div>
+                </div>
+              ) : selectedObj.type === "wall" ? (
                 <div className="px-5 pb-5 space-y-4">
                   {/* Wall Length */}
                   <div>

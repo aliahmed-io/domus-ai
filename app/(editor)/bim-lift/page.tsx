@@ -6,7 +6,6 @@ import {
   Layers,
   Sparkles,
   CheckCircle,
-  AlertTriangle,
   FileText,
   Info,
   Loader2,
@@ -46,7 +45,7 @@ export default function BimLiftPage() {
   };
 
   return (
-    <div className="flex-1 w-full h-full flex flex-col md:flex-row overflow-hidden bg-darkSurface select-none">
+    <div className="flex-1 w-full h-full flex flex-col md:flex-row overflow-hidden bg-dark-surface select-none">
       {/* Parameter inputs (Left sidebar, 340px) */}
       <aside className="w-[340px] h-full bg-white border-r border-hairline flex flex-col shrink-0 overflow-y-auto p-6 gap-6 shadow-card z-20">
         <div className="flex items-center justify-between border-b border-hairline pb-4">
@@ -165,14 +164,14 @@ export default function BimLiftPage() {
         {/* Viewport Floating Header */}
         <div className="absolute top-6 left-6 right-6 flex items-center justify-between pointer-events-none z-30">
           <div className="flex items-center gap-2 pointer-events-auto">
-            <div className="px-4 py-2 bg-darkSurface/90 border border-hairlineDark text-onDark rounded-full text-xs font-bold shadow-hero select-none flex items-center gap-1.5">
+            <div className="px-4 py-2 bg-dark-surface/90 border border-hairline-dark text-on-dark rounded-full text-xs font-bold shadow-hero select-none flex items-center gap-1.5">
               <span>BIM Extruder Viewport</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 pointer-events-auto">
-            <div className="flex items-center gap-1.5 px-4 py-2 bg-darkSurface/90 border border-hairlineDark text-teal rounded-full text-xs font-bold shadow-hero select-none">
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <div className="flex items-center gap-1.5 px-4 py-2 bg-dark-surface/90 border border-hairline-dark text-on-dark-muted rounded-full text-xs font-bold shadow-hero select-none">
+              <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
               <span>WebGL Ready</span>
             </div>
           </div>

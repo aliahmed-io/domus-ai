@@ -142,7 +142,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Hover overlay with CTA */}
         <div className="absolute inset-0 bg-charcoal/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
           <Link
-            href={`/editor/${project.type === "floor-plan" ? "floor-plan" : project.type === "bim-model" ? "bim-lift" : project.type === "ar-scan" ? "ar-map" : project.type === "material-lab" ? "material-lab" : "furniture"}`}
+            href={`/editor/${project.type === "floor-plan" ? "floor-plan" : project.type === "bim-model" ? "bim-lift" : project.type === "ar-scan" ? "ar-map" : project.type === "material-lab" ? "material-lab" : "furniture"}?projectId=${project.id}`}
             className="flex items-center gap-1.5 px-4 py-2 bg-white text-charcoal hover:bg-gray-50 rounded-lg text-xs font-semibold shadow-sm transition-all duration-200"
           >
             <ExternalLink size={14} />

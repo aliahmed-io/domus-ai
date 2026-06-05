@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import * as Slider from "@radix-ui/react-slider";
 import * as Switch from "@radix-ui/react-switch";
 import * as Accordion from "@radix-ui/react-accordion";
-import { Sparkles, Brain, Minus, Plus, Loader2, Cuboid, Scan, UploadCloud, ChevronDown } from "lucide-react";
+import { Sparkles, Brain, Minus, Plus, Loader2, Cuboid, UploadCloud, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryState, parseAsInteger, parseAsStringEnum } from "nuqs";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -160,7 +160,7 @@ export default function ParameterPanel() {
       } else {
         toast.error(result.error || "Generation failed.", { id: "gen3d" });
       }
-    } catch (err) {
+    } catch {
       toast.error("Error communicating with AI cluster.", { id: "gen3d" });
     } finally {
       setIsGeneratingModel(false);
@@ -480,7 +480,7 @@ export default function ParameterPanel() {
                   } else {
                     toast.error(data.error || "Parsing failed.", { id: "bim" });
                   }
-                } catch (err) {
+                } catch {
                   toast.error("Vision API Error.", { id: "bim" });
                 } finally {
                   setGenerating(false);

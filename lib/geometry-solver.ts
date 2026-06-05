@@ -1,4 +1,4 @@
-import type { Room, Wall, Door, Window2D, Vec2D, Rect2D, SceneObject } from "@/types/puter";
+import type { Room, Wall, Door, Window2D, SceneObject } from "@/types/puter";
 import { StandardCatalog } from "./standard-catalog";
 import { nanoid } from "./utils";
 

@@ -1,19 +1,26 @@
 "use client";
 
 import React from "react";
-import { PenTool, Sparkles, Image as ImageIcon, X } from "lucide-react";
+import { PenTool, Sparkles } from "lucide-react";
 import { useEditorStore } from "@/store/useEditorStore";
+import { useShallow } from "zustand/react/shallow";
+import { loadProject, saveProject } from "@/lib/puter";
 
-export default function OnboardingModal() {
-  const { setWorkspace, setFloorPlan } = useEditorStore((s) => ({
-    setWorkspace: s.setWorkspace,
-    setFloorPlan: s.setFloorPlan,
-  }));
+interface OnboardingModalProps {
+  projectId: string | null;
+}
 
-  const handleStartFromScratch = () => {
-    // Initialize an empty floor plan for manual drawing
-    setFloorPlan({
-      id: "manual-project",
+export default function OnboardingModal({ projectId }: OnboardingModalProps) {
+  const { setWorkspace, setFloorPlan } = useEditorStore(
+    useShallow((s) => ({
+      setWorkspace: s.setWorkspace,
+      setFloorPlan: s.setFloorPlan,
+    }))
+  );
+
+  const handleStartFromScratch = async () => {
+    const layout = {
+      id: projectId || "manual-project",
       rooms: [],
       walls: [],
       windows: [],
@@ -23,19 +30,55 @@ export default function OnboardingModal() {
       naturalLight: 100,
       generatedAt: new Date().toISOString(),
       parameters: {
-        style: "open-plan",
+        style: "open-plan" as const,
         totalArea: 1200,
         bedrooms: 0,
         bathrooms: 0,
         floors: 1,
         features: [],
       },
-    });
+    };
+
+    // Initialize an empty floor plan for manual drawing
+    setFloorPlan(layout);
     setWorkspace("manual");
+
+    if (projectId) {
+      try {
+        const project = await loadProject(projectId);
+        if (project) {
+          await saveProject({
+            ...project,
+            title: project.title === "Untitled Project" ? "Manual Floor Plan" : project.title,
+            tags: [...project.tags.filter(t => !t.startsWith("workspace-")), "workspace-manual"],
+            floorPlanData: layout,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        console.error("Failed to save scratch onboarding choice:", err);
+      }
+    }
   };
 
-  const handleGenerativeAI = () => {
+  const handleGenerativeAI = async () => {
     setWorkspace("generative");
+
+    if (projectId) {
+      try {
+        const project = await loadProject(projectId);
+        if (project) {
+          await saveProject({
+            ...project,
+            title: project.title === "Untitled Project" ? "AI Generated Floor Plan" : project.title,
+            tags: [...project.tags.filter(t => !t.startsWith("workspace-")), "workspace-generative"],
+            updatedAt: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        console.error("Failed to save generative onboarding choice:", err);
+      }
+    }
   };
 
   return (

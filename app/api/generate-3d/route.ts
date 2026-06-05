@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { ApiResult } from "@/types/puter";
-
 export const runtime = "edge";
 
 // ─── Rate Limiter Memory (Edge Sandbox) ───────────────────────────────────────

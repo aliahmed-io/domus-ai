@@ -63,6 +63,8 @@ export interface Room {
   area: number; // sq ft
   color?: string;
   ceilingHeight?: number; // meters
+  wallIds?: string[]; // References to walls defining this room boundary
+  noTexture?: boolean;
 }
 
 export type RoomType =
@@ -183,6 +185,7 @@ export interface SceneObject {
   scale: Vec3D;
   materialId?: string;
   gltfPath?: string;
+  thumbnailUrl?: string | undefined;
 }
 
 export interface SceneSnapshot {

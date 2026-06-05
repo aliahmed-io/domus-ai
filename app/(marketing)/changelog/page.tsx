@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sparkles, Calendar, Zap, Layers, RefreshCw } from "lucide-react";
+import { Sparkles, Calendar, Zap } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Changelog | Domus",
@@ -54,7 +54,7 @@ export default function ChangelogPage() {
         <div className="absolute top-10 bottom-10 left-6 sm:left-1/2 w-0.5 bg-hairline" />
 
         <div className="space-y-12">
-          {LOGS.map((log, logIdx) => (
+          {LOGS.map((log) => (
             <div key={log.version} className="relative flex flex-col sm:flex-row gap-8 items-start">
               {/* Dot locator */}
               <div className="absolute left-6 sm:left-1/2 w-4 h-4 rounded-full bg-indigo border-4 border-white -translate-x-[7px] z-10 shadow-sm" />

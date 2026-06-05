@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, Brain, Loader2, RefreshCw, Cpu, ShoppingCart, HelpCircle } from "lucide-react";
+import { Sparkles, Brain, Loader2, Cpu, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import type { ApiResult } from "@/types/puter";
 
@@ -90,7 +90,7 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
         }, 2000);
       }
 
-    } catch (err) {
+    } catch {
       setError("Failed to establish server connection path.");
       setLoading(false);
     }

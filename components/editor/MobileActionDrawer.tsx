@@ -6,9 +6,8 @@ import { toast } from "sonner";
 import { furnishRooms } from "@/lib/geometry-solver";
 
 export default function MobileActionDrawer() {
-  const { setGenerating, setFloorPlan, toggleRoof, showRoof, floorPlanLayout, addSceneObject } = useEditorStore(
+  const { setFloorPlan, toggleRoof, showRoof, floorPlanLayout, addSceneObject } = useEditorStore(
     useShallow((s) => ({
-      setGenerating: s.setGenerating,
       setFloorPlan: s.setFloorPlan,
       toggleRoof: s.toggleRoof,
       showRoof: s.showRoof,
@@ -32,7 +31,7 @@ export default function MobileActionDrawer() {
       } else {
         toast.error("Failed", { id: "mob-gen" });
       }
-    } catch (err) {
+    } catch {
       toast.error("Error", { id: "mob-gen" });
     }
   };
