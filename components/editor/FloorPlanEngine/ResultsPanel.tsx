@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  Sparkles,
   Layers,
   FileDown,
   ChevronDown,
@@ -238,7 +237,8 @@ export default function ResultsPanel() {
 
     try {
       toast.loading("Generating 3D BIM IFC model...", { id: "ifc-export" });
-      const ifcContent = generateFloorPlanIFC(floorPlanLayout);
+      const storeys = useEditorStore.getState().storeys;
+      const ifcContent = generateFloorPlanIFC(floorPlanLayout, storeys);
       const blob = new Blob([ifcContent], { type: "application/x-step" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -321,7 +321,7 @@ export default function ResultsPanel() {
       <div className="flex items-center justify-between border-b border-hairline p-5 bg-alabaster">
         <div>
           <h2 className="font-jakarta text-[13px] font-800 text-charcoal tracking-tight flex items-center gap-2 uppercase">
-            <Sparkles size={14} className="text-indigo" />
+            <CheckCircle size={14} className="text-indigo" />
             <span>Generative Assessment</span>
           </h2>
           <p className="font-mono text-[9px] text-stone mt-1 tracking-wider uppercase">

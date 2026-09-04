@@ -14,6 +14,7 @@ export default function ModeToggle() {
   const options: { id: EditorMode; label: string }[] = [
     { id: "2d", label: "2D Plan" },
     { id: "3d", label: "3D View" },
+    { id: "walk", label: "Walk" },
     { id: "ar", label: "WebXR AR" },
   ];
 

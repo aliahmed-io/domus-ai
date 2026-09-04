@@ -11,6 +11,10 @@ import {
   Home,
   Trash2,
   Ban,
+  DoorOpen,
+  Grid2X2,
+  Footprints,
+  Eye,
 } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useStore } from "zustand";
@@ -33,7 +37,9 @@ export default function Toolbar() {
     removeSceneObject,
     dimensionLines,
     removeDimensionLine,
-    sceneObjects
+    sceneObjects,
+    isPresentationMode,
+    togglePresentationMode,
   } = useEditorStore(
     useShallow((s) => ({ 
       tool: s.tool, 
@@ -47,7 +53,9 @@ export default function Toolbar() {
       removeSceneObject: s.removeSceneObject,
       dimensionLines: s.dimensionLines,
       removeDimensionLine: s.removeDimensionLine,
-      sceneObjects: s.sceneObjects
+      sceneObjects: s.sceneObjects,
+      isPresentationMode: s.isPresentationMode,
+      togglePresentationMode: s.togglePresentationMode,
     }))
   );
 
@@ -152,6 +160,18 @@ export default function Toolbar() {
         e.preventDefault();
         setTool("add-room");
         setSelectedObject(null);
+      } else if (e.key.toLowerCase() === "o" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setTool("add-door");
+        setSelectedObject(null);
+      } else if (e.key.toLowerCase() === "i" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setTool("add-window");
+        setSelectedObject(null);
+      } else if (e.key.toLowerCase() === "s" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setTool("add-stair");
+        setSelectedObject(null);
       } else if (e.key.toLowerCase() === "a" && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         setTool("place-furniture");
@@ -182,9 +202,14 @@ export default function Toolbar() {
   }[][] = [
     [
       { id: "draw-wall", icon: PenTool, label: "Draw Structural Wall", shortcut: "W" },
-      { id: "add-room", icon: Square, label: "Add Room boundary", shortcut: "F" },
-      { id: "place-furniture", icon: Armchair, label: "Insert GLB Asset", shortcut: "A" },
-      { id: "measure", icon: Ruler, label: "Measure distance", shortcut: "D" },
+      { id: "add-room", icon: Square, label: "Add Room Boundary", shortcut: "F" },
+      { id: "add-door", icon: DoorOpen, label: "Insert Door Opening", shortcut: "O" },
+      { id: "add-window", icon: Grid2X2, label: "Insert Glazed Window", shortcut: "I" },
+      { id: "add-stair", icon: Footprints, label: "Insert Staircase", shortcut: "S" },
+    ],
+    [
+      { id: "place-furniture", icon: Armchair, label: "Insert Furniture Asset", shortcut: "A" },
+      { id: "measure", icon: Ruler, label: "Measure Distance", shortcut: "D" },
     ],
   ];
 
@@ -333,6 +358,32 @@ export default function Toolbar() {
         {/* View & System Toggles grouping */}
         <div className="w-px h-6 bg-hairline mx-1.5" />
         <div className="flex flex-row items-center gap-1">
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                onClick={togglePresentationMode}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none ${
+                  isPresentationMode
+                    ? "bg-indigo text-white shadow-sm"
+                    : "text-stone hover:text-charcoal hover:bg-gray-50"
+                }`}
+                aria-label="Client Presentation Mode"
+                title="Client Presentation Mode"
+              >
+                <Eye size={18} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content
+                side="bottom"
+                sideOffset={12}
+                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
+              >
+                <span>Presentation Mode</span>
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
               <button

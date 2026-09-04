@@ -112,9 +112,11 @@ export default function FeedGrid() {
                   </div>
 
                   <div className="p-5">
-                    <h3 className="font-jakarta text-base font-700 text-charcoal line-clamp-1 group-hover:text-indigo transition-colors mb-1.5">
-                      {project.title}
-                    </h3>
+                    <Link href={`/community/${project.id}`} className="block">
+                      <h3 className="font-jakarta text-base font-700 text-charcoal line-clamp-1 group-hover:text-indigo transition-colors mb-1.5">
+                        {project.title}
+                      </h3>
+                    </Link>
                     <p className="font-body text-xs text-stone leading-relaxed line-clamp-2 min-h-[36px]">
                       {project.description || "No description provided."}
                     </p>

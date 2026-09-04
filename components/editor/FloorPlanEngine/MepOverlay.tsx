@@ -5,6 +5,7 @@ import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { Line, Html } from "@react-three/drei";
 import { nanoid } from "@/lib/utils";
+import { Info } from "lucide-react";
 import type { MEPNode, MEPEdge, Vec3D } from "@/types/puter";
 import { calculateMepPath } from "@/lib/mep-router";
 
@@ -213,8 +214,9 @@ export default function MepOverlay() {
                 </button>
               ))}
             </div>
-            <span className="text-[7.5px] text-stone leading-tight text-center mt-1">
-              💡 Click on floor to place outlets/drains. Click two nodes sequentially to route connection lines.
+            <span className="text-[7.5px] text-stone leading-tight text-center mt-1 flex items-center justify-center gap-1">
+              <Info size={10} className="text-teal shrink-0" />
+              <span>Click on floor to place outlets/drains. Click two nodes sequentially to route connection lines.</span>
             </span>
           </div>
         </Html>

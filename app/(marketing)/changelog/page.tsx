@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sparkles, Calendar, Zap } from "lucide-react";
+import { Layers, Calendar, Zap } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Changelog | Domus",
@@ -75,7 +75,7 @@ export default function ChangelogPage() {
                 <div className="bg-white rounded-2xl p-6 border border-hairline shadow-card space-y-4">
                   <div>
                     <h3 className="font-jakarta text-sm font-bold text-charcoal flex items-center gap-1.5">
-                      <Sparkles size={13} className="text-indigo" />
+                      <Layers size={13} className="text-indigo" />
                       <span>{log.badge}</span>
                     </h3>
                     <p className="font-body text-xs text-stone mt-1 leading-relaxed">

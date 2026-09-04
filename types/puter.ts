@@ -49,8 +49,8 @@ export interface PuterProject {
   createdAt: string;
   updatedAt: string;
   // Spatial data
-  floorPlanData?: FloorPlanLayout;
-  sceneData?: SceneSnapshot;
+  floorPlanData?: FloorPlanLayout | undefined;
+  sceneData?: SceneSnapshot | undefined;
 }
 
 // ─── Floor Plan ───────────────────────────────────────────────────────────────
@@ -65,6 +65,8 @@ export interface Room {
   ceilingHeight?: number; // meters
   wallIds?: string[]; // References to walls defining this room boundary
   noTexture?: boolean;
+  polygon?: Vec2D[];
+  floorMaterial?: string;
 }
 
 export type RoomType =
@@ -89,13 +91,28 @@ export interface Wall {
   isLoadBearing: boolean;
 }
 
+export type DoorType = "single" | "double" | "sliding" | "pocket" | "bifold";
+export type SwingSide = "left" | "right";
+export type SwingDirection = "inward" | "outward";
+export type HandleType = "lever" | "knob" | "bar";
+
 export interface Door {
   id: string;
   wallId: string;
   position: number; // 0–1 along wall
   width: number; // inches
+  height?: number; // inches (default 80)
   isExterior: boolean;
+  doorType?: DoorType;
+  swingSide?: SwingSide;
+  swingDirection?: SwingDirection;
+  openAngle?: number; // 0 to 1 (0 closed, 1 fully open)
+  color?: string;
+  frameColor?: string;
+  handleType?: HandleType;
 }
+
+export type WindowType = "picture" | "single-hung" | "double-hung" | "casement" | "grid-2x2";
 
 export interface Window2D {
   id: string;
@@ -104,6 +121,11 @@ export interface Window2D {
   width: number; // inches
   height: number; // inches
   sillHeight: number; // inches from floor
+  windowType?: WindowType;
+  frameColor?: string;
+  glassTint?: string;
+  hasSill?: boolean;
+  openAngle?: number; // 0 to 1 for operable sashes
 }
 
 export interface FloorPlanParameters {
@@ -186,6 +208,7 @@ export interface SceneObject {
   materialId?: string;
   gltfPath?: string;
   thumbnailUrl?: string | undefined;
+  attachmentType?: "floor" | "ceiling" | "surface" | "wall";
 }
 
 export interface SceneSnapshot {
@@ -233,7 +256,7 @@ export type ApiResult<T> = ApiSuccess<T> | ApiError;
 
 // ─── Editor State ─────────────────────────────────────────────────────────────
 
-export type EditorMode = "2d" | "3d" | "ar";
+export type EditorMode = "2d" | "3d" | "walk" | "ar";
 export type EditorWorkspace = "onboarding" | "manual" | "generative";
 export type EditorTool =
   | "select"
@@ -244,6 +267,7 @@ export type EditorTool =
   | "add-room"
   | "add-window"
   | "add-door"
+  | "add-stair"
   | "place-furniture"
   | "measure"
   | "camera";
@@ -277,7 +301,10 @@ export interface BuildingStorey {
   id: string;
   name: string;
   elevation: number; // feet
+  height?: number; // feet (floor-to-floor height, default 10)
+  slabThickness?: number; // feet (default 0.8)
   floorPlanLayout: FloorPlanLayout;
+  isVisible?: boolean;
 }
 
 // ─── MEP (Mechanical, Electrical, Plumbing) Layers ──────────────────────────

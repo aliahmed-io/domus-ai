@@ -1,22 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_URL ?? "https://domus.ai"),
@@ -89,7 +74,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr" className={`${inter.variable} ${jakarta.variable} h-full antialiased`} data-scroll-behavior="smooth">
+    <html lang="en" dir="ltr" className="h-full antialiased" data-scroll-behavior="smooth">
       <head>
         {/* Puter.js SDK — loaded client-side only */}
         <script src="https://js.puter.com/v2/" async defer />

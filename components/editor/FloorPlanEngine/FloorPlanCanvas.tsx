@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Move,
   ZoomIn,
@@ -10,9 +10,11 @@ import {
   Zap,
   X,
   CheckCircle2,
+  Eye,
 } from "lucide-react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
+import { feetToMeters } from "@/lib/utils";
 import EditorCanvas from "../EditorCanvas";
 import WallMesh from "./WallMesh";
 import DoorMesh from "./DoorMesh";
@@ -22,21 +24,37 @@ import DimensionLineOverlay from "./DimensionLineOverlay";
 import SunController from "../SunController";
 import MepOverlay from "./MepOverlay";
 import StaircaseMesh from "./StaircaseMesh";
-
 import CeilingMesh from "./CeilingMesh";
 import BlueprintCanvas2D from "./BlueprintCanvas2D";
 import StoreySelector from "../StoreySelector";
 import PhysicsFurniture from "../PhysicsFurniture";
 import RoofMesh from "./RoofMesh";
+import { Geometry, Base, Subtraction } from "@react-three/csg";
 
 export default function FloorPlanCanvas() {
-  const { floorPlanLayout, mode, cameraMode, toggleCameraMode, sceneObjects } = useEditorStore(
+  const { 
+    floorPlanLayout, 
+    mode, 
+    cameraMode, 
+    toggleCameraMode, 
+    sceneObjects, 
+    storeys, 
+    activeStoreyId, 
+    staircases,
+    isPresentationMode,
+    togglePresentationMode,
+  } = useEditorStore(
     useShallow((s) => ({
       floorPlanLayout: s.floorPlanLayout,
       mode: s.mode,
       cameraMode: s.cameraMode,
       toggleCameraMode: s.toggleCameraMode,
       sceneObjects: s.sceneObjects,
+      storeys: s.storeys,
+      activeStoreyId: s.activeStoreyId,
+      staircases: s.staircases,
+      isPresentationMode: s.isPresentationMode,
+      togglePresentationMode: s.togglePresentationMode,
     }))
   );
   const [headsetOpen, setHeadsetOpen] = useState(false);
@@ -51,69 +69,104 @@ export default function FloorPlanCanvas() {
     setImmersiveStep("active");
   };
 
+  const displayStoreys = useMemo(() => {
+    if (storeys && storeys.length > 0) {
+      return storeys;
+    }
+    if (floorPlanLayout) {
+      return [
+        {
+          id: activeStoreyId || "storey-1",
+          name: "Level 1 - Ground",
+          elevation: 0,
+          height: 10,
+          slabThickness: 0.8,
+          floorPlanLayout,
+          isVisible: true,
+        },
+      ];
+    }
+    return [];
+  }, [storeys, activeStoreyId, floorPlanLayout]);
+
   return (
     <div className="flex-1 w-full h-full relative overflow-hidden flex flex-col bg-dark-surface">
       
       {/* ── 1. FLOATING VIEWPORT TOOLBAR ────────────────────────────────────── */}
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between pointer-events-none z-30">
-        <div className="pointer-events-auto">
-          <StoreySelector />
-        </div>
+      {!isPresentationMode && (
+        <div className="absolute top-6 left-6 right-6 flex items-center justify-between pointer-events-none z-30">
+          <div className="pointer-events-auto">
+            <StoreySelector />
+          </div>
 
-        {/* Immersive controls segment */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          {mode !== "2d" && (
-            <>
-              {/* Headset WebXR activation button */}
-              <button
-                onClick={() => {
-                  setHeadsetOpen(true);
-                  setImmersiveStep("pair");
-                }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-hero outline-none select-none flex items-center gap-1.5 border transition-all ${
-                  immersiveStep === "active" && headsetOpen
-                    ? "bg-[#8C7662] border-transparent text-white shadow-[0_0_12px_rgba(140,118,98,0.4)] animate-pulse"
-                    : "bg-dark-surface/90 border-hairline-dark text-on-dark-muted hover:text-white hover:bg-dark-surface-alt"
-                }`}
-                title="Connect VR Headset / Passthrough"
-              >
-                <Glasses size={13} />
-                <span className="hidden xl:inline">{immersiveStep === "active" ? "VisionPro: Active" : "WebXR Headset"}</span>
-                <span className="inline xl:hidden">{immersiveStep === "active" ? "VisionPro" : "WebXR"}</span>
-              </button>
+          {/* Immersive controls segment */}
+          <div className="flex items-center gap-2 pointer-events-auto">
+            {mode !== "2d" && (
+              <>
+                {/* Headset WebXR activation button */}
+                <button
+                  onClick={() => {
+                    setHeadsetOpen(true);
+                    setImmersiveStep("pair");
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-hero outline-none select-none flex items-center gap-1.5 border transition-all ${
+                    immersiveStep === "active" && headsetOpen
+                      ? "bg-[#8C7662] border-transparent text-white shadow-[0_0_12px_rgba(140,118,98,0.4)] animate-pulse"
+                      : "bg-dark-surface/90 border-hairline-dark text-on-dark-muted hover:text-white hover:bg-dark-surface-alt"
+                  }`}
+                  title="Connect VR Headset / Passthrough"
+                >
+                  <Glasses size={13} />
+                  <span className="hidden xl:inline">{immersiveStep === "active" ? "VisionPro: Active" : "WebXR Headset"}</span>
+                  <span className="inline xl:hidden">{immersiveStep === "active" ? "VisionPro" : "WebXR"}</span>
+                </button>
 
-              {/* Hyper-realistic path tracing toggle */}
-              <button
-                onClick={togglePathTracing}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-hero outline-none select-none flex items-center gap-1.5 border transition-all ${
-                  pathTracing
-                    ? "bg-[#5A4A3A] border-transparent text-white shadow-[0_0_12px_rgba(90,74,58,0.4)]"
-                    : "bg-dark-surface/90 border-hairline-dark text-on-dark-muted hover:text-white hover:bg-dark-surface-alt"
-                }`}
-                title="Toggle Simulated Ambient Path-Tracing"
-              >
-                <Zap size={13} className={pathTracing ? "animate-bounce" : ""} />
-                <span className="hidden xl:inline">{pathTracing ? "Path-Tracing ON" : "Ambient Raytrace"}</span>
-                <span className="inline xl:hidden">{pathTracing ? "ON" : "Raytrace"}</span>
-              </button>
+                {/* Hyper-realistic path tracing toggle */}
+                <button
+                  onClick={togglePathTracing}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-hero outline-none select-none flex items-center gap-1.5 border transition-all ${
+                    pathTracing
+                      ? "bg-[#5A4A3A] border-transparent text-white shadow-[0_0_12px_rgba(90,74,58,0.4)]"
+                      : "bg-dark-surface/90 border-hairline-dark text-on-dark-muted hover:text-white hover:bg-dark-surface-alt"
+                  }`}
+                  title="Toggle Simulated Ambient Path-Tracing"
+                >
+                  <Zap size={13} className={pathTracing ? "animate-bounce" : ""} />
+                  <span className="hidden xl:inline">{pathTracing ? "Path-Tracing ON" : "Ambient Raytrace"}</span>
+                  <span className="inline xl:hidden">{pathTracing ? "ON" : "Raytrace"}</span>
+                </button>
 
+                <button
+                  onClick={toggleCameraMode}
+                  className="px-4 py-2 bg-dark-surface/90 border border-hairline-dark text-on-dark-muted hover:text-white hover:bg-dark-surface-alt rounded-full text-xs font-bold shadow-hero outline-none select-none transition-all"
+                >
+                  <span className="hidden xl:inline">Camera: {cameraMode === "perspective" ? "Perspective" : "Orthographic"}</span>
+                  <span className="inline xl:hidden">{cameraMode === "perspective" ? "3D" : "2D"}</span>
+                </button>
+              </>
+            )}
+
+            {/* Client Showcase Presentation Mode Button */}
+            {floorPlanLayout && (
               <button
-                onClick={toggleCameraMode}
-                className="px-4 py-2 bg-dark-surface/90 border border-hairline-dark text-on-dark-muted hover:text-white hover:bg-dark-surface-alt rounded-full text-xs font-bold shadow-hero outline-none select-none transition-all"
+                onClick={togglePresentationMode}
+                className="px-3.5 py-2 bg-dark-surface/90 border border-hairline-dark text-on-dark-muted hover:text-white hover:bg-dark-surface-alt rounded-full text-xs font-bold shadow-hero outline-none select-none transition-all flex items-center gap-1.5"
+                title="Client Presentation / Showcase Mode"
               >
-                <span className="hidden xl:inline">Camera: {cameraMode === "perspective" ? "Perspective" : "Orthographic"}</span>
-                <span className="inline xl:hidden">{cameraMode === "perspective" ? "3D" : "2D"}</span>
+                <Eye size={13} className="text-indigo-400" />
+                <span className="hidden xl:inline">Showcase</span>
+                <span className="inline xl:hidden">Showcase</span>
               </button>
-            </>
-          )}
-          
-          <div className="flex items-center gap-1.5 px-4 py-2 bg-dark-surface/90 border border-hairline-dark text-on-dark rounded-full text-xs font-bold shadow-hero select-none">
-            <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
-            <span className="hidden lg:inline">WebGL Active</span>
-            <span className="inline lg:hidden">WebGL</span>
+            )}
+            
+            <div className="flex items-center gap-1.5 px-4 py-2 bg-dark-surface/90 border border-hairline-dark text-on-dark rounded-full text-xs font-bold shadow-hero select-none">
+              <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
+              <span className="hidden lg:inline">WebGL Active</span>
+              <span className="inline lg:hidden">WebGL</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── 2. PATH TRACING STATUS INDICATOR ─────────────────────────────────── */}
       {pathTracing && floorPlanLayout && (
@@ -157,18 +210,89 @@ export default function FloorPlanCanvas() {
                   </>
                 )}
 
-                {/* Render all structural walls procedural meshes */}
-                {(floorPlanLayout.walls || []).map((wall) => (
-                  <WallMesh key={wall.id} wall={wall} />
-                ))}
+                {/* Render Multi-Storey Building Stack with Volumetric Floor Slabs */}
+                {displayStoreys.map((storey) => {
+                  if (storey.isVisible === false) return null;
+                  const elevM = feetToMeters(storey.elevation);
+                  const layout = storey.floorPlanLayout;
+                  const isStoreyActive = storey.id === (activeStoreyId || displayStoreys[0]?.id);
 
-                {/* Render doors and windows along the walls */}
-                {(floorPlanLayout.doors || []).map((door) => (
-                  <DoorMesh key={door.id} door={door} walls={floorPlanLayout.walls || []} />
-                ))}
-                {(floorPlanLayout.windows || []).map((win) => (
-                  <WindowMesh key={win.id} window={win} walls={floorPlanLayout.walls || []} />
-                ))}
+                  // Compute floor slab bounds from walls
+                  let minX = Infinity;
+                  let minZ = Infinity;
+                  let maxX = -Infinity;
+                  let maxZ = -Infinity;
+
+                  (layout.walls || []).forEach((w) => {
+                    const sx = feetToMeters(w.start.x);
+                    const sz = feetToMeters(w.start.y);
+                    const ex = feetToMeters(w.end.x);
+                    const ez = feetToMeters(w.end.y);
+                    minX = Math.min(minX, sx, ex);
+                    maxX = Math.max(maxX, sx, ex);
+                    minZ = Math.min(minZ, sz, ez);
+                    maxZ = Math.max(maxZ, sz, ez);
+                  });
+
+                  const hasWalls = minX !== Infinity;
+                  const slabW = hasWalls ? maxX - minX + 0.4 : 0;
+                  const slabD = hasWalls ? maxZ - minZ + 0.4 : 0;
+                  const slabCx = hasWalls ? (minX + maxX) / 2 : 0;
+                  const slabCz = hasWalls ? (minZ + maxZ) / 2 : 0;
+                  const slabThick = feetToMeters(storey.slabThickness || 0.8);
+
+                  return (
+                    <group key={storey.id} position={[0, elevM, 0]}>
+                      {/* Volumetric Concrete Floor Slab with Stairwell Void Subtraction */}
+                      {hasWalls && (
+                        <mesh position={[slabCx, -slabThick / 2, slabCz]} receiveShadow castShadow>
+                          {staircases.length === 0 || elevM === 0 ? (
+                            <boxGeometry args={[slabW, slabThick, slabD]} />
+                          ) : (
+                            <Geometry computeVertexNormals>
+                              <Base>
+                                <boxGeometry args={[slabW, slabThick, slabD]} />
+                              </Base>
+                              {staircases.map((stair) => {
+                                const stairWidthM = feetToMeters(stair.width / 12);
+                                const stairLengthM = stair.riserCount * 0.28;
+                                const localX = stair.position.x - slabCx;
+                                const localZ = stair.position.z - slabCz;
+                                return (
+                                  <Subtraction
+                                    key={stair.id}
+                                    position={[localX, 0, localZ]}
+                                    rotation={[0, stair.rotation.y, 0]}
+                                  >
+                                    <boxGeometry args={[stairWidthM + 0.1, slabThick * 2.5, stairLengthM + 0.1]} />
+                                  </Subtraction>
+                                );
+                              })}
+                            </Geometry>
+                          )}
+                          <meshStandardMaterial
+                            color={isStoreyActive ? "#DDD8D0" : "#BCB7AF"}
+                            roughness={0.8}
+                            metalness={0.1}
+                          />
+                        </mesh>
+                      )}
+
+                      {/* Structural walls */}
+                      {(layout.walls || []).map((wall) => (
+                        <WallMesh key={wall.id} wall={wall} />
+                      ))}
+
+                      {/* Doors and Windows */}
+                      {(layout.doors || []).map((door) => (
+                        <DoorMesh key={door.id} door={door} walls={layout.walls || []} />
+                      ))}
+                      {(layout.windows || []).map((win) => (
+                        <WindowMesh key={win.id} window={win} walls={layout.walls || []} />
+                      ))}
+                    </group>
+                  );
+                })}
 
                 {/* Render interactive 3D wall drawing helper plane and previews */}
                 <WallDrawingManager />
@@ -196,6 +320,7 @@ export default function FloorPlanCanvas() {
                     rotation={[obj.rotation.x, obj.rotation.y, obj.rotation.z]}
                     color="#8B95F5"
                     modelUrl={obj.gltfPath}
+                    attachmentType={obj.attachmentType}
                   />
                 ))}
 
@@ -220,7 +345,7 @@ export default function FloorPlanCanvas() {
           </div>
         )}
 
-        {floorPlanLayout && (
+        {floorPlanLayout && !isPresentationMode && (
           <div className="absolute bottom-6 right-6 z-20">
             <SunController />
           </div>
@@ -228,7 +353,7 @@ export default function FloorPlanCanvas() {
       </div>
 
       {/* ── 4. VIEWPORT FOOTER NAVIGATION ───────────────────────────────────── */}
-      {floorPlanLayout && mode === "3d" && (
+      {floorPlanLayout && mode === "3d" && !isPresentationMode && (
         <div className="absolute bottom-6 left-6 bg-dark-surface/90 border border-hairline-dark text-on-dark-muted text-[10px] font-bold uppercase tracking-wider rounded-xl p-3 flex items-center gap-4 z-10 pointer-events-none select-none">
           <div className="flex items-center gap-1">
             <Move size={12} className="text-indigo" />

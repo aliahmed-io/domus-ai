@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { PenTool, Sparkles } from "lucide-react";
+import { PenTool, Brain } from "lucide-react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { loadProject, saveProject } from "@/lib/puter";
@@ -128,7 +128,7 @@ export default function OnboardingModal({ projectId }: OnboardingModalProps) {
               Popular
             </div>
             <div className="w-16 h-16 rounded-2xl bg-teal/10 text-teal flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-              <Sparkles size={32} strokeWidth={1.5} />
+              <Brain size={32} strokeWidth={1.5} />
             </div>
             <div>
               <h3 className="font-jakarta text-lg font-bold text-charcoal mb-2">

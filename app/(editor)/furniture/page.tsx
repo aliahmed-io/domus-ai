@@ -9,11 +9,15 @@ import {
   Armchair,
   Move,
   Trash2,
+  Loader2,
+  Upload,
 } from "lucide-react";
+import { toast } from "sonner";
 import EditorCanvas from "@/components/editor/EditorCanvas";
 import TrellisGenerator from "@/components/editor/FurnitureSwap/TrellisGenerator";
 import PhysicsFurniture from "@/components/editor/PhysicsFurniture";
 import PhysicsBoundary from "@/components/editor/PhysicsBoundary";
+import { useIsClient } from "@/lib/useIsClient";
 
 interface FurnitureItem {
   id: string;
@@ -72,6 +76,7 @@ function generateUniqueId(baseId: string): string {
 }
 
 export default function FurnitureSwapPage() {
+  const mounted = useIsClient();
   const [selectedAsset, setSelectedAsset] = useState<string>("furn-chair-1");
   const [placedAssets, setPlacedAssets] = useState<FurnitureItem[]>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -105,6 +110,27 @@ export default function FurnitureSwapPage() {
 
   const handleClear = () => {
     setPlacedAssets([]);
+  };
+
+  const handleImportCustomModel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "glb" && ext !== "gltf") {
+      toast.error("Please select a .glb or .gltf 3D model file.");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const customAsset: FurnitureItem = {
+      id: generateUniqueId("imported"),
+      name: file.name.replace(/\.[^/.]+$/, ""),
+      category: "Imported 3D",
+      modelUrl: url,
+      color: "#10B981",
+      customPosition: [0, 4.0, 0],
+    };
+    setPlacedAssets((prev) => [...prev, customAsset]);
+    toast.success(`Imported 3D model "${customAsset.name}"!`);
   };
 
   // HTML5 Drag and Drop Handlers
@@ -221,9 +247,24 @@ export default function FurnitureSwapPage() {
               );
             })}
           </div>
-          <span className="text-[9px] text-stone italic block text-center mt-1">
-            💡 Drag cards above and drop them anywhere in the viewport!
+          <span className="text-[10px] text-stone flex items-center justify-center gap-1 text-center mt-1 font-medium">
+            <Info size={11} className="text-indigo shrink-0" />
+            <span>Drag cards above and drop them anywhere in the viewport!</span>
           </span>
+
+          {/* Custom 3D Model Importer (GLTF/GLB Upload) */}
+          <div className="border-t border-hairline pt-3 space-y-2">
+            <label className="w-full h-10 border border-hairline border-dashed rounded-xl bg-white hover:bg-gray-50 hover:border-indigo transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs font-bold text-stone hover:text-charcoal select-none">
+              <Upload size={13} className="text-indigo" />
+              <span>Import Custom .GLB / .GLTF</span>
+              <input
+                type="file"
+                accept=".glb,.gltf"
+                onChange={handleImportCustomModel}
+                className="hidden"
+              />
+            </label>
+          </div>
         </div>
       </aside>
 
@@ -266,29 +307,36 @@ export default function FurnitureSwapPage() {
             </div>
           )}
 
-          <EditorCanvas cameraMode="perspective" showGrid={true}>
-            {/* Render procedurally placed furniture blocks inside Cannon dynamic body boundaries */}
-            {placedAssets.map((asset) => {
-              const pos = asset.customPosition || [0, 4.0, 0];
-              return (
-                <PhysicsFurniture
-                  key={asset.id}
-                  position={pos}
-                  color={asset.color}
-                  modelUrl={asset.modelUrl}
-                  args={[1.2, 0.9, 1.2]}
-                />
-              );
-            })}
+          {mounted ? (
+            <EditorCanvas cameraMode="perspective" showGrid={true}>
+              {/* Render procedurally placed furniture blocks inside Cannon dynamic body boundaries */}
+              {placedAssets.map((asset) => {
+                const pos = asset.customPosition || [0, 4.0, 0];
+                return (
+                  <PhysicsFurniture
+                    key={asset.id}
+                    position={pos}
+                    color={asset.color}
+                    modelUrl={asset.modelUrl}
+                    args={[1.2, 0.9, 1.2]}
+                  />
+                );
+              })}
 
-            {/* Static floor collider boundary to prevent physics objects from falling infinitely */}
-            <PhysicsBoundary position={[0, -0.4, 0]} args={[100, 0.8, 100]} />
+              {/* Static floor collider boundary to prevent physics objects from falling infinitely */}
+              <PhysicsBoundary position={[0, -0.4, 0]} args={[100, 0.8, 100]} />
 
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
-              <planeGeometry args={[100, 100]} />
-              <meshStandardMaterial color="#1a1a2e" roughness={1.0} />
-            </mesh>
-          </EditorCanvas>
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
+                <planeGeometry args={[100, 100]} />
+                <meshStandardMaterial color="#1a1a2e" roughness={1.0} />
+              </mesh>
+            </EditorCanvas>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-dark-surface-alt text-stone gap-3">
+              <Loader2 size={32} className="animate-spin text-indigo" />
+              <span className="font-body text-xs font-medium">Initializing 3D Viewport...</span>
+            </div>
+          )}
         </div>
       </main>
 
@@ -330,8 +378,9 @@ export default function FurnitureSwapPage() {
                     Interactive Physics Active
                   </span>
                 </div>
-                <p className="text-stone text-[9px] leading-normal font-medium">
-                  💡 <strong>Twin simulator:</strong> Digital twin meshes drop with real physics gravity constraints and stack seamlessly on top of one another!
+                <p className="text-stone text-[9px] leading-normal font-medium flex items-center gap-1.5">
+                  <Info size={12} className="text-indigo shrink-0" />
+                  <span><strong>Twin simulator:</strong> Digital twin meshes drop with real physics gravity constraints and stack seamlessly on top of one another!</span>
                 </p>
               </div>
             </div>

@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
-import { PanelRightClose, PanelRightOpen, Trash2, Loader2 } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Trash2, Loader2, Check } from "lucide-react";
+import { toast } from "sonner";
 import { getUser, loadProject, saveProject } from "@/lib/puter";
 import type { PuterProject, EditorWorkspace } from "@/types/puter";
 
@@ -20,6 +21,11 @@ const FloorPlanCanvas = dynamic(
 
 const ResultsPanel = dynamic(
   () => import("@/components/editor/FloorPlanEngine/ResultsPanel"),
+  { ssr: false }
+);
+
+const PropertiesPanel = dynamic(
+  () => import("@/components/editor/PropertiesPanel"),
   { ssr: false }
 );
 
@@ -43,6 +49,11 @@ const OnboardingModal = dynamic(
   { ssr: false }
 );
 
+const PresentationOverlay = dynamic(
+  () => import("@/components/editor/PresentationOverlay"),
+  { ssr: false }
+);
+
 export default function FloorPlanPage() {
   const { 
     setMode, 
@@ -51,7 +62,8 @@ export default function FloorPlanPage() {
     floorPlanLayout, 
     deleteSelected, 
     selectedObjectId,
-    loadProjectData
+    loadProjectData,
+    isPresentationMode,
   } = useEditorStore(
     useShallow((s) => ({
       setMode: s.setMode,
@@ -61,12 +73,24 @@ export default function FloorPlanPage() {
       deleteSelected: s.deleteSelected,
       selectedObjectId: s.selectedObjectId,
       loadProjectData: s.loadProjectData,
+      isPresentationMode: s.isPresentationMode,
     }))
   );
 
   const [rightOpen, setRightOpen] = useState(false);
+  const [rightTab, setRightTab] = useState<"inspector" | "results">("inspector");
   const [loadingProject, setLoadingProject] = useState(true);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+
+  const [prevSelectedId, setPrevSelectedId] = useState<string | null>(null);
+  if (selectedObjectId && selectedObjectId !== prevSelectedId) {
+    setPrevSelectedId(selectedObjectId);
+    setRightOpen(true);
+    setRightTab("inspector");
+  } else if (!selectedObjectId && prevSelectedId) {
+    setPrevSelectedId(null);
+  }
 
   useEffect(() => {
     // Synchronize workspace views on tool launch
@@ -118,7 +142,23 @@ export default function FloorPlanPage() {
 
         setCurrentProjectId(projectId);
 
-        const project = await loadProject(projectId);
+        let project = await loadProject(projectId);
+
+        // Dual-layer auto-save fallback: if Puter KV is empty, restore from local storage
+        if (!project) {
+          const localStr =
+            localStorage.getItem(`domus_backup_project_${projectId}`) ||
+            localStorage.getItem("domus_latest_project");
+          if (localStr) {
+            try {
+              project = JSON.parse(localStr) as PuterProject;
+              toast.success("Restored project from local autosave!");
+            } catch (lsParseErr) {
+              console.warn("Local storage parse error:", lsParseErr);
+            }
+          }
+        }
+
         if (project) {
           let ws: EditorWorkspace = "onboarding";
           if (project.tags.includes("workspace-manual")) {
@@ -143,7 +183,7 @@ export default function FloorPlanPage() {
     loadEditorProject();
   }, [loadProjectData]);
 
-  // Setup debounced autosave subscription
+  // Setup debounced dual-layer autosave subscription (Local Mirror + Cloud KV)
   useEffect(() => {
     if (loadingProject || !currentProjectId) return;
 
@@ -172,36 +212,78 @@ export default function FloorPlanPage() {
         lastObjects = currentObjectsStr;
         lastWorkspace = currentWorkspaceStr;
 
+        // 1. Instant local storage mirror save
+        try {
+          const backupProject: PuterProject = {
+            id: currentProjectId,
+            ownerId: "guest",
+            ownerUsername: "Guest Architect",
+            title: "Domus CAD Project",
+            description: "Mirrored in local storage",
+            type: "floor-plan",
+            isPublic: false,
+            tags: [`workspace-${currentWorkspaceStr}`],
+            floorPlanData: state.floorPlanLayout || undefined,
+            sceneData: {
+              id: `scene-${Date.now()}`,
+              objects: state.sceneObjects,
+              cameraPosition: { x: 0, y: 5, z: 10 },
+              cameraTarget: { x: 0, y: 0, z: 0 },
+              createdAt: new Date().toISOString(),
+            },
+            stats: { likes: 0, views: 0, forks: 0 },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          localStorage.setItem(`domus_backup_project_${currentProjectId}`, JSON.stringify(backupProject));
+          localStorage.setItem("domus_latest_project", JSON.stringify(backupProject));
+          setLastSaved(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        } catch (lsErr) {
+          console.warn("localStorage autosave failed:", lsErr);
+        }
+
+        // 2. Debounced Cloud KV save
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(async () => {
           try {
             const existingProject = await loadProject(currentProjectId);
-            if (existingProject) {
-              const updatedProject: PuterProject = {
-                ...existingProject,
-                tags: [
-                  ...existingProject.tags.filter(t => !t.startsWith("workspace-")),
-                  `workspace-${currentWorkspaceStr}`
-                ],
-                sceneData: {
-                  id: existingProject.sceneData?.id || `scene-${Date.now()}`,
-                  objects: state.sceneObjects,
-                  cameraPosition: existingProject.sceneData?.cameraPosition || { x: 0, y: 5, z: 10 },
-                  cameraTarget: existingProject.sceneData?.cameraTarget || { x: 0, y: 0, z: 0 },
-                  createdAt: existingProject.sceneData?.createdAt || new Date().toISOString(),
-                },
-                updatedAt: new Date().toISOString(),
-              };
+            const baseProject = existingProject || {
+              id: currentProjectId,
+              ownerId: "guest",
+              ownerUsername: "Guest Architect",
+              title: "Domus CAD Project",
+              description: "Autosaved CAD workspace",
+              type: "floor-plan" as const,
+              isPublic: false,
+              tags: [`workspace-${currentWorkspaceStr}`],
+              stats: { likes: 0, views: 0, forks: 0 },
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
 
-              if (state.floorPlanLayout) {
-                updatedProject.floorPlanData = state.floorPlanLayout;
-              } else {
-                delete updatedProject.floorPlanData;
-              }
+            const updatedProject: PuterProject = {
+              ...baseProject,
+              tags: [
+                ...baseProject.tags.filter((t) => !t.startsWith("workspace-")),
+                `workspace-${currentWorkspaceStr}`,
+              ],
+              sceneData: {
+                id: baseProject.sceneData?.id || `scene-${Date.now()}`,
+                objects: state.sceneObjects,
+                cameraPosition: baseProject.sceneData?.cameraPosition || { x: 0, y: 5, z: 10 },
+                cameraTarget: baseProject.sceneData?.cameraTarget || { x: 0, y: 0, z: 0 },
+                createdAt: baseProject.sceneData?.createdAt || new Date().toISOString(),
+              },
+              updatedAt: new Date().toISOString(),
+            };
 
-              await saveProject(updatedProject);
-              console.log("Project autosaved successfully.");
+            if (state.floorPlanLayout) {
+              updatedProject.floorPlanData = state.floorPlanLayout;
+            } else {
+              delete updatedProject.floorPlanData;
             }
+
+            await saveProject(updatedProject);
           } catch (err) {
             console.error("Autosave error:", err);
           }
@@ -235,20 +317,25 @@ export default function FloorPlanPage() {
         <FloorPlanCanvas />
       </div>
 
+      {/* Client Presentation Mode Cinema Overlay */}
+      {isPresentationMode && <PresentationOverlay />}
+
       {/* Top App Bar (Manual CAD Mode or Generative after layout creation) */}
-      {(workspace === "manual" || (workspace === "generative" && floorPlanLayout)) && <Toolbar />}
+      {!isPresentationMode && (workspace === "manual" || (workspace === "generative" && floorPlanLayout)) && <Toolbar />}
 
       {/* Left Panel: Catalog (Manual) or Parameters (Generative) */}
-      <div 
-        className="absolute left-6 top-24 bottom-6 z-20 hidden lg:block"
-      >
-        <div className="h-full pointer-events-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] rounded-2xl">
-          {workspace === "manual" ? <CatalogPanel /> : workspace === "generative" ? <ParameterPanel /> : null}
+      {!isPresentationMode && (
+        <div 
+          className="absolute left-6 top-24 bottom-6 z-20 hidden lg:block"
+        >
+          <div className="h-full pointer-events-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] rounded-2xl">
+            {workspace === "manual" ? <CatalogPanel /> : workspace === "generative" ? <ParameterPanel /> : null}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Right Panel Toggle Button */}
-      {(workspace === "manual" || workspace === "generative") && (
+      {!isPresentationMode && (workspace === "manual" || workspace === "generative") && (
         <button
           onClick={() => setRightOpen(!rightOpen)}
           className="absolute right-6 top-24 z-30 p-2.5 bg-dark-surface/90 border border-hairline-dark rounded-xl text-on-dark hover:text-white hover:bg-dark-surface-alt transition-all shadow-hero backdrop-blur-md"
@@ -257,19 +344,51 @@ export default function FloorPlanPage() {
         </button>
       )}
 
-      {/* Right Panel: Results & BOM */}
-      <div 
-        className={`absolute right-20 top-24 bottom-6 w-80 z-20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hidden lg:block ${
-          rightOpen ? "translate-x-0" : "translate-x-[120%]"
-        }`}
-      >
-        <div className="w-full h-full pointer-events-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] rounded-2xl">
-          {(workspace === "manual" || workspace === "generative") && <ResultsPanel />}
+      {/* Right Panel: Contextual Inspector & Project BOM */}
+      {!isPresentationMode && (
+        <div 
+          className={`absolute right-20 top-24 bottom-6 w-80 z-20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hidden lg:block ${
+            rightOpen ? "translate-x-0" : "translate-x-[120%]"
+          }`}
+        >
+          <div className="w-full h-full pointer-events-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] rounded-2xl flex flex-col overflow-hidden bg-white/95 backdrop-blur-md border border-hairline">
+            {/* Header Tab Switcher */}
+            <div className="flex border-b border-hairline bg-alabaster/60 p-1.5 gap-1 select-none">
+              <button
+                onClick={() => setRightTab("inspector")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  rightTab === "inspector"
+                    ? "bg-white text-indigo shadow-sm"
+                    : "text-stone hover:text-charcoal"
+                }`}
+              >
+                Inspector {selectedObjectId ? "•" : ""}
+              </button>
+              <button
+                onClick={() => setRightTab("results")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  rightTab === "results"
+                    ? "bg-white text-indigo shadow-sm"
+                    : "text-stone hover:text-charcoal"
+                }`}
+              >
+                BOM & Export
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {rightTab === "inspector" ? (
+                <PropertiesPanel />
+              ) : (
+                (workspace === "manual" || workspace === "generative") && <ResultsPanel />
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Floating Contextual Toolbar for Selected Items */}
-      {selectedObjectId && (
+      {!isPresentationMode && selectedObjectId && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 bg-dark-surface/90 backdrop-blur-md border border-hairline-dark p-2 rounded-xl flex gap-2 shadow-[0_24px_48px_rgba(0,0,0,0.4)] animate-in slide-in-from-bottom-10 fade-in duration-300">
           <button 
             onClick={deleteSelected}
@@ -280,10 +399,26 @@ export default function FloorPlanPage() {
         </div>
       )}
 
+      {/* Dual-Layer Autosave Indicator Badge */}
+      {!isPresentationMode && (
+        <div className="absolute bottom-6 right-6 z-30 pointer-events-auto hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-dark-surface/90 border border-hairline-dark backdrop-blur-md shadow-hero text-xs">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span className="font-mono text-[11px] text-zinc-300 font-medium flex items-center gap-1.5">
+            <Check size={12} className="text-emerald-400" />
+            {lastSaved ? `Autosaved · ${lastSaved}` : "Dual Autosave Active"}
+          </span>
+        </div>
+      )}
+
       {/* Mobile Bottom Sheet Drawer (Mobile Only) */}
-      <div className="block lg:hidden">
-        <MobileActionDrawer />
-      </div>
+      {!isPresentationMode && (
+        <div className="block lg:hidden">
+          <MobileActionDrawer />
+        </div>
+      )}
     </div>
   );
 }

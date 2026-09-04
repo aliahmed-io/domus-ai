@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Compass, Shield, Award, Sparkles } from "lucide-react";
+import { Compass, Shield, Award, Cpu } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About Us | Domus",
@@ -18,7 +18,7 @@ const VALUES = [
     desc: "We support open standard BIM schemas. Full support for IFC format ensures absolute cross-platform parity.",
   },
   {
-    icon: Sparkles,
+    icon: Cpu,
     title: "AI as a Co-Pilot",
     desc: "We empower architects with generative models, automating heavy routing and optimization calculations.",
   },

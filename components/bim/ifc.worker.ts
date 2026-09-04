@@ -1,22 +1,43 @@
 /// <reference lib="webworker" />
+import * as WebIFC from "web-ifc";
+
+let ifcApi: WebIFC.IfcAPI | null = null;
 
 self.onmessage = async (e: MessageEvent) => {
-  const { type } = e.data;
-  if (type === "PARSE_IFC") {
+  const { type, data } = e.data;
+  if (type === "PARSE_IFC" && data) {
     try {
-      // In a real application, you would initialize web-ifc here and parse the array buffer
-      // For this implementation plan, we demonstrate the architectural boundary.
-      // import * as WebIFC from "web-ifc";
-      
-      // const ifcApi = new WebIFC.IfcAPI();
-      // await ifcApi.Init();
-      // const modelID = ifcApi.OpenModel(new Uint8Array(data));
+      if (!ifcApi) {
+        ifcApi = new WebIFC.IfcAPI();
+        ifcApi.SetWasmPath("/");
+        await ifcApi.Init();
+      }
 
-      // ... extraction logic ...
+      const uint8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+      const modelID = ifcApi.OpenModel(uint8);
 
-      self.postMessage({ type: "PARSE_SUCCESS", payload: { /* geometry and metadata */ } });
+      const walls = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCWALL);
+      const doors = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCDOOR);
+      const windows = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCWINDOW);
+      const storeys = ifcApi.GetLineIDsWithType(modelID, WebIFC.IFCBUILDINGSTOREY);
+
+      const summary = {
+        modelID,
+        wallCount: walls.size(),
+        doorCount: doors.size(),
+        windowCount: windows.size(),
+        storeyCount: storeys.size(),
+      };
+
+      ifcApi.CloseModel(modelID);
+
+      self.postMessage({ type: "PARSE_SUCCESS", payload: summary });
     } catch (err) {
-      self.postMessage({ type: "PARSE_ERROR", payload: err });
+      self.postMessage({
+        type: "PARSE_ERROR",
+        payload: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 };
+

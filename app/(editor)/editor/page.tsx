@@ -6,19 +6,18 @@ import {
   Scan,
   Palette,
   Package,
-  Sparkles,
   ArrowRight,
   Compass,
 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Spatial CAD Studio",
-  description: "Select an AI tool module to begin designing in WebGL spatial virtual environments.",
+  description: "Select an architectural module to begin designing in WebGL spatial virtual environments.",
 };
 
 const modules = [
   {
-    href: "/editor/floor-plan",
+    href: "/floor-plan",
     icon: Brain,
     title: "AI Floor Plan",
     desc: "Generate complete multi-room architectural spatial layouts using GNN-driven area optimization.",
@@ -26,7 +25,7 @@ const modules = [
     gradient: "from-indigo/10 via-white to-white",
   },
   {
-    href: "/editor/bim-lift",
+    href: "/bim-lift",
     icon: Layers,
     title: "BIM Lift",
     desc: "Lift 2D blueprints or hand sketches into extruded 3D BIM spaces, running full BOM reports client-side.",
@@ -34,7 +33,7 @@ const modules = [
     gradient: "from-teal/10 via-white to-white",
   },
   {
-    href: "/editor/ar-map",
+    href: "/ar-map",
     icon: Scan,
     title: "AR Room Scanner",
     desc: "Use WebXR passthrough on mobile devices to map exact room dimensions and output 3D spatial shells.",
@@ -42,7 +41,7 @@ const modules = [
     gradient: "from-gray-100 via-white to-white",
   },
   {
-    href: "/editor/material-lab",
+    href: "/material-lab",
     icon: Palette,
     title: "Material Lab",
     desc: "Reskin 3D geometries with generative seamless PBR texture layers mapped via text-prompts.",
@@ -50,7 +49,7 @@ const modules = [
     gradient: "from-gold/10 via-white to-white",
   },
   {
-    href: "/editor/furniture",
+    href: "/furniture",
     icon: Package,
     title: "Furniture Swap",
     desc: "Detect furniture placements and insert responsive, cached high-performance DRACO GLB assets.",
@@ -108,9 +107,6 @@ export default function EditorHubPage() {
                 <div>
                   <h3 className="font-jakarta text-lg font-700 text-charcoal flex items-center gap-1.5 group-hover:text-indigo transition-colors">
                     <span>{mod.title}</span>
-                    {mod.title === "AI Floor Plan" && (
-                      <Sparkles size={13} className="text-indigo" />
-                    )}
                   </h3>
                   <p className="font-body text-xs text-stone leading-relaxed mt-1.5">
                     {mod.desc}

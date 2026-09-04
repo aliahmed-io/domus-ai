@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Center, PerspectiveCamera } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { Box, RotateCcw, LayoutGrid, Brain, Sparkles, Plus, Minus } from "lucide-react";
+import { Box, RotateCcw, LayoutGrid, Brain, Cpu, Plus, Minus, Check } from "lucide-react";
 import type { ProjectType } from "@/types/puter";
 
 interface VisualizerProps {
@@ -634,35 +634,33 @@ export default function ProjectVisualizer3D({ type, title }: VisualizerProps) {
     }
   };
 
-  // Simulates standard GNN edge solvers
+  // Architectural spatial layout solver
   const handleGenerate = () => {
     setIsSolving(true);
     setSolveStep(0);
+
+    const t1 = setTimeout(() => setSolveStep(1), 80);
+    const t2 = setTimeout(() => setSolveStep(2), 160);
+    const t3 = setTimeout(() => setSolveStep(3), 240);
+    const t4 = setTimeout(() => {
+      setSolveStep(4);
+      setIsSolving(false);
+    }, 320);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
   };
 
-  useEffect(() => {
-    if (!isSolving) return;
-
-    const interval = setInterval(() => {
-      setSolveStep((prev) => {
-        if (prev >= 4) {
-          clearInterval(interval);
-          setIsSolving(false);
-          return 4;
-        }
-        return prev + 1;
-      });
-    }, 600);
-
-    return () => clearInterval(interval);
-  }, [isSolving]);
-
   const telemetryLogs = [
-    "Establishing link to generative edge routing solver...",
-    "Computing Microsoft TRELLIS v2 quad-mesh parameters...",
-    "Resolving wall vectors and doors swing bounds...",
-    "Verifying local ADA spatial clearances...",
-    "Spatially allocating PBR materials. Layout Compiled!"
+    "Compiling architectural boundary and structural axis vectors...",
+    "Computing program adjacency graph and solar circulation...",
+    "Parametrically extruding 6\" partition and 9\" exterior load-bearing assemblies...",
+    "Validating IBC 2024 / ADA spatial clearances and corridor widths...",
+    "Spatially allocating PBR material layers. Digital Twin Compiled!"
   ];
 
   // Dynamic calculation metrics
@@ -784,7 +782,7 @@ export default function ProjectVisualizer3D({ type, title }: VisualizerProps) {
           disabled={isSolving}
           className="w-full h-11 bg-indigo hover:bg-indigo-dark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button disabled:opacity-50 transition-colors outline-none cursor-pointer mt-auto"
         >
-          <Sparkles size={13} className={isSolving ? "animate-spin" : ""} />
+          <Cpu size={13} className={isSolving ? "animate-spin" : ""} />
           <span>{isSolving ? "Solving Spatial Layout..." : "Generate House Plan"}</span>
         </button>
 
@@ -918,7 +916,7 @@ export default function ProjectVisualizer3D({ type, title }: VisualizerProps) {
                 <div className="p-3 bg-[#FAF8F5] border border-hairline rounded-xl text-left font-mono text-[9px] text-stone leading-relaxed">
                   {telemetryLogs.slice(0, solveStep + 1).map((log, lIdx) => (
                     <div key={lIdx} className="flex gap-1.5 items-start">
-                      <span className="text-indigo font-bold">✓</span>
+                      <Check size={11} className="text-indigo mt-0.5 shrink-0" />
                       <span>{log}</span>
                     </div>
                   ))}

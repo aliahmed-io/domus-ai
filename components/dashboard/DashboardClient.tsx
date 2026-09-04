@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Plus,
   LayoutDashboard,
@@ -17,10 +16,9 @@ import { useProjectStore } from "@/store/useProjectStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { listProjects, getUser, signOut } from "@/lib/puter";
 import ProjectCard from "./ProjectCard";
-import type { ProjectType } from "@/types/puter";
+import type { ProjectType, PuterUser } from "@/types/puter";
 
 export default function DashboardClient() {
-  const router = useRouter();
   const { projects, setProjects, isLoading, setLoading } = useProjectStore();
   const { user, setUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState<"all" | ProjectType>("all");
@@ -36,6 +34,8 @@ export default function DashboardClient() {
         ]);
         if (userData) {
           setUser(userData);
+        } else {
+          setUser({ uuid: "guest-user", username: "Guest Architect" } as PuterUser);
         }
         setProjects(projectList);
       } catch (err) {
@@ -47,13 +47,11 @@ export default function DashboardClient() {
     initDashboard();
   }, [setProjects, setUser, setLoading]);
 
-  // Handle Logout
+  // Handle Logout / Profile Reset
   const handleLogout = async () => {
     await signOut();
-    // Delete local cookie if set, and redirect
     document.cookie = "puter_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    setUser(null);
-    router.push("/login");
+    setUser({ uuid: "guest-user", username: "Guest Architect" } as PuterUser);
   };
 
   // Filter projects by activeTab

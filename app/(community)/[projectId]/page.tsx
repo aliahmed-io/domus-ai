@@ -201,7 +201,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
           {/* Call-to-action buttons */}
           <div className="border-t border-hairline pt-5 flex flex-col gap-2.5">
             <Link
-              href={`/editor/${project.type === "floor-plan" ? "floor-plan" : project.type === "bim-model" ? "bim-lift" : project.type === "ar-scan" ? "ar-map" : project.type === "material-lab" ? "material-lab" : "furniture"}`}
+              href={`/${project.type === "floor-plan" ? "floor-plan" : project.type === "bim-model" ? "bim-lift" : project.type === "ar-scan" ? "ar-map" : project.type === "material-lab" ? "material-lab" : "furniture"}`}
               className="w-full h-11 btn-primary bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button transition-colors"
             >
               <ExternalLink size={13} />

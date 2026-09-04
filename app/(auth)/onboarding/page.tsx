@@ -8,7 +8,6 @@ import {
   Layers,
   Scan,
   Palette,
-  Sparkles,
   ArrowRight,
   ArrowLeft,
   CheckCircle,
@@ -309,7 +308,7 @@ export default function OnboardingPage() {
               className="flex items-center gap-1.5 text-xs font-semibold px-5 py-2.5 bg-indigo hover:bg-indigoDark text-white rounded-lg shadow-button transition-colors disabled:opacity-50"
             >
               <span>{isFinishing ? "Syncing..." : "Launch Space"}</span>
-              <Sparkles size={14} />
+              <ArrowRight size={14} />
             </button>
           )}
         </div>

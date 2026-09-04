@@ -7,8 +7,28 @@
 
 import type { PuterUser, PuterProject } from "@/types/puter";
 
-// Safe accessor — returns null on SSR or if Puter hasn't loaded
-function getPuter(): typeof window.puter | null {
+// Polls until window.puter is available (SDK loads with async defer)
+// Returns null only if it times out after 10s (user truly offline)
+async function waitForPuter(timeoutMs = 10_000): Promise<typeof window.puter | null> {
+  if (typeof window === "undefined") return null;
+  if (window.puter) return window.puter;
+
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const poll = () => {
+      if (window.puter) return resolve(window.puter);
+      if (Date.now() - start > timeoutMs) {
+        console.warn("[puter] SDK did not load within timeout — operating offline.");
+        return resolve(null);
+      }
+      setTimeout(poll, 100);
+    };
+    poll();
+  });
+}
+
+// Sync accessor for non-async contexts only (returns null if SDK not yet loaded)
+export function getPuter(): typeof window.puter | null {
   if (typeof window === "undefined") return null;
   return window.puter ?? null;
 }
@@ -34,7 +54,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs = 5000, fallback: T): Pro
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 export async function signIn(): Promise<PuterUser | null> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return null;
   try {
     await puter.auth.signIn();
@@ -45,13 +65,13 @@ export async function signIn(): Promise<PuterUser | null> {
 }
 
 export async function signOut(): Promise<void> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return;
   await puter.auth.signOut();
 }
 
 export async function getUser(): Promise<PuterUser | null> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return null;
   try {
     const user = await puter.auth.getUser();
@@ -62,7 +82,7 @@ export async function getUser(): Promise<PuterUser | null> {
 }
 
 export async function isSignedIn(): Promise<boolean> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return false;
   try {
     return await puter.auth.isSignedIn();
@@ -74,7 +94,7 @@ export async function isSignedIn(): Promise<boolean> {
 // ─── KV Storage ──────────────────────────────────────────────────────────────
 
 export async function kvGet<T>(key: string): Promise<T | null> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return null;
   try {
     const apiCall = puter.kv.get(key).then((value) => {
@@ -89,7 +109,7 @@ export async function kvGet<T>(key: string): Promise<T | null> {
 }
 
 export async function kvSet<T>(key: string, value: T): Promise<boolean> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return false;
   try {
     const apiCall = puter.kv.set(key, JSON.stringify(value)).then(() => true).catch(() => false);
@@ -101,7 +121,7 @@ export async function kvSet<T>(key: string, value: T): Promise<boolean> {
 }
 
 export async function kvDelete(key: string): Promise<boolean> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return false;
   try {
     const apiCall = puter.kv.del(key).then(() => true).catch(() => false);
@@ -113,7 +133,7 @@ export async function kvDelete(key: string): Promise<boolean> {
 }
 
 export async function kvList(prefix: string): Promise<string[]> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return [];
   try {
     const apiCall = puter.kv.list(prefix + "*").then((result) => {
@@ -132,7 +152,7 @@ export async function uploadFile(
   path: string,
   content: Blob | string
 ): Promise<string | null> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return null;
   try {
     const file = await puter.fs.write(path, content);
@@ -143,7 +163,7 @@ export async function uploadFile(
 }
 
 export async function readFile(path: string): Promise<Blob | null> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return null;
   try {
     const file = await puter.fs.read(path);
@@ -154,7 +174,7 @@ export async function readFile(path: string): Promise<Blob | null> {
 }
 
 export async function deleteFile(path: string): Promise<boolean> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return false;
   try {
     await puter.fs.delete(path);
@@ -170,7 +190,7 @@ export async function aiChat(
   prompt: string,
   options?: { model?: string; maxTokens?: number }
 ): Promise<string | null> {
-  const puter = getPuter();
+  const puter = await waitForPuter();
   if (!puter) return null;
   try {
     const response = await puter.ai.chat(prompt, {

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import * as Accordion from "@radix-ui/react-accordion";
 import * as Slider from "@radix-ui/react-slider";
 import * as Switch from "@radix-ui/react-switch";
-import * as Accordion from "@radix-ui/react-accordion";
-import { Sparkles, Brain, Minus, Plus, Loader2, Cuboid, UploadCloud, ChevronDown } from "lucide-react";
+import { Brain, Minus, Plus, Loader2, Cuboid, UploadCloud, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryState, parseAsInteger, parseAsStringEnum } from "nuqs";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -266,7 +266,9 @@ export default function ParameterPanel() {
           max={4000}
           step={50}
           value={[area]}
-          onValueChange={(val) => val[0] && setArea(val[0])}
+          onValueChange={(val: number[]) => {
+            if (val[0]) setArea(val[0]);
+          }}
           className="relative flex items-center select-none touch-none w-full h-5"
         >
           <Slider.Track className="bg-indigo-light relative grow h-1.5 rounded-full">
@@ -433,7 +435,7 @@ export default function ParameterPanel() {
             onClick={handleGenerate3DModel}
             className="w-full h-10 bg-charcoal hover:bg-black text-white rounded-none font-jakarta text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isGeneratingModel ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {isGeneratingModel ? <Loader2 size={14} className="animate-spin" /> : <Cuboid size={14} />}
             Synthesize Model
           </button>
         </div>

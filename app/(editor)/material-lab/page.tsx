@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import {
   Palette,
-  Sparkles,
+  Cpu,
   Info,
   Loader2,
   CheckCircle,
@@ -66,7 +66,7 @@ export default function MaterialLabPage() {
               </>
             ) : (
               <>
-                <Sparkles size={14} />
+                <Cpu size={14} />
                 <span>Generate Material</span>
               </>
             )}

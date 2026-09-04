@@ -10,7 +10,7 @@ import {
   Key,
   Trash,
   Upload,
-  Sparkles,
+  SlidersHorizontal,
   Save,
   CheckCircle,
   Plus,
@@ -374,7 +374,7 @@ export default function SettingsPage() {
           ) : (
             <div className="p-16 flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 rounded-xl bg-indigo-light text-indigo flex items-center justify-center mb-4">
-                <Sparkles size={22} />
+                <SlidersHorizontal size={22} />
               </div>
               <h3 className="font-jakarta text-heading-sm font-700 text-charcoal mb-1">
                 Tab under development

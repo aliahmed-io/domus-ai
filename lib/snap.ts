@@ -38,10 +38,16 @@ export function snapToWallEndpoints(pt: Vec2D, walls: Wall[], tolerance = 1.0): 
 }
 
 /**
-  * Snaps a vector (end point relative to start point) to key angles (e.g. 0, 45, 90, 135, 180 degrees).
-  * Useful for drawing perfectly horizontal, vertical, or 45-degree walls!
-  */
-export function snapToAngle(start: Vec2D, end: Vec2D, snapAngles = [0, 45, 90, 135, 180, 225, 270, 315]): Vec2D {
+ * Snaps a vector (end point relative to start point) to key angles (e.g. 0, 45, 90, 135, 180 degrees).
+ * If thresholdDegrees is specified, only snaps if the angle difference is within threshold.
+ * Otherwise, strictly snaps to the nearest angle in the list.
+ */
+export function snapToAngle(
+  start: Vec2D,
+  end: Vec2D,
+  snapAngles = [0, 45, 90, 135, 180, 225, 270, 315],
+  thresholdDegrees?: number
+): Vec2D {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const length = Math.hypot(dx, dy);
@@ -53,7 +59,7 @@ export function snapToAngle(start: Vec2D, end: Vec2D, snapAngles = [0, 45, 90, 1
   if (angle < 0) angle += 360;
 
   // Find the closest snap angle
-  let closestAngle = snapAngles[0] || 0;
+  let closestAngle = snapAngles[0] ?? 0;
   let minDiff = Infinity;
 
   snapAngles.forEach((snapAngle) => {
@@ -67,12 +73,38 @@ export function snapToAngle(start: Vec2D, end: Vec2D, snapAngles = [0, 45, 90, 1
     }
   });
 
+  if (thresholdDegrees !== undefined && minDiff > thresholdDegrees) {
+    return end;
+  }
+
   // Reconstruct point from closest angle and length
   const rad = (closestAngle * Math.PI) / 180;
   return {
     x: start.x + length * Math.cos(rad),
     y: start.y + length * Math.sin(rad),
   };
+}
+
+/**
+ * Snaps a target point to any nearby wall midpoints.
+ * Tolerance is in feet. Returns the snapped point if found, otherwise returns original.
+ */
+export function snapToWallMidpoints(pt: Vec2D, walls: Wall[], tolerance = 0.8): Vec2D {
+  let closestPt = { ...pt };
+  let minDistance = Infinity;
+
+  walls.forEach((wall) => {
+    const midX = (wall.start.x + wall.end.x) / 2;
+    const midY = (wall.start.y + wall.end.y) / 2;
+    const dist = Math.hypot(pt.x - midX, pt.y - midY);
+
+    if (dist < minDistance && dist <= tolerance) {
+      minDistance = dist;
+      closestPt = { x: midX, y: midY };
+    }
+  });
+
+  return closestPt;
 }
 
 /**

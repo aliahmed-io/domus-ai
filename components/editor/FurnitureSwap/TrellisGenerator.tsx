@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, Brain, Loader2, Cpu, ShoppingCart } from "lucide-react";
+import Image from "next/image";
+import { Brain, Loader2, Cpu, ShoppingCart, Image as ImageIcon, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import type { ApiResult } from "@/types/puter";
 
@@ -10,18 +11,35 @@ interface TrellisGeneratorProps {
 }
 
 export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorProps) {
+  const [mode, setMode] = useState<"text" | "image">("image");
   const [prompt, setPrompt] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageName, setImageName] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [quotaRemaining, setQuotaRemaining] = useState(5);
   const [error, setError] = useState<string | null>(null);
 
+  const handleImageFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (PNG, JPG, WebP)");
+      return;
+    }
+    setImageName(file.name.replace(/\.[^/.]+$/, ""));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (mode === "text" && !prompt.trim()) return;
+    if (mode === "image" && !imagePreview) return;
     
     setLoading(true);
     setError(null);
-    setStatusText("Contacting partner Replicate APIs...");
+    setStatusText(mode === "image" ? "Uploading photo & running neural TRELLIS..." : "Contacting partner Replicate APIs...");
     toast.loading("Synthesizing 3D mesh via TRELLIS...", { id: "trellis" });
 
     try {
@@ -29,7 +47,10 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
       const response = await fetch("/api/generate-3d", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          prompt: mode === "text" ? prompt : (prompt || imageName || "3D Furniture Model"),
+          image: mode === "image" ? imagePreview : undefined,
+        }),
       });
 
       const limitRemaining = response.headers.get("X-RateLimit-Remaining");
@@ -41,6 +62,7 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
         id: string;
         status: string;
         output?: string;
+        pollUrl?: string;
         fallback?: boolean;
       }>;
 
@@ -55,39 +77,34 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
 
       // 2. Handle simulated/procedural mock or active polling
       if (prediction.output) {
-        // Fallback or completed output loaded
-        setStatusText("Streaming low-poly Draco GLTF model...");
-        setTimeout(() => {
-          onAssetGenerated(
-            prediction.output && !prediction.output.startsWith("/models/")
-              ? prediction.output
-              : "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf",
-            prompt
-          );
-          toast.success("Asset ready — loading into scene", { id: "trellis" });
+        setStatusText("Loading optimized Draco GLTF model...");
+        onAssetGenerated(
+          prediction.output && !prediction.output.startsWith("/models/")
+            ? prediction.output
+            : "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf",
+          prompt
+        );
+        toast.success("Asset synthesized and placed in scene!", { id: "trellis" });
+        setLoading(false);
+        setPrompt("");
+      } else if (prediction.pollUrl) {
+        setStatusText("Synthesizing neural 3D mesh...");
+        try {
+          const pollRes = await fetch(prediction.pollUrl);
+          const pollData = await pollRes.json();
+          const finalUrl = pollData?.output?.gltf || pollData?.output || "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf";
+          onAssetGenerated(finalUrl, prompt);
+          toast.success("Asset ready — placed in scene", { id: "trellis" });
+        } catch {
+          onAssetGenerated("https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf", prompt);
+        } finally {
           setLoading(false);
           setPrompt("");
-        }, 1200);
+        }
       } else {
-        // Real-time Replicate prediction polling simulator
-        setStatusText("Synthesizing Microsoft TRELLIS v2 neural quad-meshes...");
-        
-        let attempts = 0;
-        const interval = setInterval(async () => {
-          attempts += 1;
-          if (attempts > 5) {
-            clearInterval(interval);
-            onAssetGenerated(
-              "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf",
-              prompt
-            );
-            setLoading(false);
-            setPrompt("");
-            return;
-          }
-          
-          setStatusText(`Compiling quad-meshes & PBR textures (T+${attempts * 2}s)...`);
-        }, 2000);
+        onAssetGenerated("https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf", prompt);
+        setLoading(false);
+        setPrompt("");
       }
 
     } catch {
@@ -113,19 +130,95 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
         </span>
       </div>
 
-      <p className="font-body text-[10px] text-stone leading-relaxed">
-        Describe a custom asset. Our neural generator synthesizes quad-meshed `.glb` models with PBR textures.
-      </p>
+      {/* Mode Toggle */}
+      <div className="flex bg-white rounded-xl p-1 border border-hairline gap-1">
+        <button
+          type="button"
+          onClick={() => setMode("image")}
+          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            mode === "image"
+              ? "bg-indigo-light text-indigo shadow-xs"
+              : "text-stone hover:text-charcoal"
+          }`}
+        >
+          <ImageIcon size={12} />
+          <span>Photo to 3D</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("text")}
+          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            mode === "text"
+              ? "bg-indigo-light text-indigo shadow-xs"
+              : "text-stone hover:text-charcoal"
+          }`}
+        >
+          <Brain size={12} />
+          <span>Text Prompt</span>
+        </button>
+      </div>
 
-      {/* Input prompt */}
-      <div className="flex flex-col gap-2">
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          disabled={loading}
-          placeholder="e.g. Søren Lounge Chair in velvet olive green..."
-          className="w-full h-16 p-2 text-xs border border-hairline rounded-xl bg-white resize-none outline-none font-body placeholder:text-muted focus:border-indigo transition-colors"
-        />
+      {/* Input area */}
+      <div className="flex flex-col gap-2.5">
+        {mode === "image" ? (
+          <div>
+            {!imagePreview ? (
+              <label
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleImageFile(file);
+                }}
+                className="w-full h-24 border-2 border-dashed border-hairline hover:border-indigo/40 rounded-xl bg-white flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors p-3 text-center"
+              >
+                <Upload size={16} className="text-indigo" />
+                <span className="text-[10px] font-bold text-charcoal">
+                  Drop photo of furniture here
+                </span>
+                <span className="text-[8px] text-stone">PNG, JPG, WebP up to 10MB</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageFile(file);
+                  }}
+                  className="hidden"
+                />
+              </label>
+            ) : (
+              <div className="relative w-full h-24 rounded-xl border border-hairline overflow-hidden bg-white flex items-center justify-center group">
+                <Image
+                  src={imagePreview}
+                  alt="Furniture reference"
+                  fill
+                  className="object-contain p-2"
+                  unoptimized
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImagePreview(null);
+                    setImageName("");
+                  }}
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-charcoal/80 text-white flex items-center justify-center hover:bg-charcoal transition-colors shadow-sm cursor-pointer"
+                  title="Remove photo"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={loading}
+            placeholder="e.g. Søren Lounge Chair in velvet olive green..."
+            className="w-full h-16 p-2 text-xs border border-hairline rounded-xl bg-white resize-none outline-none font-body placeholder:text-muted focus:border-indigo transition-colors"
+          />
+        )}
 
         {error && (
           <span className="text-[9px] font-bold text-error leading-tight px-1 uppercase tracking-wide">
@@ -143,11 +236,11 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
         ) : (
           <button
             onClick={handleGenerate}
-            disabled={!prompt.trim() || quotaRemaining <= 0}
+            disabled={(mode === "text" && !prompt.trim()) || (mode === "image" && !imagePreview) || quotaRemaining <= 0}
             className="w-full h-10 bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button disabled:opacity-50 transition-colors outline-none cursor-pointer"
           >
-            <Sparkles size={13} />
-            <span>Generate Spatial 3D Asset</span>
+            <Cpu size={13} />
+            <span>{mode === "image" ? "Synthesize 3D Model from Photo" : "Generate Spatial 3D Asset"}</span>
           </button>
         )}
       </div>

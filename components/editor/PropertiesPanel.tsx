@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import {
   Info,
   Layers,
-  Sparkles,
+  Palette,
   ChevronDown,
   ChevronUp,
   CheckCircle,
@@ -16,7 +16,7 @@ import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { PBR_PRESETS } from "@/lib/materials/pbr-preset-catalog";
 import { toast } from "sonner";
-import type { Material, ApiResult } from "@/types/puter";
+import type { Material, ApiResult, RoomType } from "@/types/puter";
 
 const SWATCHES = [
   { color: "#e3ded7", name: "Alabaster Drywall" },
@@ -217,7 +217,7 @@ export default function PropertiesPanel() {
                     <select
                       value={floorPlanLayout?.rooms.find((r) => r.id === selectedObj.id)?.type || "living"}
                       onChange={(e) => {
-                        const newType = e.target.value as any;
+                        const newType = e.target.value as RoomType;
                         if (floorPlanLayout) {
                           const updatedRooms = floorPlanLayout.rooms.map((r) =>
                             r.id === selectedObj.id ? { ...r, type: newType } : r
@@ -471,7 +471,7 @@ export default function PropertiesPanel() {
               className="w-full flex items-center justify-between p-4 text-xs font-bold text-charcoal uppercase tracking-wider hover:bg-gray-50 transition-colors outline-none"
             >
               <span className="flex items-center gap-2">
-                <Sparkles size={14} className="text-stone" />
+                <Palette size={14} className="text-stone" />
                 <span>Material Reskin</span>
               </span>
               {showMaterial ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -541,7 +541,7 @@ export default function PropertiesPanel() {
                       <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                     ) : (
                       <>
-                        <Sparkles size={12} />
+                        <Palette size={12} />
                         <span>Reskin Mesh</span>
                       </>
                     )}

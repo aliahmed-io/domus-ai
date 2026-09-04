@@ -18,8 +18,8 @@ interface NavLink {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const NAV_LINKS: readonly NavLink[] = [
-  { label: 'Features', href: '/features' },
-  { label: 'Workflow', href: '/workflow' },
+  { label: 'Studio', href: '/editor' },
+  { label: 'Showcase', href: '/showcase' },
   { label: 'Community', href: '/community' },
   { label: 'Pricing', href: '/pricing' },
 ] as const;
@@ -195,18 +195,18 @@ export default function Navbar() {
           {/* Desktop buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Link
-              href="/sign-in"
+              href="/dashboard"
               className="btn-secondary"
               style={{ padding: '10px 20px', fontSize: '14px' }}
             >
-              Sign In
+              Dashboard
             </Link>
             <Link
-              href="/sign-up"
+              href="/floor-plan"
               className="btn-primary"
               style={{ padding: '10px 20px', fontSize: '14px' }}
             >
-              Start Free
+              Launch Studio
             </Link>
           </div>
 
@@ -314,18 +314,18 @@ export default function Navbar() {
                 exit="exit"
               >
                 <Link
-                  href="/sign-in"
+                  href="/dashboard"
                   className="btn-secondary w-full justify-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Sign In
+                  Dashboard
                 </Link>
                 <Link
-                  href="/sign-up"
+                  href="/floor-plan"
                   className="btn-primary w-full justify-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Start Free
+                  Launch Studio
                 </Link>
               </motion.div>
             </div>

@@ -1,4 +1,3 @@
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 /**
@@ -13,33 +12,11 @@ import { NextResponse } from "next/server";
  * puter.auth.isSignedIn() in each protected page's client component.
  */
 
-const PROTECTED_PREFIXES = ["/dashboard", "/editor"] as const;
-const LOGIN_PATH = "/login";
-
-export function proxy(request: NextRequest): NextResponse {
-  const { pathname } = request.nextUrl;
-
-  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix)
-  );
-
-  if (!isProtected) {
-    return NextResponse.next();
-  }
-
-  // Check for Puter session cookie
-  const puterSession = request.cookies.get("puter_session");
-
-  if (!puterSession?.value) {
-    const loginUrl = new URL(LOGIN_PATH, request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Session exists — allow through
+export function proxy(): NextResponse {
+  // Direct open access — auth gating removed
   const response = NextResponse.next();
 
-  // Security headers for authenticated routes
+  // Security headers for application routes
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set(

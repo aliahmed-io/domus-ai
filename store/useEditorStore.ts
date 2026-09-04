@@ -55,8 +55,15 @@ interface EditorState {
   sunAzimuth: number;
   sunTime: string;
   showRoof: boolean;
+  roofType: "flat" | "gable" | "hip";
+  sectionCutHeight: number | null;
   favoriteModelIds: string[];
-  userGeneratedAssets: { id: string; name: string; modelUrl: string; color: string }[];
+  userGeneratedAssets: { id: string; name: string; modelUrl: string; color: string; thumbnailUrl?: string }[];
+
+  // ── Presentation Mode ──
+  isPresentationMode: boolean;
+  togglePresentationMode(): void;
+  setPresentationMode(val: boolean): void;
 
   // ── Konva Stage Viewport State ──
   stageScale: number;
@@ -82,12 +89,18 @@ interface EditorState {
   toggleCameraMode(): void;
   toggleXrScale(): void;
   toggleRoof(): void;
+  setRoofType(type: "flat" | "gable" | "hip"): void;
+  setSectionCutHeight(height: number | null): void;
   setStageViewport(scale: number, x: number, y: number): void;
 
   addDimensionLine(line: DimensionLine): void;
   removeDimensionLine(id: string): void;
   setStoreys(storeys: BuildingStorey[]): void;
   setActiveStoreyId(id: string): void;
+  addStorey(name?: string, copyFromActive?: boolean): void;
+  duplicateActiveStorey(): void;
+  removeStorey(id: string): void;
+  toggleStoreyVisibility(id: string): void;
   addMepNode(node: MEPNode): void;
   updateMepNode(id: string, updates: Partial<MEPNode>): void;
   addMepEdge(edge: MEPEdge): void;
@@ -96,7 +109,7 @@ interface EditorState {
   removeStaircase(id: string): void;
   setSunTime(timeStr: string): void;
   toggleFavoriteModel(id: string): void;
-  addUserGeneratedAsset(asset: { id: string; name: string; modelUrl: string; color: string }): void;
+  addUserGeneratedAsset(asset: { id: string; name: string; modelUrl: string; color: string; thumbnailUrl?: string }): void;
   deleteSelected(): void;
 }
 
@@ -104,7 +117,7 @@ interface EditorState {
 
 export const useEditorStore = create<EditorState>()(
   temporal(
-    immer((set) => ({
+    immer((set, get) => ({
     // ── Initial State ────────────────────────────────────────────────────────
     workspace: 'onboarding',
     mode: '2d',
@@ -115,6 +128,8 @@ export const useEditorStore = create<EditorState>()(
     showMeasurements: false,
     xrScale: 1,
     showRoof: false,
+    roofType: "hip",
+    sectionCutHeight: null,
 
     floorPlanLayout: null,
     sceneObjects: [],
@@ -136,6 +151,7 @@ export const useEditorStore = create<EditorState>()(
     sunTime: "12:00",
     favoriteModelIds: [],
     userGeneratedAssets: [],
+    isPresentationMode: false,
 
     // ── Konva Stage Viewport Initial State ──
     stageScale: 1,
@@ -168,6 +184,26 @@ export const useEditorStore = create<EditorState>()(
     setFloorPlan(layout) {
       set((state) => {
         state.floorPlanLayout = layout;
+        if (layout) {
+          if (state.activeStoreyId && state.storeys.length > 0) {
+            const activeStorey = state.storeys.find((s) => s.id === state.activeStoreyId);
+            if (activeStorey) {
+              activeStorey.floorPlanLayout = layout;
+            }
+          } else if (state.storeys.length === 0) {
+            const initialStorey: BuildingStorey = {
+              id: "storey-1",
+              name: "Level 1 - Ground",
+              elevation: 0,
+              height: 10,
+              slabThickness: 0.8,
+              floorPlanLayout: layout,
+              isVisible: true,
+            };
+            state.storeys = [initialStorey];
+            state.activeStoreyId = initialStorey.id;
+          }
+        }
       });
     },
 
@@ -314,6 +350,18 @@ export const useEditorStore = create<EditorState>()(
       });
     },
 
+    setRoofType(type) {
+      set((state) => {
+        state.roofType = type;
+      });
+    },
+
+    setSectionCutHeight(height) {
+      set((state) => {
+        state.sectionCutHeight = height;
+      });
+    },
+
     addDimensionLine(line) {
       set((state) => {
         state.dimensionLines.push(line);
@@ -337,10 +385,84 @@ export const useEditorStore = create<EditorState>()(
 
     setActiveStoreyId(id) {
       set((state) => {
+        if (state.activeStoreyId && state.floorPlanLayout) {
+          const currentStorey = state.storeys.find((s) => s.id === state.activeStoreyId);
+          if (currentStorey) {
+            currentStorey.floorPlanLayout = state.floorPlanLayout;
+          }
+        }
         state.activeStoreyId = id;
-        const storey = state.storeys.find((s) => s.id === id);
-        if (storey) {
-          state.floorPlanLayout = storey.floorPlanLayout;
+        const targetStorey = state.storeys.find((s) => s.id === id);
+        if (targetStorey) {
+          state.floorPlanLayout = targetStorey.floorPlanLayout;
+        }
+      });
+    },
+
+    addStorey(name, copyFromActive = false) {
+      set((state) => {
+        const nextElevation = state.storeys.length > 0
+          ? Math.max(...state.storeys.map((s) => s.elevation)) + 10
+          : 10;
+        const levelNum = state.storeys.length + 1;
+        const newStoreyId = `storey-${Date.now().toString(36)}-${levelNum}`;
+        const newLayout: FloorPlanLayout = copyFromActive && state.floorPlanLayout
+          ? JSON.parse(JSON.stringify(state.floorPlanLayout))
+          : {
+              id: `fp-${Date.now().toString(36)}`,
+              parameters: state.floorPlanLayout?.parameters || {
+                bedrooms: 1,
+                bathrooms: 1,
+                totalArea: 500,
+                floors: 1,
+                style: "open-plan",
+                features: [],
+              },
+              rooms: [],
+              walls: [],
+              doors: [],
+              windows: [],
+              dimensions: state.floorPlanLayout?.dimensions || { width: 40, height: 30 },
+              efficiency: 100,
+              naturalLight: 100,
+              generatedAt: new Date().toISOString(),
+            };
+        const newStorey: BuildingStorey = {
+          id: newStoreyId,
+          name: name || `Level ${levelNum}`,
+          elevation: nextElevation,
+          height: 10,
+          slabThickness: 0.8,
+          floorPlanLayout: newLayout,
+          isVisible: true,
+        };
+        state.storeys.push(newStorey);
+        state.activeStoreyId = newStoreyId;
+        state.floorPlanLayout = newLayout;
+      });
+    },
+
+    duplicateActiveStorey() {
+      const active = get().storeys.find((s) => s.id === get().activeStoreyId);
+      get().addStorey(`${active?.name || "Level"} Copy`, true);
+    },
+
+    removeStorey(id) {
+      set((state) => {
+        if (state.storeys.length <= 1) return;
+        state.storeys = state.storeys.filter((s) => s.id !== id);
+        if (state.activeStoreyId === id) {
+          state.activeStoreyId = state.storeys[0]?.id || "";
+          state.floorPlanLayout = state.storeys[0]?.floorPlanLayout || null;
+        }
+      });
+    },
+
+    toggleStoreyVisibility(id) {
+      set((state) => {
+        const s = state.storeys.find((storey) => storey.id === id);
+        if (s) {
+          s.isVisible = s.isVisible === false ? true : false;
         }
       });
     },
@@ -412,6 +534,18 @@ export const useEditorStore = create<EditorState>()(
         state.stageScale = scale;
         state.stageX = x;
         state.stageY = y;
+      });
+    },
+
+    togglePresentationMode() {
+      set((state) => {
+        state.isPresentationMode = !state.isPresentationMode;
+      });
+    },
+
+    setPresentationMode(val) {
+      set((state) => {
+        state.isPresentationMode = val;
       });
     },
     })),

@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
-import { Square, Plus, Scissors, Compass, Armchair, Heart, Sparkles, Brain, Loader2, Upload, FolderOpen, X, Layers } from "lucide-react";
+import { Square, Plus, Scissors, Compass, Armchair, Heart, Cpu, Brain, Loader2, Upload, FolderOpen, X, Layers } from "lucide-react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
-import { nanoid } from "@/lib/utils";
+import { nanoid, feetToMeters } from "@/lib/utils";
+import type { SceneObject } from "@/types/puter";
 import { toast } from "sonner";
 
 const FURNITURE_CATALOG = [
@@ -36,11 +37,30 @@ const FURNITURE_CATALOG = [
     ]
   },
   {
+    category: "Rugs & Carpets",
+    items: [
+      { id: "furn-rug-rect", name: "Nordic Geometric Area Rug", modelUrl: "/models/kenney_furniture-kit/models/rugRectangle.glb", color: "#6366F1", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/rugRectangle_SE.png", attachmentType: "floor" as const },
+      { id: "furn-rug-round", name: "Round Braided Jute Rug", modelUrl: "/models/kenney_furniture-kit/models/rugRound.glb", color: "#D97706", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/rugRound_SE.png", attachmentType: "floor" as const },
+      { id: "furn-rug-rounded", name: "Persian Living Rug", modelUrl: "/models/kenney_furniture-kit/models/rugRounded.glb", color: "#DC2626", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/rugRounded_SE.png", attachmentType: "floor" as const },
+      { id: "furn-rug-square", name: "Square Bedroom Carpet", modelUrl: "/models/kenney_furniture-kit/models/rugSquare.glb", color: "#4B5563", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/rugSquare_SE.png", attachmentType: "floor" as const },
+      { id: "furn-rug-mat", name: "Natural Coir Entry Mat", modelUrl: "/models/kenney_furniture-kit/models/rugDoormat.glb", color: "#92400E", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/rugDoormat_SE.png", attachmentType: "floor" as const }
+    ]
+  },
+  {
+    category: "Ceiling & Lighting",
+    items: [
+      { id: "furn-lamp-ceiling", name: "Square Ceiling Chandelier", modelUrl: "/models/kenney_furniture-kit/models/lampSquareCeiling.glb", color: "#F59E0B", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/lampSquareCeiling_SE.png", attachmentType: "ceiling" as const },
+      { id: "furn-lamp-wall", name: "Architectural Sconce Light", modelUrl: "/models/kenney_furniture-kit/models/lampWall.glb", color: "#D4AF37", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/lampWall_SE.png", attachmentType: "wall" as const },
+      { id: "furn-lamp-floor", name: "Brushed Dome Floor Lamp", modelUrl: "/models/kenney_furniture-kit/models/lampRoundFloor.glb", color: "#10B981", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/lampRoundFloor_SE.png", attachmentType: "surface" as const },
+      { id: "furn-lamp-table", name: "Nordic Ceramic Table Lamp", modelUrl: "/models/kenney_furniture-kit/models/lampRoundTable.glb", color: "#3B82F6", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/lampRoundTable_SE.png", attachmentType: "surface" as const }
+    ]
+  },
+  {
     category: "Lighting & Decor",
     items: [
-      { id: "furn-pendant-1", name: "Brushed Dome Pendant", modelUrl: "/models/kenney_furniture-kit/models/lampSquareFloor.glb", color: "#C2A585", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/lampSquareFloor_SE.png" },
-      { id: "furn-plant-1", name: "Monstera Floor Plant", modelUrl: "/models/kenney_furniture-kit/models/pottedPlant.glb", color: "#10B981", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/pottedPlant_SE.png" },
-      { id: "furn-vase-1", name: "Retro Table Radio", modelUrl: "/models/kenney_furniture-kit/models/radio.glb", color: "#D1D5DB", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/radio_SE.png" }
+      { id: "furn-pendant-1", name: "Brushed Dome Pendant", modelUrl: "/models/kenney_furniture-kit/models/lampSquareFloor.glb", color: "#C2A585", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/lampSquareFloor_SE.png", attachmentType: "surface" as const },
+      { id: "furn-plant-1", name: "Monstera Floor Plant", modelUrl: "/models/kenney_furniture-kit/models/pottedPlant.glb", color: "#10B981", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/pottedPlant_SE.png", attachmentType: "floor" as const },
+      { id: "furn-vase-1", name: "Retro Table Radio", modelUrl: "/models/kenney_furniture-kit/models/radio.glb", color: "#D1D5DB", thumbnailUrl: "/models/kenney_furniture-kit/thumbnails/radio_SE.png", attachmentType: "surface" as const }
     ]
   }
 ];
@@ -55,7 +75,9 @@ export default function CatalogPanel() {
     favoriteModelIds, 
     toggleFavoriteModel, 
     userGeneratedAssets,
-    addUserGeneratedAsset
+    addUserGeneratedAsset,
+    storeys,
+    activeStoreyId
   } = useEditorStore(
     useShallow((s) => ({
       tool: s.tool,
@@ -67,6 +89,8 @@ export default function CatalogPanel() {
       toggleFavoriteModel: s.toggleFavoriteModel,
       userGeneratedAssets: s.userGeneratedAssets,
       addUserGeneratedAsset: s.addUserGeneratedAsset,
+      storeys: s.storeys,
+      activeStoreyId: s.activeStoreyId,
     }))
   );
 
@@ -222,21 +246,52 @@ export default function CatalogPanel() {
     toast.success("Placed Inverted L-Shaped Room with 6 boundary walls!");
   };
 
-  const handlePlaceFurniture = (item: { name: string; modelUrl: string; color: string; thumbnailUrl?: string }) => {
+  const handlePlaceFurniture = (item: {
+    name: string;
+    modelUrl: string;
+    color: string;
+    thumbnailUrl?: string;
+    attachmentType?: "floor" | "ceiling" | "surface" | "wall";
+  }) => {
     const randomOffset = () => (Math.random() - 0.5) * 4;
-    const newObj = {
+
+    // Altitude calculation based on attachment type:
+    // 1. "floor" (carpets/rugs): sits right above floor slab at 0.005m (prevents z-fighting with floor)
+    // 2. "ceiling" (chandeliers, downlights): attached to ceiling height (2.74m)
+    // 3. "wall" (sconces): at eye level on wall (1.7m)
+    // 4. "surface" (table lamps): on furniture surface (0.75m)
+    // 5. default (seating/tables): floor level 0.0m
+    let yPos = 0.0;
+    const activeStorey = storeys.find((s) => s.id === activeStoreyId);
+    const elevationM = activeStorey ? feetToMeters(activeStorey.elevation) : 0;
+    const heightM = activeStorey?.height ? feetToMeters(activeStorey.height) : 2.74;
+
+    if (item.attachmentType === "floor") {
+      yPos = elevationM + 0.005;
+    } else if (item.attachmentType === "ceiling") {
+      yPos = elevationM + heightM;
+    } else if (item.attachmentType === "wall") {
+      yPos = elevationM + 1.7;
+    } else if (item.attachmentType === "surface") {
+      yPos = elevationM + 0.75;
+    } else {
+      yPos = elevationM + 0.0;
+    }
+
+    const newObj: SceneObject = {
       id: `furniture-${nanoid()}`,
-      type: "furniture" as const,
+      type: item.attachmentType === "ceiling" || item.attachmentType === "wall" ? "light" : "furniture",
       name: item.name,
-      position: { x: randomOffset(), y: 0.1, z: randomOffset() },
+      position: { x: randomOffset(), y: yPos, z: randomOffset() },
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
       gltfPath: item.modelUrl,
       thumbnailUrl: item.thumbnailUrl,
+      attachmentType: item.attachmentType || "floor",
     };
 
     addSceneObject(newObj);
-    toast.success(`Placed ${item.name} into the 3D scene!`);
+    toast.success(`Placed ${item.name} (${item.attachmentType || "floor"}) in scene!`);
   };
 
   const handleGenerateAIAsset = async () => {
@@ -402,7 +457,7 @@ export default function CatalogPanel() {
             }`}
             title="AI Synthesis & Model Import"
           >
-            <Sparkles size={18} className={selectedCategory === "ai-studio" ? "" : "animate-pulse"} />
+            <Cpu size={18} className={selectedCategory === "ai-studio" ? "" : "animate-pulse"} />
             {selectedCategory === "ai-studio" && (
               <span className="absolute left-0 w-1 h-4 bg-indigo rounded-r-full" />
             )}
@@ -580,7 +635,7 @@ export default function CatalogPanel() {
                         >
                           <div className="w-full h-16 rounded-lg bg-alabaster flex items-center justify-center relative overflow-hidden border border-hairline">
                             {item.thumbnailUrl ? (
-                              <img /* eslint-disable-next-line @next/next/no-img-element */ src={item.thumbnailUrl} alt={item.name} className="w-full h-full object-cover opacity-90" />
+                              <Image src={item.thumbnailUrl} alt={item.name} fill className="object-cover opacity-90" unoptimized />
                             ) : (
                               <Armchair size={24} className="text-stone opacity-60" />
                             )}
@@ -648,7 +703,7 @@ export default function CatalogPanel() {
                       disabled={!aiPrompt.trim()}
                       className="w-full h-10 bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button disabled:opacity-50 transition-colors outline-none cursor-pointer"
                     >
-                      <Sparkles size={13} />
+                      <Cpu size={13} />
                       <span>Synthesize 3D Mesh</span>
                     </button>
                   )}
@@ -690,8 +745,8 @@ export default function CatalogPanel() {
                           className="p-2 border border-hairline rounded-xl flex flex-col items-start text-left gap-1.5 transition-all outline-none bg-white hover:bg-gray-50 hover:border-indigo group relative cursor-pointer"
                         >
                           <div className="w-full h-16 rounded-lg bg-alabaster flex items-center justify-center relative overflow-hidden border border-hairline">
-                            {(item as any).thumbnailUrl ? (
-                              <img /* eslint-disable-next-line @next/next/no-img-element */ src={(item as any).thumbnailUrl} alt={item.name} className="w-full h-full object-cover opacity-90" />
+                            {item.thumbnailUrl ? (
+                              <Image src={item.thumbnailUrl} alt={item.name} fill className="object-cover opacity-90" unoptimized />
                             ) : (
                               <Armchair size={24} className="text-stone opacity-60" />
                             )}
@@ -753,8 +808,8 @@ export default function CatalogPanel() {
                         className="p-2 border border-hairline rounded-xl flex flex-col items-start text-left gap-1.5 transition-all outline-none bg-white hover:bg-gray-50 hover:border-indigo group relative cursor-pointer"
                       >
                         <div className="w-full h-16 rounded-lg bg-alabaster flex items-center justify-center relative overflow-hidden border border-hairline">
-                          {(item as any).thumbnailUrl ? (
-                            <Image src={(item as any).thumbnailUrl} alt={item.name} fill className="object-cover opacity-90" />
+                          {item.thumbnailUrl ? (
+                            <Image src={item.thumbnailUrl} alt={item.name} fill className="object-cover opacity-90" unoptimized />
                           ) : (
                             <Armchair size={24} className="text-stone opacity-60" />
                           )}

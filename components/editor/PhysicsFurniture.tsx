@@ -32,10 +32,11 @@ class ThreeErrorBoundary extends React.Component<{
 
 interface PhysicsFurnitureProps {
   position: [number, number, number];
-  rotation?: [number, number, number];
+  rotation?: [number, number, number] | undefined;
   color: string;
-  args?: [number, number, number];
+  args?: [number, number, number] | undefined;
   modelUrl?: string | undefined;
+  attachmentType?: "floor" | "ceiling" | "surface" | "wall" | undefined;
 }
 
 // Progressive GLTF Loader Component
@@ -48,7 +49,8 @@ function GltfModel({ url }: { url: string }) {
 
 /**
  * Commercial-grade spatial furniture rigid-body mesh
- * Integrates Rapier physics with PMNDRS Drei LOD (Level of Detail) & progressive GLTF loaders.
+ * Integrates Rapier physics with PMNDRS Drei LOD & progressive GLTF loaders.
+ * Supports floor/ceiling attachment semantics with suspension cables and lighting.
  */
 export default function PhysicsFurniture({
   position,
@@ -56,9 +58,15 @@ export default function PhysicsFurniture({
   color,
   args = [1, 0.8, 1],
   modelUrl,
+  attachmentType = "floor",
 }: PhysicsFurnitureProps) {
 
-  const fallbackBox = (
+  const fallbackBox = attachmentType === "floor" ? (
+    <mesh position={[0, 0.01, 0]} receiveShadow>
+      <boxGeometry args={[1.8, 0.02, 2.4]} />
+      <meshStandardMaterial color={color} roughness={0.9} />
+    </mesh>
+  ) : (
     <mesh castShadow receiveShadow>
       <boxGeometry args={args} />
       <meshStandardMaterial
@@ -70,9 +78,21 @@ export default function PhysicsFurniture({
   );
 
   return (
-    // kinematicPosition = stays exactly where placed, not affected by gravity
+    // kinematicPosition = stays exactly where placed, not affected by physics gravity
     <RigidBody type="kinematicPosition" position={position} rotation={rotation} colliders="trimesh">
       <group>
+        {attachmentType === "ceiling" && (
+          <>
+            {/* Ceiling canopy and suspension wire */}
+            <mesh position={[0, 0.3, 0]}>
+              <cylinderGeometry args={[0.005, 0.005, 0.6]} />
+              <meshStandardMaterial color="#2B2D42" roughness={0.3} metalness={0.8} />
+            </mesh>
+            {/* Architectural warm point light from fixture */}
+            <pointLight position={[0, -0.1, 0]} intensity={1.5} distance={6} decay={2} color="#FFF4E0" />
+          </>
+        )}
+
         {modelUrl ? (
           <ThreeErrorBoundary fallback={fallbackBox}>
             <Suspense fallback={fallbackBox}>

@@ -12,7 +12,7 @@ interface WindowMeshProps {
   walls: Wall[];
 }
 
-export default function WindowMesh({ window, walls }: WindowMeshProps) {
+export default function WindowMesh({ window: win, walls }: WindowMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const { selectedObjectId, setSelectedObject } = useEditorStore(
     useShallow((s) => ({
@@ -23,7 +23,7 @@ export default function WindowMesh({ window, walls }: WindowMeshProps) {
   const [hovered, setHovered] = useState(false);
 
   // Find the parent wall
-  const parentWall = walls.find((w) => w.id === window.wallId);
+  const parentWall = walls.find((w) => w.id === win.wallId);
   if (!parentWall) return null;
 
   // Calculate parent wall vectors in meters
@@ -37,30 +37,41 @@ export default function WindowMesh({ window, walls }: WindowMeshProps) {
   const angle = -Math.atan2(dz, dx);
 
   // Position along the wall
-  const p = window.position; // 0-1
+  const p = win.position; // 0-1
   const winX = startX + p * dx;
   const winZ = startZ + p * dz;
 
   // Convert dimensions to meters
-  const winWidth = feetToMeters(window.width / 12);
-  const winHeight = feetToMeters(window.height / 12);
-  const sillHeight = feetToMeters(window.sillHeight / 12);
+  const winWidth = feetToMeters(win.width / 12);
+  const winHeight = feetToMeters(win.height / 12);
+  const sillHeight = feetToMeters(win.sillHeight / 12);
   const wallThickness = feetToMeters(parentWall.thickness / 12);
 
-  const isSelected = selectedObjectId === window.id;
+  const isSelected = selectedObjectId === win.id;
+
+  // Frame dimensioning (architectural profile)
+  const frameThick = 0.045; // 45mm width
+  const frameDepth = wallThickness + 0.015; // slightly proud of wall
+  const innerW = Math.max(0.1, winWidth - frameThick * 2);
+  const innerH = Math.max(0.1, winHeight - frameThick * 2);
+
+  const frameColor = isSelected
+    ? "#3B82F6"
+    : hovered
+      ? "#60A5FA"
+      : win.frameColor || "#23201D"; // Anodized bronze / architectural charcoal
+
+  const windowType = win.windowType || "grid-2x2";
 
   return (
-    <group
-      position={[winX, sillHeight, winZ]}
-      rotation={[0, angle, 0]}
-    >
-      {/* Interactive area / click box */}
+    <group position={[winX, sillHeight, winZ]} rotation={[0, angle, 0]}>
+      {/* Invisible raycast / click boundary */}
       <mesh
         ref={meshRef}
         position={[0, winHeight / 2, 0]}
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedObject(window.id);
+          setSelectedObject(win.id);
         }}
         onPointerOver={(e) => {
           e.stopPropagation();
@@ -69,53 +80,131 @@ export default function WindowMesh({ window, walls }: WindowMeshProps) {
         onPointerOut={() => setHovered(false)}
         visible={false}
       >
-        <boxGeometry args={[winWidth, winHeight, wallThickness * 1.5]} />
+        <boxGeometry args={[winWidth, winHeight, wallThickness * 1.6]} />
       </mesh>
 
-      {/* Outer Window Frame */}
-      <mesh position={[0, winHeight / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[winWidth, winHeight, wallThickness * 1.05]} />
-        {/* Render a wireframe-like border or simple open box geometry to make it look like a frame */}
-        <meshStandardMaterial
-          color={
-            isSelected
-              ? "#5B6AF0"
-              : hovered
-                ? "#8B95F5"
-                : "#2C2621" // dark bronze/charcoal frame
-          }
-          roughness={0.5}
-          metalness={0.8}
-          wireframe={false}
-        />
-      </mesh>
-
-      {/* Inner translucent glass pane */}
-      <mesh position={[0, winHeight / 2, 0]} castShadow>
-        <boxGeometry args={[winWidth - 0.08, winHeight - 0.08, 0.02]} />
-        <meshPhysicalMaterial
-          color="#A9D4E2"
-          transparent
-          opacity={0.4}
-          roughness={0.1}
-          metalness={0.9}
-          transmission={0.9}
-          ior={1.5}
-          thickness={0.1}
-        />
-      </mesh>
-
-      {/* Frame details (crossbars for classic architectural look) */}
+      {/* ─── Architectural Perimeter Frame (Hollow opening, not solid box) ─── */}
       <group>
-        {/* Horizontal separator */}
-        <mesh position={[0, winHeight / 2, 0]} castShadow>
-          <boxGeometry args={[winWidth - 0.08, 0.02, 0.03]} />
-          <meshStandardMaterial color="#2C2621" roughness={0.5} metalness={0.8} />
+        {/* Top Header */}
+        <mesh position={[0, winHeight - frameThick / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[winWidth, frameThick, frameDepth]} />
+          <meshStandardMaterial
+            color={frameColor}
+            roughness={0.4}
+            metalness={0.6}
+            emissive={isSelected ? "#1D4ED8" : "#000000"}
+            emissiveIntensity={isSelected ? 0.25 : 0}
+          />
         </mesh>
-        {/* Vertical separator */}
-        <mesh position={[0, winHeight / 2, 0]} castShadow>
-          <boxGeometry args={[0.02, winHeight - 0.08, 0.03]} />
-          <meshStandardMaterial color="#2C2621" roughness={0.5} metalness={0.8} />
+
+        {/* Bottom Sill Rail */}
+        <mesh position={[0, frameThick / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[winWidth, frameThick, frameDepth]} />
+          <meshStandardMaterial
+            color={frameColor}
+            roughness={0.4}
+            metalness={0.6}
+            emissive={isSelected ? "#1D4ED8" : "#000000"}
+            emissiveIntensity={isSelected ? 0.25 : 0}
+          />
+        </mesh>
+
+        {/* Left Jamb */}
+        <mesh position={[-winWidth / 2 + frameThick / 2, winHeight / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[frameThick, innerH, frameDepth]} />
+          <meshStandardMaterial
+            color={frameColor}
+            roughness={0.4}
+            metalness={0.6}
+            emissive={isSelected ? "#1D4ED8" : "#000000"}
+            emissiveIntensity={isSelected ? 0.25 : 0}
+          />
+        </mesh>
+
+        {/* Right Jamb */}
+        <mesh position={[winWidth / 2 - frameThick / 2, winHeight / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[frameThick, innerH, frameDepth]} />
+          <meshStandardMaterial
+            color={frameColor}
+            roughness={0.4}
+            metalness={0.6}
+            emissive={isSelected ? "#1D4ED8" : "#000000"}
+            emissiveIntensity={isSelected ? 0.25 : 0}
+          />
+        </mesh>
+      </group>
+
+      {/* ─── Exterior Sloped Sill / Stool with Drip Edge ─── */}
+      <mesh
+        position={[0, -0.015, -wallThickness / 2 - 0.03]}
+        rotation={[0.08, 0, 0]}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry args={[winWidth + 0.06, 0.035, 0.07]} />
+        <meshStandardMaterial color={frameColor} roughness={0.3} metalness={0.7} />
+      </mesh>
+
+      {/* ─── Double-Glazed Insulated Glass Unit (Physical Material) ─── */}
+      <mesh position={[0, winHeight / 2, 0]} castShadow>
+        <boxGeometry args={[innerW, innerH, 0.022]} />
+        <meshPhysicalMaterial
+          color={win.glassTint || "#E8F4F8"}
+          transparent
+          opacity={0.35}
+          roughness={0.03}
+          metalness={0.05}
+          transmission={0.96}
+          ior={1.52}
+          thickness={0.03}
+          clearcoat={1.0}
+          clearcoatRoughness={0.04}
+        />
+      </mesh>
+
+      {/* ─── Parametric Mullions & Muntin Grid ─── */}
+      {windowType !== "picture" && (
+        <group position={[0, winHeight / 2, 0]}>
+          {/* Horizontal Muntin / Meeting Rail */}
+          {(windowType === "grid-2x2" || windowType === "single-hung" || windowType === "double-hung") && (
+            <mesh position={[0, windowType === "grid-2x2" ? 0 : 0.05, 0]} castShadow>
+              <boxGeometry
+                args={[
+                  innerW,
+                  windowType === "grid-2x2" ? 0.02 : 0.035,
+                  windowType === "grid-2x2" ? 0.024 : 0.03,
+                ]}
+              />
+              <meshStandardMaterial color={frameColor} roughness={0.4} metalness={0.6} />
+            </mesh>
+          )}
+
+          {/* Vertical Muntin */}
+          {(windowType === "grid-2x2" || windowType === "casement") && (
+            <mesh position={[0, 0, 0]} castShadow>
+              <boxGeometry args={[0.02, innerH, 0.024]} />
+              <meshStandardMaterial color={frameColor} roughness={0.4} metalness={0.6} />
+            </mesh>
+          )}
+        </group>
+      )}
+
+      {/* ─── Interior Trim Casing / Architrave ─── */}
+      <group position={[0, 0, wallThickness / 2 + 0.006]}>
+        {/* Top casing */}
+        <mesh position={[0, winHeight + 0.025, 0]} castShadow>
+          <boxGeometry args={[winWidth + 0.08, 0.05, 0.012]} />
+          <meshStandardMaterial color="#EAE7E2" roughness={0.7} />
+        </mesh>
+        {/* Left casing */}
+        <mesh position={[-winWidth / 2 - 0.025, winHeight / 2, 0]} castShadow>
+          <boxGeometry args={[0.05, winHeight, 0.012]} />
+          <meshStandardMaterial color="#EAE7E2" roughness={0.7} />
+        </mesh>
+        {/* Right casing */}
+        <mesh position={[winWidth / 2 + 0.025, winHeight / 2, 0]} castShadow>
+          <boxGeometry args={[0.05, winHeight, 0.012]} />
+          <meshStandardMaterial color="#EAE7E2" roughness={0.7} />
         </mesh>
       </group>
     </group>

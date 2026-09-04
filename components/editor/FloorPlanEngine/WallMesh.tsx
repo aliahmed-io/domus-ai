@@ -113,6 +113,11 @@ export default function WallMesh({ wall }: WallMeshProps) {
   const csgGeometry = useMemo(() => {
     const doors = JSON.parse(wallDoorsStr) as typeof wallDoors;
     const windows = JSON.parse(wallWindowsStr) as typeof wallWindows;
+
+    if (doors.length === 0 && windows.length === 0) {
+      return <boxGeometry args={[length, wallHeight, wallThickness]} />;
+    }
+
     return (
       <Geometry computeVertexNormals>
         <Base>
@@ -125,7 +130,7 @@ export default function WallMesh({ wall }: WallMeshProps) {
           const localY = (doorHeight / 2) - (wallHeight / 2);
           return (
             <Subtraction key={door.id} position={[localX, localY, 0]}>
-              <boxGeometry args={[doorWidth, doorHeight, wallThickness * 1.5]} />
+              <boxGeometry args={[doorWidth, doorHeight, wallThickness * 2.2]} />
             </Subtraction>
           );
         })}
@@ -137,13 +142,81 @@ export default function WallMesh({ wall }: WallMeshProps) {
           const localY = (sillHeight + winHeight / 2) - (wallHeight / 2);
           return (
             <Subtraction key={win.id} position={[localX, localY, 0]}>
-              <boxGeometry args={[winWidth, winHeight, wallThickness * 1.5]} />
+              <boxGeometry args={[winWidth, winHeight, wallThickness * 2.2]} />
             </Subtraction>
           );
         })}
       </Geometry>
     );
   }, [length, wallHeight, wallThickness, wallDoorsStr, wallWindowsStr]);
+
+  // Segment physics colliders when doors exist so users can physically walk through doorways
+  const physicsColliders = useMemo(() => {
+    const doors = JSON.parse(wallDoorsStr) as typeof wallDoors;
+    if (doors.length === 0) {
+      return (
+        <PhysicsBoundary
+          position={[midX, wallHeight / 2, midZ]}
+          rotation={[0, angle, 0]}
+          args={[length, wallHeight, wallThickness]}
+        />
+      );
+    }
+
+    // Sort doors along wall segment
+    const sortedDoors = [...doors].sort((a, b) => a.position - b.position);
+    const intervals: { x: number; width: number; height: number; y: number }[] = [];
+    let currentX = -length / 2;
+
+    sortedDoors.forEach((door) => {
+      const doorWidth = feetToMeters(door.width / 12);
+      const doorHeight = feetToMeters(6.8);
+      const doorCenter = door.position * length - length / 2;
+      const doorStart = Math.max(-length / 2, doorCenter - doorWidth / 2);
+      const doorEnd = Math.min(length / 2, doorCenter + doorWidth / 2);
+
+      // Wall post before door
+      if (doorStart - currentX > 0.05) {
+        const segW = doorStart - currentX;
+        const segMid = currentX + segW / 2;
+        intervals.push({ x: segMid, width: segW, height: wallHeight, y: wallHeight / 2 });
+      }
+
+      // Lintel header above door
+      if (wallHeight > doorHeight + 0.05) {
+        const headerH = wallHeight - doorHeight;
+        const headerY = doorHeight + headerH / 2;
+        intervals.push({ x: doorCenter, width: doorWidth, height: headerH, y: headerY });
+      }
+
+      currentX = doorEnd;
+    });
+
+    // Final wall post after last door
+    if (length / 2 - currentX > 0.05) {
+      const segW = length / 2 - currentX;
+      const segMid = currentX + segW / 2;
+      intervals.push({ x: segMid, width: segW, height: wallHeight, y: wallHeight / 2 });
+    }
+
+    return (
+      <group>
+        {intervals.map((inv, idx) => {
+          const frac = inv.x / length;
+          const worldX = midX + frac * dx;
+          const worldZ = midZ + frac * dz;
+          return (
+            <PhysicsBoundary
+              key={`wall-collider-${wall.id}-${idx}`}
+              position={[worldX, inv.y, worldZ]}
+              rotation={[0, angle, 0]}
+              args={[inv.width, inv.height, wallThickness]}
+            />
+          );
+        })}
+      </group>
+    );
+  }, [length, wallHeight, wallThickness, wallDoorsStr, midX, midZ, dx, dz, angle, wall.id]);
 
   // Render wall with its physical boundary
   return (
@@ -161,8 +234,6 @@ export default function WallMesh({ wall }: WallMeshProps) {
             if (!floorPlanLayout) return;
             
             // Calculate segment vectors in world meters
-            const dx = endX - startX;
-            const dz = endZ - startZ;
             const lengthSq = dx * dx + dz * dz;
             
             if (lengthSq > 0) {
@@ -222,12 +293,8 @@ export default function WallMesh({ wall }: WallMeshProps) {
         />
       </mesh>
 
-      {/* Registers wall static collider box in Rapier physics engine */}
-      <PhysicsBoundary
-        position={[midX, wallHeight / 2, midZ]}
-        rotation={[0, angle, 0]}
-        args={[length, wallHeight, wallThickness]}
-      />
+      {/* Registers segmented wall colliders in Rapier physics engine */}
+      {physicsColliders}
     </group>
   );
 }

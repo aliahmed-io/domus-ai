@@ -53,8 +53,9 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
   {
     heading: 'Product',
     links: [
-      { label: 'Features', href: '/features' },
-      { label: 'How It Works', href: '/workflow' },
+      { label: 'Floor Plan Editor', href: '/floor-plan' },
+      { label: 'BIM Lift Engine', href: '/bim-lift' },
+      { label: 'Showcase', href: '/showcase' },
       { label: 'Pricing', href: '/pricing' },
       { label: 'Changelog', href: '/changelog' },
     ],
@@ -64,17 +65,17 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
     links: [
       { label: 'About', href: '/about' },
       { label: 'Blog', href: '/blog' },
+      { label: 'Community', href: '/community' },
       { label: 'Contact', href: '/contact' },
-      { label: 'Careers', href: '/careers' },
     ],
   },
   {
     heading: 'Legal',
     links: [
-      { label: 'Privacy Policy', href: '/legal/privacy' },
-      { label: 'Terms of Service', href: '/legal/terms' },
-      { label: 'Cookie Policy', href: '/legal/cookies' },
-      { label: 'GDPR Rights', href: '/legal/gdpr' },
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms of Service', href: '/terms' },
+      { label: 'Cookie Policy', href: '/cookies' },
+      { label: 'GDPR Rights', href: '/gdpr' },
     ],
   },
 ] as const;
