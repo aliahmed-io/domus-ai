@@ -4,12 +4,14 @@ import React from "react";
 import * as THREE from "three";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
+import { roomShape } from "@/lib/room-shape";
 import { feetToMeters } from "@/lib/utils";
 
 export default function CeilingMesh() {
-  const { floorPlanLayout } = useEditorStore(
+  const { floorPlanLayout, showRoof } = useEditorStore(
     useShallow((s) => ({
       floorPlanLayout: s.floorPlanLayout,
+      showRoof: s.showRoof,
     }))
   );
 
@@ -18,26 +20,24 @@ export default function CeilingMesh() {
   return (
     <group>
       {floorPlanLayout.rooms.map((room) => {
-        // bounds are in feet
-        const width = feetToMeters(room.bounds.width);
-        const depth = feetToMeters(room.bounds.height);
-        
-        const midX = feetToMeters(room.bounds.x + room.bounds.width / 2);
-        const midZ = feetToMeters(room.bounds.y + room.bounds.height / 2);
-        
-        // Default ceiling height to 9ft (2.74m) if not specified
-        const cHeight = room.ceilingHeight || 2.74;
+        // Default ceiling height to 9ft (2.74m) if not specified; convert feet to meters if > 4.5
+        const rawHeight = room.ceilingHeight || 9;
+        const cHeight = rawHeight > 4.5 ? feetToMeters(rawHeight) : rawHeight;
 
         return (
           <mesh
             key={room.id}
-            position={[midX, cHeight, midZ]}
+            position={[0, cHeight, 0]}
             rotation={[Math.PI / 2, 0, 0]} // Rotate to lay flat
             receiveShadow
           >
-            <planeGeometry args={[width, depth]} />
-            {/* BackSide makes it invisible from the top, visible from the bottom inside the room */}
-            <meshStandardMaterial color="#FFFFFF" roughness={0.9} side={THREE.BackSide} />
+            <shapeGeometry args={[roomShape(room)]} />
+            {/* The plane faces down, so FrontSide shows the ceiling from inside and keeps the overhead view open */}
+            <meshStandardMaterial
+              color="#FFFFFF"
+              roughness={0.9}
+              side={showRoof ? THREE.DoubleSide : THREE.FrontSide}
+            />
           </mesh>
         );
       })}

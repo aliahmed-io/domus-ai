@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
       doc.setFontSize(9);
       doc.setTextColor(90, 74, 58);
       doc.text(
-        `Generated: ${new Date().toLocaleDateString()} | OpenBIM IFC4 ISO-10303-21 Compliant | Standard: IBC 2024 / ADA`,
+        `Generated: ${new Date().toLocaleDateString()} | Preliminary design export. Building-code compliance not verified.`,
         16,
-        32
+        32,
       );
 
       // Section: Architectural Schedule
@@ -55,9 +55,21 @@ export async function POST(req: NextRequest) {
       doc.text(`Project Identifier: ${projectId}`, 16, 60);
       doc.text(`Multi-Storey Stack: ${totalStoreys} Level(s)`, 16, 68);
       doc.text(`Total Structural Walls: ${wallCount} Assemblies`, 16, 76);
-      doc.text(`Fenestration Units: ${doorCount} Doors / ${winCount} Windows`, 16, 84);
-      doc.text(`Wall Framing Standard: 2x6 DF 16" O.C. (Interior) / 9" Exterior CMU`, 16, 92);
-      doc.text(`Glazing Specification: Double-pane Insulated Low-E (SHGC 0.28, U-factor 0.29)`, 16, 100);
+      doc.text(
+        `Fenestration Units: ${doorCount} Doors / ${winCount} Windows`,
+        16,
+        84,
+      );
+      doc.text(
+        `Wall Framing Standard: 2x6 DF 16" O.C. (Interior) / 9" Exterior CMU`,
+        16,
+        92,
+      );
+      doc.text(
+        `Glazing Specification: Double-pane Insulated Low-E (SHGC 0.28, U-factor 0.29)`,
+        16,
+        100,
+      );
 
       // Stamp & Verification Box
       doc.setDrawColor(200, 195, 185);
@@ -65,13 +77,17 @@ export async function POST(req: NextRequest) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       doc.setTextColor(44, 38, 33);
-      doc.text("ARCHITECTURAL SPECIFICATION SEAL", 180, 56);
+      doc.text("PRELIMINARY DESIGN NOTES", 180, 56);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(110, 100, 90);
       doc.text("Compiled by Domus AI Commercial CAD Engine.", 180, 66);
-      doc.text("Spatial clearances verified for egress and accessibility.", 180, 74);
-      doc.text("All dimensions to be verified in field prior to construction.", 180, 82);
+      doc.text("Clearance checks need professional review.", 180, 74);
+      doc.text(
+        "All dimensions to be verified in field prior to construction.",
+        180,
+        82,
+      );
       doc.text("Domus AI Spatial Architecture © 2026.", 180, 96);
 
       const pdfArrayBuffer = doc.output("arraybuffer");
@@ -79,7 +95,8 @@ export async function POST(req: NextRequest) {
       return new NextResponse(pdfArrayBuffer, {
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": "attachment; filename=Domus_Architectural_Set.pdf",
+          "Content-Disposition":
+            "attachment; filename=Domus_Architectural_Set.pdf",
         },
       });
     }
@@ -90,8 +107,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: unknown) {
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : "Internal error." },
-      { status: 500 }
+      {
+        ok: false,
+        error: err instanceof Error ? err.message : "Internal error.",
+      },
+      { status: 500 },
     );
   }
 }

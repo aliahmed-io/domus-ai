@@ -2,27 +2,34 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Brain, Loader2, Cpu, ShoppingCart, Image as ImageIcon, X, Upload } from "lucide-react";
+import { Loader2, Image as ImageIcon, X, Upload } from "lucide-react";
 import { toast } from "sonner";
-import type { ApiResult } from "@/types/puter";
+import { useModelRequest } from "@/lib/use-model-request";
 
 interface TrellisGeneratorProps {
   onAssetGenerated: (modelUrl: string, name: string) => void;
 }
 
-export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorProps) {
-  const [mode, setMode] = useState<"text" | "image">("image");
+export default function TrellisGenerator({
+  onAssetGenerated,
+}: TrellisGeneratorProps) {
+  const findModel = useModelRequest();
+  const [mode, setMode] = useState<"text" | "image">("text");
   const [prompt, setPrompt] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState("");
-  const [quotaRemaining, setQuotaRemaining] = useState(5);
+  const [catalogMode, setCatalogMode] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
 
   const handleImageFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file (PNG, JPG, WebP)");
+    if (
+      !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
+      file.size > 10 * 1024 * 1024
+    ) {
+      toast.error("Use PNG, JPG, or WebP, up to 10 MB.");
       return;
     }
     setImageName(file.name.replace(/\.[^/.]+$/, ""));
@@ -36,98 +43,53 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
   const handleGenerate = async () => {
     if (mode === "text" && !prompt.trim()) return;
     if (mode === "image" && !imagePreview) return;
-    
+
     setLoading(true);
     setError(null);
-    setStatusText(mode === "image" ? "Uploading photo & running neural TRELLIS..." : "Contacting partner Replicate APIs...");
-    toast.loading("Synthesizing 3D mesh via TRELLIS...", { id: "trellis" });
-
+    setStatusText("Finding a model…");
     try {
-      // 1. Fetch from Edge GNN & TRELLIS proxy
-      const response = await fetch("/api/generate-3d", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: mode === "text" ? prompt : (prompt || imageName || "3D Furniture Model"),
-          image: mode === "image" ? imagePreview : undefined,
-        }),
-      });
-
-      const limitRemaining = response.headers.get("X-RateLimit-Remaining");
-      if (limitRemaining !== null) {
-        setQuotaRemaining(Number(limitRemaining));
-      }
-
-      const result = (await response.json()) as ApiResult<{
-        id: string;
-        status: string;
-        output?: string;
-        pollUrl?: string;
-        fallback?: boolean;
-      }>;
-
-      if (!result.ok) {
-        setError(result.error || "Failed to generate asset.");
-        toast.error("Generation failed. Please retry.", { id: "trellis" });
-        setLoading(false);
-        return;
-      }
-
-      const prediction = result.data;
-
-      // 2. Handle simulated/procedural mock or active polling
-      if (prediction.output) {
-        setStatusText("Loading optimized Draco GLTF model...");
-        onAssetGenerated(
-          prediction.output && !prediction.output.startsWith("/models/")
-            ? prediction.output
-            : "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf",
-          prompt
+      const result = await findModel(
+        {
+          prompt: prompt.trim() || imageName || "Furniture model",
+          image: mode === "image" ? (imagePreview ?? undefined) : undefined,
+        },
+        setStatusText,
+      );
+      setCatalogMode(result.fallback);
+      const label = prompt.trim() || imageName || "Furniture model";
+      onAssetGenerated(
+        result.output,
+        result.fallback ? `Catalog sample: ${label}` : label,
+      );
+      toast.success(
+        result.fallback
+          ? "Catalog sample added. No original model was generated."
+          : "Generated model added.",
+      );
+      setPrompt("");
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError"))
+        setError(
+          error instanceof Error ? error.message : "No model was added.",
         );
-        toast.success("Asset synthesized and placed in scene!", { id: "trellis" });
-        setLoading(false);
-        setPrompt("");
-      } else if (prediction.pollUrl) {
-        setStatusText("Synthesizing neural 3D mesh...");
-        try {
-          const pollRes = await fetch(prediction.pollUrl);
-          const pollData = await pollRes.json();
-          const finalUrl = pollData?.output?.gltf || pollData?.output || "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf";
-          onAssetGenerated(finalUrl, prompt);
-          toast.success("Asset ready — placed in scene", { id: "trellis" });
-        } catch {
-          onAssetGenerated("https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf", prompt);
-        } finally {
-          setLoading(false);
-          setPrompt("");
-        }
-      } else {
-        onAssetGenerated("https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/chair-wood/model.gltf", prompt);
-        setLoading(false);
-        setPrompt("");
-      }
-
-    } catch {
-      setError("Failed to establish server connection path.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="bg-alabaster border border-hairline rounded-2xl p-4 flex flex-col gap-4 shadow-sm select-none">
-      
+      <p className="text-xs text-stone leading-relaxed">
+        Try chair, sofa, table, lamp, or plant. Without an AI provider, you get
+        a catalog sample. Sample mode does not reconstruct photos.
+      </p>
       {/* Title */}
       <div className="flex justify-between items-center border-b border-hairline/60 pb-2.5">
         <div className="flex items-center gap-1.5">
-          <Brain size={15} className="text-indigo" />
           <span className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider">
-            TRELLIS 3D Generator
+            Furniture models
           </span>
         </div>
-        <span className="px-2 py-0.5 bg-indigo-light text-indigo text-[9px] font-bold rounded-full border border-indigo/10 flex items-center gap-1">
-          <Cpu size={9} />
-          v2.0 Neural
-        </span>
       </div>
 
       {/* Mode Toggle */}
@@ -153,8 +115,7 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
               : "text-stone hover:text-charcoal"
           }`}
         >
-          <Brain size={12} />
-          <span>Text Prompt</span>
+          <span>Search catalog</span>
         </button>
       </div>
 
@@ -176,7 +137,9 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
                 <span className="text-[10px] font-bold text-charcoal">
                   Drop photo of furniture here
                 </span>
-                <span className="text-[8px] text-stone">PNG, JPG, WebP up to 10MB</span>
+                <span className="text-[8px] text-stone">
+                  PNG, JPG, WebP up to 10MB
+                </span>
                 <input
                   type="file"
                   accept="image/*"
@@ -212,6 +175,7 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
           </div>
         ) : (
           <textarea
+            aria-label="Furniture model description"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             disabled={loading}
@@ -236,11 +200,17 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
         ) : (
           <button
             onClick={handleGenerate}
-            disabled={(mode === "text" && !prompt.trim()) || (mode === "image" && !imagePreview) || quotaRemaining <= 0}
+            disabled={
+              (mode === "text" && !prompt.trim()) ||
+              (mode === "image" && !imagePreview)
+            }
             className="w-full h-10 bg-indigo hover:bg-indigoDark text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button disabled:opacity-50 transition-colors outline-none cursor-pointer"
           >
-            <Cpu size={13} />
-            <span>{mode === "image" ? "Synthesize 3D Model from Photo" : "Generate Spatial 3D Asset"}</span>
+            <span>
+              {mode === "image"
+                ? "Find or generate model"
+                : "Find or generate model"}
+            </span>
           </button>
         )}
       </div>
@@ -248,11 +218,13 @@ export default function TrellisGenerator({ onAssetGenerated }: TrellisGeneratorP
       {/* Rate limit status */}
       <div className="flex justify-between items-center border-t border-hairline/60 pt-3 text-[9px] font-bold uppercase tracking-wider text-stone px-1">
         <span className="flex items-center gap-1">
-          <ShoppingCart size={10} className="text-teal" />
-          matched SKU purchase ready
+          Catalog or optional AI model
         </span>
         <span>
-          Quota remaining: <span className="text-charcoal">{quotaRemaining}/5 hr</span>
+          Model source:{" "}
+          <span className="text-charcoal">
+            {loading ? "Processing request" : catalogMode ? "Built-in catalog" : "AI provider"}
+          </span>
         </span>
       </div>
     </div>

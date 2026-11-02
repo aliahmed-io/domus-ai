@@ -1,34 +1,38 @@
+import { buildPlanTopology } from "@/lib/plan-topology";
 import type { Wall, Room } from "@/types/puter";
 
 /**
  * Robust Planar Graph Face Detection to automatically find all closed rooms
  * from a set of intersecting or welded CAD wall segments.
  */
-export function detectAllRooms(walls: Wall[], existingRooms: Room[] = []): Room[] {
+export function detectAllRooms(
+  walls: Wall[],
+  existingRooms: Room[] = [],
+): Room[] {
   if (!walls || walls.length < 3) return [];
 
-  // 1. Unify vertices (snap within 0.5ft)
-  const vertices: { x: number; y: number }[] = [];
-  const getVertexIdx = (pt: { x: number; y: number }) => {
-    let idx = vertices.findIndex((v) => Math.hypot(v.x - pt.x, v.y - pt.y) < 0.5);
-    if (idx === -1) {
-      idx = vertices.length;
-      vertices.push({ ...pt });
-    }
-    return idx;
-  };
-
-  const edges: { from: number; to: number; wallId: string; angle: number }[] = [];
-  walls.forEach((w) => {
-    const u = getVertexIdx(w.start);
-    const v = getVertexIdx(w.end);
-    if (u !== v) {
-      const dx = vertices[v]!.x - vertices[u]!.x;
-      const dy = vertices[v]!.y - vertices[u]!.y;
-      edges.push({ from: u, to: v, wallId: w.id, angle: Math.atan2(dy, dx) });
-      edges.push({ from: v, to: u, wallId: w.id, angle: Math.atan2(-dy, -dx) });
-    }
-  });
+  // Intersections are graph vertices even when the source walls were never manually split.
+  const { vertices, edges: segments } = buildPlanTopology(walls);
+  const edges: {
+    from: number;
+    to: number;
+    wallIds: string[];
+    angle: number;
+  }[] = [];
+  for (const segment of segments) {
+    const start = vertices[segment.from]!,
+      end = vertices[segment.to]!;
+    edges.push({
+      ...segment,
+      angle: Math.atan2(end.y - start.y, end.x - start.x),
+    });
+    edges.push({
+      from: segment.to,
+      to: segment.from,
+      wallIds: segment.wallIds,
+      angle: Math.atan2(start.y - end.y, start.x - end.x),
+    });
+  }
 
   // 2. Sort outgoing edges by angle
   const adj = new Map<number, typeof edges>();
@@ -57,28 +61,20 @@ export function detectAllRooms(walls: Wall[], existingRooms: Room[] = []): Room[
       visited.add(`${curr.from}->${curr.to}`);
 
       const outEdges = adj.get(curr.to) || [];
-      const revAngle = Math.atan2(
-        vertices[curr.from]!.y - vertices[curr.to]!.y,
-        vertices[curr.from]!.x - vertices[curr.to]!.x
-      );
-
-      // Find edge with angle just greater than reverse angle
-      let nextEdgeIdx = -1;
-      for (let i = 0; i < outEdges.length; i++) {
-        if (outEdges[i]!.angle > revAngle) {
-          nextEdgeIdx = i;
-          break;
-        }
+      // Select the neighbour by edge identity, not a floating-point angle comparison.
+      // The previous angular neighbour keeps the bounded face on the right in screen coordinates.
+      const reverseIndex = outEdges.findIndex((edge) => edge.to === curr.from);
+      if (reverseIndex < 0) {
+        valid = false;
+        break;
       }
-      if (nextEdgeIdx === -1) nextEdgeIdx = 0; // Wrap around
-
-      curr = outEdges[nextEdgeIdx]!;
+      curr = outEdges[(reverseIndex + outEdges.length - 1) % outEdges.length]!;
 
       if (curr.from === startEdge.from && curr.to === startEdge.to) {
         break; // Loop closed
       }
 
-      if (faceEdges.length > walls.length * 2) {
+      if (faceEdges.length > edges.length) {
         valid = false;
         break;
       }
@@ -98,7 +94,8 @@ export function detectAllRooms(walls: Wall[], existingRooms: Room[] = []): Room[
     signedArea /= 2;
 
     // Positive signedArea in screen coordinates (Y down) means Counter-Clockwise (internal face)
-    if (signedArea > 15) { // Minimum 15 sq ft to filter tiny artifact slivers
+    if (signedArea > 0.25) {
+      // Ignore only sub-quarter-foot numerical slivers, not closets
       let minX = Infinity;
       let maxX = -Infinity;
       let minY = Infinity;
@@ -125,25 +122,12 @@ export function detectAllRooms(walls: Wall[], existingRooms: Room[] = []): Room[
         return Math.hypot(cx - ecx, cy - ecy) < 3.0;
       });
 
-      // Semantic architectural naming heuristic based on room size
-      let defaultLabel = `Room ${rooms.length + 1}`;
-      let defaultType: Room["type"] = "bedroom";
-
-      if (areaSqFt >= 240) {
-        defaultLabel = "Living Room";
-        defaultType = "living";
-      } else if (areaSqFt >= 160) {
-        defaultLabel = "Primary Bedroom";
-        defaultType = "bedroom";
-      } else if (areaSqFt >= 110) {
-        defaultLabel = "Kitchen / Dining";
-        defaultType = "kitchen";
-      } else if (areaSqFt <= 60) {
-        defaultLabel = "Bathroom";
-        defaultType = "bathroom";
-      }
+      // A closed polygon does not reveal how a room is used.
+      const defaultLabel = `Room ${rooms.length + 1}`;
+      const defaultType: Room["type"] = "unassigned";
 
       rooms.push({
+        ...matchedRoom,
         id: matchedRoom?.id || `room-${Date.now()}-${rooms.length + 1}`,
         label: matchedRoom?.label || defaultLabel,
         type: matchedRoom?.type || defaultType,
@@ -155,7 +139,7 @@ export function detectAllRooms(walls: Wall[], existingRooms: Room[] = []): Room[
         },
         polygon: polygonPts,
         area: areaSqFt,
-        wallIds: faceEdges.map((fe) => fe.wallId),
+        wallIds: [...new Set(faceEdges.flatMap((edge) => edge.wallIds))],
         floorMaterial: matchedRoom?.floorMaterial || "hardwood",
       });
     }

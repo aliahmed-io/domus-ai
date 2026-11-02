@@ -8,15 +8,12 @@ import {
   Ruler,
   Undo,
   Redo,
-  Home,
-  Trash2,
-  Ban,
   DoorOpen,
   Grid2X2,
   Footprints,
-  Eye,
 } from "lucide-react";
-import * as Tooltip from "@radix-ui/react-tooltip";
+import * as Popover from "@radix-ui/react-dialog";
+import ViewSettings from "./ViewSettings";
 import { useStore } from "zustand";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
@@ -24,108 +21,55 @@ import type { EditorTool } from "@/types/puter";
 import { toast } from "sonner";
 import ModeToggle from "./ModeToggle";
 
-export default function Toolbar() {
-  const { 
-    tool, 
-    setTool, 
-    showRoof, 
-    toggleRoof,
+export default function Toolbar({
+  onToggleProject,
+  projectOpen,
+}: {
+  onToggleProject: () => void;
+  projectOpen: boolean;
+}) {
+  const mode = useEditorStore((state) => state.mode);
+  const catalogOpen = useEditorStore((state) => state.catalogOpen);
+  const setCatalogOpen = useEditorStore((state) => state.setCatalogOpen);
+  const {
+    tool,
+    setTool,
     selectedObjectId,
     setSelectedObject,
-    floorPlanLayout,
-    setFloorPlan,
-    removeSceneObject,
-    dimensionLines,
-    removeDimensionLine,
-    sceneObjects,
-    isPresentationMode,
-    togglePresentationMode,
+    deleteSelected,
+    clearWorkspace,
   } = useEditorStore(
-    useShallow((s) => ({ 
-      tool: s.tool, 
-      setTool: s.setTool, 
-      showRoof: s.showRoof, 
-      toggleRoof: s.toggleRoof,
+    useShallow((s) => ({
+      tool: s.tool,
+      setTool: s.setTool,
       selectedObjectId: s.selectedObjectId,
       setSelectedObject: s.setSelectedObject,
-      floorPlanLayout: s.floorPlanLayout,
-      setFloorPlan: s.setFloorPlan,
-      removeSceneObject: s.removeSceneObject,
-      dimensionLines: s.dimensionLines,
-      removeDimensionLine: s.removeDimensionLine,
-      sceneObjects: s.sceneObjects,
-      isPresentationMode: s.isPresentationMode,
-      togglePresentationMode: s.togglePresentationMode,
-    }))
+      deleteSelected: s.deleteSelected,
+      clearWorkspace: s.clearWorkspace,
+    })),
   );
 
   // Subscribe to temporal spatial layout state history actions
-  const { undo, redo, pastStates, futureStates } = useStore(useEditorStore.temporal, (s) => s);
+  const undo = useEditorStore((state) => state.undoDocument);
+  const redo = useEditorStore((state) => state.redoDocument);
+  const { pastStates, futureStates } = useStore(
+    useEditorStore.temporal,
+    (s) => s,
+  );
 
   const handleDelete = useCallback(() => {
     if (!selectedObjectId) return;
-
-    // Check furniture
-    if (sceneObjects.some(o => o.id === selectedObjectId)) {
-      removeSceneObject(selectedObjectId);
-      toast.success("Deleted furniture item.");
-      return;
-    }
-
-    // Check dimensions
-    if (dimensionLines.some(d => d.id === selectedObjectId)) {
-      removeDimensionLine(selectedObjectId);
-      toast.success("Deleted dimension line.");
-      return;
-    }
-
-    if (floorPlanLayout) {
-      // Check walls
-      const wallIndex = floorPlanLayout.walls.findIndex(w => w.id === selectedObjectId);
-      if (wallIndex !== -1) {
-        const newWalls = [...floorPlanLayout.walls];
-        newWalls.splice(wallIndex, 1);
-        setFloorPlan({ ...floorPlanLayout, walls: newWalls });
-        setSelectedObject(null);
-        toast.success("Deleted wall.");
-        return;
-      }
-
-      // Check rooms
-      const roomIndex = floorPlanLayout.rooms.findIndex(r => r.id === selectedObjectId);
-      if (roomIndex !== -1) {
-        const room = floorPlanLayout.rooms[roomIndex]!;
-        const newRooms = floorPlanLayout.rooms.map(r =>
-          r.id === room.id ? { ...r, noTexture: true } : r
-        );
-
-        setFloorPlan({ ...floorPlanLayout, rooms: newRooms });
-        setSelectedObject(null);
-        toast.success("Cleared floor texture.");
-        return;
-      }
-    }
-  }, [selectedObjectId, sceneObjects, removeSceneObject, dimensionLines, removeDimensionLine, floorPlanLayout, setFloorPlan, setSelectedObject]);
+    deleteSelected();
+    toast.success("Deleted selected element.");
+  }, [selectedObjectId, deleteSelected]);
 
   const handleClearAll = () => {
-    if (confirm("Are you sure you want to clear the entire workspace? This cannot be easily undone.")) {
-      setFloorPlan(null);
-      // We would also clear furniture and dimensions here, but for now we'll just clear the floor plan layout 
-      // or set it to empty
-      setFloorPlan({
-        id: "empty-plan",
-        parameters: { bedrooms: 0, bathrooms: 0, totalArea: 0, floors: 1, style: "open-plan", features: [] },
-        rooms: [],
-        walls: [],
-        doors: [],
-        windows: [],
-        dimensions: { width: 100, height: 100 },
-        efficiency: 100,
-        naturalLight: 100,
-        generatedAt: new Date().toISOString()
-      });
-      // Need to clear scene objects manually through the store if we had a clear function. 
-      // For now, setting floorplan to empty is a good start.
+    if (
+      confirm(
+        "Are you sure you want to clear the entire workspace? You can undo with Ctrl+Z.",
+      )
+    ) {
+      clearWorkspace();
       toast.success("Workspace cleared.");
     }
   };
@@ -133,9 +77,16 @@ export default function Toolbar() {
   // Setup standard professional CAD keyboard layout shortcuts
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (useEditorStore.getState().mode === "walk") return;
       const activeEl = document.activeElement;
       // Do not trigger shortcuts if typing inside inputs or textareas
-      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+      if (
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.tagName === "SELECT" ||
+          (activeEl instanceof HTMLElement && activeEl.isContentEditable))
+      ) {
         return;
       }
 
@@ -201,239 +152,172 @@ export default function Toolbar() {
     shortcut: string;
   }[][] = [
     [
-      { id: "draw-wall", icon: PenTool, label: "Draw Structural Wall", shortcut: "W" },
-      { id: "add-room", icon: Square, label: "Add Room Boundary", shortcut: "F" },
-      { id: "add-door", icon: DoorOpen, label: "Insert Door Opening", shortcut: "O" },
-      { id: "add-window", icon: Grid2X2, label: "Insert Glazed Window", shortcut: "I" },
-      { id: "add-stair", icon: Footprints, label: "Insert Staircase", shortcut: "S" },
+      {
+        id: "draw-wall",
+        icon: PenTool,
+        label: "Draw Structural Wall",
+        shortcut: "W",
+      },
+      {
+        id: "add-room",
+        icon: Square,
+        label: "Add Room Boundary",
+        shortcut: "F",
+      },
+      {
+        id: "add-door",
+        icon: DoorOpen,
+        label: "Insert Door Opening",
+        shortcut: "O",
+      },
+      {
+        id: "add-window",
+        icon: Grid2X2,
+        label: "Insert Glazed Window",
+        shortcut: "I",
+      },
+      {
+        id: "add-stair",
+        icon: Footprints,
+        label: "Insert Staircase",
+        shortcut: "S",
+      },
     ],
     [
-      { id: "place-furniture", icon: Armchair, label: "Insert Furniture Asset", shortcut: "A" },
+      {
+        id: "place-furniture",
+        icon: Armchair,
+        label: "Insert Furniture Asset",
+        shortcut: "A",
+      },
       { id: "measure", icon: Ruler, label: "Measure Distance", shortcut: "D" },
     ],
   ];
 
   return (
-    <Tooltip.Provider delayDuration={150}>
-      <aside className="absolute top-24 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur border border-hairline rounded-2xl p-2 flex flex-row items-center gap-2.5 shadow-hero z-30">
-        <ModeToggle />
-        <div className="w-px h-6 bg-hairline mx-1" />
-        {toolGroups.map((group, groupIdx) => (
-          <React.Fragment key={groupIdx}>
-            {groupIdx > 0 && <div className="w-px h-6 bg-hairline mx-1.5" />}
-            <div className="flex flex-row items-center gap-1">
-              {group.map((item) => {
-                const Icon = item.icon;
-                const isActive = tool === item.id;
-                return (
-                  <Tooltip.Root key={item.id}>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        onClick={() => {
-                          if (tool === item.id) {
-                            setTool("select");
-                          } else {
-                            setTool(item.id);
-                          }
-                          setSelectedObject(null); // Clear selection on tool change
-                        }}
-                        aria-label={item.label}
-                        title={item.label}
-                        aria-pressed={isActive}
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none ${
-                          isActive
-                            ? "bg-indigo text-white shadow-sm"
-                            : "text-stone hover:text-charcoal hover:bg-gray-50"
-                        }`}
-                      >
-                        <Icon size={18} />
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        side="bottom"
-                        sideOffset={12}
-                        className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
-                      >
-                        <span>{item.label}</span>
-                        <span className="text-on-dark-muted font-bold bg-white/10 px-1 rounded uppercase">
-                          {item.shortcut}
-                        </span>
-                        <Tooltip.Arrow className="fill-charcoal" />
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
-                );
-              })}
-            </div>
-          </React.Fragment>
-        ))}
-
-        {/* Undo / Redo Actions grouping */}
-        <div className="w-px h-6 bg-hairline mx-1.5" />
-        <div className="flex flex-row items-center gap-1">
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
+    <header className="editor-command-bar" aria-label="Editor controls">
+      <div className="editor-command-left">
+        <button
+          type="button"
+          className="editor-add-button"
+          aria-expanded={catalogOpen}
+          onClick={() => setCatalogOpen(!catalogOpen)}
+        >
+          Add to plan
+        </button>
+        {mode === "2d" && (
+          <button
+            type="button"
+            className="editor-text-button"
+            aria-label="Draw Structural Wall"
+            aria-pressed={tool === "draw-wall"}
+            onClick={() => {
+              setTool(tool === "draw-wall" ? "select" : "draw-wall");
+              setSelectedObject(null);
+            }}
+          >
+            Wall
+          </button>
+        )}
+        <Popover.Root modal={false}>
+          <Popover.Trigger asChild>
+            <button type="button" className="editor-text-button">
+              Tools
+            </button>
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content className="editor-tools-menu">
+              <Popover.Title>Draw and edit</Popover.Title>
+              <Popover.Description className="sr-only">
+                Choose a drawing tool or an editing action.
+              </Popover.Description>
+              {toolGroups
+                .flat()
+                .filter((item) => item.id !== "draw-wall")
+                .map((item) => (
+                  <Popover.Close asChild key={item.id}>
+                    <button
+                      type="button"
+                      aria-label={item.label}
+                      onClick={() => {
+                        setTool(item.id);
+                        setSelectedObject(null);
+                        if (item.id === "place-furniture") setCatalogOpen(true);
+                        if (item.id !== "place-furniture")
+                          useEditorStore.getState().setMode("2d");
+                      }}
+                    >
+                      {item.label}
+                      <kbd>{item.shortcut}</kbd>
+                    </button>
+                  </Popover.Close>
+                ))}
+              <Popover.Close asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    useEditorStore.getState().setMode("2d");
+                    useEditorStore.getState().requestPlanFit();
+                  }}
+                >
+                  Fit plan to screen
+                </button>
+              </Popover.Close>
+              <details className="editor-drawing-help">
+                <summary>Keyboard shortcuts</summary>
+                <p>
+                  W: walls. F: rooms. O: doors. I: windows. D: measure. Escape:
+                  finish drawing. Drag empty space to pan. Hold Alt while
+                  dragging an endpoint to disconnect it.
+                </p>
+              </details>
               <button
-                onClick={() => undo()}
-                disabled={pastStates.length === 0}
-                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none text-stone hover:text-charcoal hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none"
-                aria-label="Undo last change"
-                title="Undo (Ctrl+Z)"
-              >
-                <Undo size={18} />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="bottom"
-                sideOffset={12}
-                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
-              >
-                <span>Undo</span>
-                <span className="text-on-dark-muted font-bold bg-white/10 px-1 rounded uppercase">
-                  Ctrl+Z
-                </span>
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <button
-                onClick={() => redo()}
-                disabled={futureStates.length === 0}
-                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none text-stone hover:text-charcoal hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none"
-                aria-label="Redo change"
-                title="Redo (Ctrl+Y)"
-              >
-                <Redo size={18} />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="bottom"
-                sideOffset={12}
-                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
-              >
-                <span>Redo</span>
-                <span className="text-on-dark-muted font-bold bg-white/10 px-1 rounded uppercase">
-                  Ctrl+Y
-                </span>
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </div>
-
-        {/* Object Actions grouping (Delete) */}
-        <div className="w-px h-6 bg-hairline mx-1.5" />
-        <div className="flex flex-row items-center gap-1">
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <button
-                onClick={handleDelete}
+                type="button"
                 disabled={!selectedObjectId}
-                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none text-stone hover:text-rose hover:bg-rose-50/50 disabled:opacity-30 disabled:pointer-events-none"
-                aria-label="Delete Selection"
-                title="Delete (Del)"
+                onClick={handleDelete}
               >
-                <Trash2 size={18} />
+                Delete selected
               </button>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="bottom"
-                sideOffset={12}
-                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
-              >
-                <span>Delete</span>
-                <span className="text-on-dark-muted font-bold bg-white/10 px-1 rounded uppercase">
-                  Del
-                </span>
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </div>
-
-        {/* View & System Toggles grouping */}
-        <div className="w-px h-6 bg-hairline mx-1.5" />
-        <div className="flex flex-row items-center gap-1">
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <button
-                onClick={togglePresentationMode}
-                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none ${
-                  isPresentationMode
-                    ? "bg-indigo text-white shadow-sm"
-                    : "text-stone hover:text-charcoal hover:bg-gray-50"
-                }`}
-                aria-label="Client Presentation Mode"
-                title="Client Presentation Mode"
-              >
-                <Eye size={18} />
+              <button type="button" onClick={handleClearAll}>
+                Clear plan
               </button>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="bottom"
-                sideOffset={12}
-                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
-              >
-                <span>Presentation Mode</span>
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <button
-                onClick={toggleRoof}
-                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none ${
-                  showRoof
-                    ? "bg-indigo-light text-indigo shadow-sm"
-                    : "text-stone hover:text-charcoal hover:bg-gray-50"
-                }`}
-                aria-label="Toggle Roof"
-                title="Toggle Roof"
-              >
-                <Home size={18} />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="bottom"
-                sideOffset={12}
-                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
-              >
-                <span>{showRoof ? "Hide Roof" : "Show Roof"}</span>
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <button
-                onClick={handleClearAll}
-                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 outline-none text-stone hover:text-rose hover:bg-rose-50/50"
-                aria-label="Clear Workspace"
-                title="Clear Workspace"
-              >
-                <Ban size={18} />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="bottom"
-                sideOffset={12}
-                className="bg-charcoal text-white rounded-lg px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2 shadow-modal border border-white/5 z-50"
-              >
-                <span>Clear Workspace</span>
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </div>
-      </aside>
-    </Tooltip.Provider>
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      </div>
+      <ModeToggle />
+      <div className="editor-command-right">
+        <button
+          type="button"
+          className="editor-icon-button"
+          aria-label="Undo last change"
+          onClick={() => undo()}
+          disabled={!pastStates.length}
+        >
+          <Undo size={17} />
+        </button>
+        <button
+          type="button"
+          className="editor-icon-button"
+          aria-label="Redo change"
+          onClick={() => redo()}
+          disabled={!futureStates.length}
+        >
+          <Redo size={17} />
+        </button>
+        <ViewSettings />
+        <button
+          type="button"
+          className="editor-text-button"
+          aria-label={
+            projectOpen ? "Close project panel" : "Open project panel"
+          }
+          aria-expanded={projectOpen}
+          onClick={onToggleProject}
+        >
+          Project
+        </button>
+      </div>
+    </header>
   );
 }
-

@@ -1,15 +1,39 @@
 "use client";
 
+import { fitPlanViewport } from "@/lib/plan-viewport";
+import BlueprintUnderlay from "./BlueprintUnderlay";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Stage, Layer, Rect, Text, Group, Line as KonvaLine, Circle, Path as KonvaPath, Arc } from "react-konva";
+import {
+  Stage,
+  Layer,
+  Rect,
+  Text,
+  Group,
+  Line as KonvaLine,
+  Circle,
+  Path as KonvaPath,
+  Arc,
+} from "react-konva";
 import type Konva from "konva";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { feetToMeters, metersToFeet } from "@/lib/utils";
-import { getWallPolygon } from '@/lib/geometry';
+import { getWallPolygon } from "@/lib/geometry";
 import { toast } from "sonner";
-import type { Room, Wall, SceneObject, Door, Window2D, Staircase } from "@/types/puter";
-import { snapCloseWallEndpoints, snapToWallEndpoints, snapToAngle, snapToWallMidpoints } from "@/lib/snap";
+import type {
+  Room,
+  Wall,
+  SceneObject,
+  Door,
+  Window2D,
+  Staircase,
+} from "@/types/puter";
+import {
+  snapCloseWallEndpoints,
+  snapToWallEndpoints,
+  snapToAngle,
+  snapToWallMidpoints,
+} from "@/lib/snap";
 import { detectAllRooms } from "@/lib/room-detection";
 
 // 1 meter = 50 pixels default base scaling
@@ -28,12 +52,16 @@ function calculatePolygonAreaFt(points: { x: number; y: number }[]): number {
     const p1 = points[i];
     const p2 = points[(i + 1) % numPoints];
     if (!p1 || !p2) continue;
-    area += (p1.x * p2.y) - (p2.x * p1.y); // Signed area (shoelace)
+    area += p1.x * p2.y - p2.x * p1.y; // Signed area (shoelace)
   }
   return area / 2;
 }
 
-function getRoomPolygonPoints(room: Room, walls: Wall[] = []): { x: number; y: number }[] {
+function getRoomPolygonPoints(
+  room: Room,
+  walls: Wall[] = [],
+): { x: number; y: number }[] {
+  if (room.polygon && room.polygon.length >= 3) return room.polygon;
   if (room.wallIds && room.wallIds.length > 0) {
     const roomWalls = walls.filter((w) => room.wallIds!.includes(w.id));
     if (roomWalls.length > 0) {
@@ -48,8 +76,10 @@ function getRoomPolygonPoints(room: Room, walls: Wall[] = []): { x: number; y: n
       while (unvisited.length > 0) {
         const nextWallIdx = unvisited.findIndex(
           (w) =>
-            (Math.abs(w.start.x - currentPoint.x) < 0.1 && Math.abs(w.start.y - currentPoint.y) < 0.1) ||
-            (Math.abs(w.end.x - currentPoint.x) < 0.1 && Math.abs(w.end.y - currentPoint.y) < 0.1)
+            (Math.abs(w.start.x - currentPoint.x) < 0.1 &&
+              Math.abs(w.start.y - currentPoint.y) < 0.1) ||
+            (Math.abs(w.end.x - currentPoint.x) < 0.1 &&
+              Math.abs(w.end.y - currentPoint.y) < 0.1),
         );
 
         if (nextWallIdx !== -1) {
@@ -64,7 +94,11 @@ function getRoomPolygonPoints(room: Room, walls: Wall[] = []): { x: number; y: n
           }
           if (
             unvisited.length > 0 ||
-            (points[0] && Math.hypot(currentPoint.x - points[0].x, currentPoint.y - points[0].y) > 0.1)
+            (points[0] &&
+              Math.hypot(
+                currentPoint.x - points[0].x,
+                currentPoint.y - points[0].y,
+              ) > 0.1)
           ) {
             points.push({ ...currentPoint });
           }
@@ -118,7 +152,7 @@ function DrawingWallPreview({ start, end, scale }: DrawingWallPreviewProps) {
       {/* Elastic rubberband dashed wall guide */}
       <KonvaLine
         points={[sx, sy, ex, ey]}
-        stroke="#4F46E5"
+        stroke="#8a5a36"
         strokeWidth={5 / scale}
         dash={[8 / scale, 4 / scale]}
         lineCap="round"
@@ -139,7 +173,7 @@ function DrawingWallPreview({ start, end, scale }: DrawingWallPreviewProps) {
         x={ex}
         y={ey}
         radius={8 / scale}
-        fill="#4F46E5"
+        fill="#8a5a36"
         stroke="#ffffff"
         strokeWidth={2.5 / scale}
       />
@@ -147,7 +181,7 @@ function DrawingWallPreview({ start, end, scale }: DrawingWallPreviewProps) {
         x={ex}
         y={ey}
         radius={14 / scale}
-        stroke="#4F46E5"
+        stroke="#8a5a36"
         strokeWidth={1.5 / scale}
         dash={[3 / scale, 3 / scale]}
       />
@@ -161,7 +195,7 @@ function DrawingWallPreview({ start, end, scale }: DrawingWallPreviewProps) {
             width={badgeW}
             height={badgeH}
             fill="#1E293B"
-            stroke="#4F46E5"
+            stroke="#8a5a36"
             strokeWidth={1.5 / scale}
             cornerRadius={0.08}
             shadowColor="rgba(0,0,0,0.3)"
@@ -196,15 +230,17 @@ function DrawingWallPreview({ start, end, scale }: DrawingWallPreviewProps) {
 }
 
 export default function BlueprintCanvas2D() {
-  const { 
-    floorPlanLayout, 
-    setFloorPlan, 
-    dimensionLines, 
-    sceneObjects, 
-    updateSceneObject, 
-    tool, 
-    setTool, 
-    addSceneObject, 
+  const {
+    floorPlanLayout,
+    setFloorPlan,
+    updateDoor,
+    updateWindow,
+    dimensionLines,
+    sceneObjects,
+    updateSceneObject,
+    tool,
+    setTool,
+    addSceneObject,
     addDimensionLine,
     selectedObjectId,
     setSelectedObject,
@@ -213,10 +249,13 @@ export default function BlueprintCanvas2D() {
     activeStoreyId,
     staircases,
     addStaircase,
+    updateStaircase,
   } = useEditorStore(
     useShallow((s) => ({
       floorPlanLayout: s.floorPlanLayout,
       setFloorPlan: s.setFloorPlan,
+      updateDoor: s.updateDoor,
+      updateWindow: s.updateWindow,
       dimensionLines: s.dimensionLines,
       sceneObjects: s.sceneObjects,
       updateSceneObject: s.updateSceneObject,
@@ -231,19 +270,25 @@ export default function BlueprintCanvas2D() {
       activeStoreyId: s.activeStoreyId,
       staircases: s.staircases,
       addStaircase: s.addStaircase,
-    }))
+      updateStaircase: s.updateStaircase,
+    })),
   );
 
   const underlayStoreys = useMemo(() => {
     if (!storeys || storeys.length <= 1) return [];
-    return storeys.filter((s) => s.id !== activeStoreyId && s.isVisible !== false);
+    return storeys.filter(
+      (s) => s.id !== activeStoreyId && s.isVisible !== false,
+    );
   }, [storeys, activeStoreyId]);
 
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [mounted, setMounted] = useState(false);
-  const [canvasCursor, setCanvasCursor] = useState<"default" | "grabbing">("default");
+  const [canvasCursor, setCanvasCursor] = useState<"default" | "grabbing">(
+    "default",
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const masterGroupRef = useRef<Konva.Group | null>(null);
+  const isPanningRef = useRef(false);
 
   useEffect(() => {
     document.body.style.cursor = canvasCursor;
@@ -254,10 +299,17 @@ export default function BlueprintCanvas2D() {
 
   useEffect(() => {
     const unsub = useEditorStore.subscribe((state, prevState) => {
-      if (state.stageX !== prevState.stageX || state.stageY !== prevState.stageY || state.stageScale !== prevState.stageScale) {
+      if (
+        state.stageX !== prevState.stageX ||
+        state.stageY !== prevState.stageY ||
+        state.stageScale !== prevState.stageScale
+      ) {
         if (masterGroupRef.current) {
           masterGroupRef.current.position({ x: state.stageX, y: state.stageY });
-          masterGroupRef.current.scale({ x: state.stageScale, y: state.stageScale });
+          masterGroupRef.current.scale({
+            x: state.stageScale,
+            y: state.stageScale,
+          });
         }
       }
     });
@@ -265,17 +317,43 @@ export default function BlueprintCanvas2D() {
   }, []);
 
   // Local states for interactive drawing/measuring tools
-  const [drawingWallStart, setDrawingWallStart] = useState<{ x: number; y: number } | null>(null);
-  const [drawingMousePos, setDrawingMousePos] = useState<{ x: number; y: number } | null>(null);
-  const [measureStart, setMeasureStart] = useState<{ x: number; y: number } | null>(null);
+  const [drawingWallStart, setDrawingWallStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [drawingMousePos, setDrawingMousePos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [measureStart, setMeasureStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Active derived states (replaces useEffect state resets)
-  const activeDrawingWallStart = (tool === "draw-wall" || tool === "add-room") ? drawingWallStart : null;
-  const activeDrawingMousePos = (tool === "draw-wall" || tool === "add-room" || tool === "measure" || tool === "add-door" || tool === "add-window" || tool === "add-stair") ? drawingMousePos : null;
+  const activeDrawingWallStart =
+    tool === "draw-wall" || tool === "add-room" ? drawingWallStart : null;
+  const activeDrawingMousePos =
+    tool === "draw-wall" ||
+    tool === "add-room" ||
+    tool === "measure" ||
+    tool === "add-door" ||
+    tool === "add-window" ||
+    tool === "add-stair"
+      ? drawingMousePos
+      : null;
   const activeMeasureStart = tool === "measure" ? measureStart : null;
 
   const dragContextRef = useRef<{
-    type: "room-move" | "wall-move" | "room-rotate" | "room-scale" | "wall-rotate" | "wall-scale";
+    type:
+      | "room-move"
+      | "wall-move"
+      | "room-rotate"
+      | "room-scale"
+      | "wall-rotate"
+      | "wall-scale"
+      | "door-slide"
+      | "window-slide";
     id: string;
     startMeters: { x: number; y: number };
     originalLayout: typeof floorPlanLayout;
@@ -283,23 +361,39 @@ export default function BlueprintCanvas2D() {
 
   const hasDraggedRef = useRef(false);
 
-  const isInitialized = useRef(false);
-  const currentMousePosMetersRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const projectId = useEditorStore((state) => state.projectId);
+  const fitRequest = useEditorStore((state) => state.fitPlanRequest);
+  const showMeasurements = useEditorStore((state) => state.showMeasurements);
+  const viewportRef = useRef<{
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    scale: number;
+    auto: boolean;
+    key: string;
+  } | null>(null);
+  const currentMousePosMetersRef = useRef<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
   const copiedObjectRef = useRef<{
     type: "furniture" | "wall" | "room";
     data: SceneObject | Wall | { room: Room; walls: Wall[] };
   } | null>(null);
 
-
   // Keyboard Copy / Paste shortcuts (Ctrl+C / Ctrl+V)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
-      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+      if (
+        activeEl &&
+        (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")
+      ) {
         return;
       }
 
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
 
       // Single-key CAD drafting tool hotkeys & Escape cancellation
@@ -365,11 +459,13 @@ export default function BlueprintCanvas2D() {
         if (!currentSelectedId) return;
 
         // 1. Check if selected is furniture
-        const furniture = sceneObjects.find((obj) => obj.id === currentSelectedId);
+        const furniture = sceneObjects.find(
+          (obj) => obj.id === currentSelectedId,
+        );
         if (furniture) {
           copiedObjectRef.current = {
             type: "furniture",
-            data: { ...furniture }
+            data: { ...furniture },
           };
           toast.success(`Copied furniture: ${furniture.name}`);
           return;
@@ -377,26 +473,32 @@ export default function BlueprintCanvas2D() {
 
         // 2. Check if selected is wall
         if (layout) {
-          const wall = (layout.walls || []).find((w) => w.id === currentSelectedId);
+          const wall = (layout.walls || []).find(
+            (w) => w.id === currentSelectedId,
+          );
           if (wall) {
             copiedObjectRef.current = {
               type: "wall",
-              data: { ...wall }
+              data: { ...wall },
             };
             toast.success("Copied wall.");
             return;
           }
 
           // 3. Check if selected is room
-          const room = (layout.rooms || []).find((r) => r.id === currentSelectedId);
+          const room = (layout.rooms || []).find(
+            (r) => r.id === currentSelectedId,
+          );
           if (room) {
-            const roomWalls = (layout.walls || []).filter((w) => room.wallIds?.includes(w.id));
+            const roomWalls = (layout.walls || []).filter((w) =>
+              room.wallIds?.includes(w.id),
+            );
             copiedObjectRef.current = {
               type: "room",
               data: {
                 room: { ...room },
-                walls: roomWalls.map((w) => ({ ...w }))
-              }
+                walls: roomWalls.map((w) => ({ ...w })),
+              },
             };
             toast.success(`Copied room: ${room.label}`);
             return;
@@ -409,14 +511,17 @@ export default function BlueprintCanvas2D() {
 
         const layout = useEditorStore.getState().floorPlanLayout;
         const targetPt = currentMousePosMetersRef.current;
-        const targetPtFeet = { x: metersToFeet(targetPt.x), y: metersToFeet(targetPt.y) };
+        const targetPtFeet = {
+          x: metersToFeet(targetPt.x),
+          y: metersToFeet(targetPt.y),
+        };
 
         if (copiedObjectRef.current.type === "furniture") {
           const original = copiedObjectRef.current.data as SceneObject;
           const newObj: SceneObject = {
             ...original,
             id: generateElementId("furnish-copy"),
-            position: { x: targetPt.x, y: original.position.y, z: targetPt.y }
+            position: { x: targetPt.x, y: original.position.y, z: targetPt.y },
           };
           addSceneObject(newObj);
           setSelectedObject(newObj.id);
@@ -425,33 +530,43 @@ export default function BlueprintCanvas2D() {
           const original = copiedObjectRef.current.data as Wall;
           const dx = original.end.x - original.start.x;
           const dy = original.end.y - original.start.y;
-          const startPt = e.shiftKey ? targetPtFeet : { x: Math.round(targetPtFeet.x * 2) / 2, y: Math.round(targetPtFeet.y * 2) / 2 };
+          const startPt = e.shiftKey
+            ? targetPtFeet
+            : {
+                x: Math.round(targetPtFeet.x * 2) / 2,
+                y: Math.round(targetPtFeet.y * 2) / 2,
+              };
           const endPt = { x: startPt.x + dx, y: startPt.y + dy };
-          
+
           const newWall: Wall = {
             ...original,
             id: generateElementId("wall-copy"),
             start: startPt,
-            end: endPt
+            end: endPt,
           };
 
           const newWalls = [...(layout.walls || []), newWall];
           const snappedWalls = snapCloseWallEndpoints(newWalls);
-          const newRooms = detectAllRooms(snappedWalls);
+          const newRooms = detectAllRooms(snappedWalls, layout.rooms);
           setFloorPlan({
             ...layout,
             walls: snappedWalls,
-            rooms: newRooms
+            rooms: newRooms,
           });
           setSelectedObject(newWall.id);
           toast.success("Pasted wall.");
         } else if (copiedObjectRef.current.type === "room" && layout) {
-          const { room, walls } = copiedObjectRef.current.data as { room: Room, walls: Wall[] };
-          
+          const { room, walls } = copiedObjectRef.current.data as {
+            room: Room;
+            walls: Wall[];
+          };
+
           if (walls.length > 0) {
-            const allPoints = walls.flatMap(w => [w.start, w.end]);
-            const cx = allPoints.reduce((sum, p) => sum + p.x, 0) / allPoints.length;
-            const cy = allPoints.reduce((sum, p) => sum + p.y, 0) / allPoints.length;
+            const allPoints = walls.flatMap((w) => [w.start, w.end]);
+            const cx =
+              allPoints.reduce((sum, p) => sum + p.x, 0) / allPoints.length;
+            const cy =
+              allPoints.reduce((sum, p) => sum + p.y, 0) / allPoints.length;
 
             const dx = targetPtFeet.x - cx;
             const dy = targetPtFeet.y - cy;
@@ -467,7 +582,7 @@ export default function BlueprintCanvas2D() {
                 ...w,
                 id: newId,
                 start: { x: w.start.x + dx, y: w.start.y + dy },
-                end: { x: w.end.x + dx, y: w.end.y + dy }
+                end: { x: w.end.x + dx, y: w.end.y + dy },
               };
               newWalls.push(nw);
               pastedWalls.push(nw);
@@ -481,9 +596,9 @@ export default function BlueprintCanvas2D() {
                 x: room.bounds.x + dx,
                 y: room.bounds.y + dy,
                 width: room.bounds.width,
-                height: room.bounds.height
+                height: room.bounds.height,
               },
-              wallIds: room.wallIds?.map(id => wallIdMap.get(id) || id) || []
+              wallIds: room.wallIds?.map((id) => wallIdMap.get(id) || id) || [],
             };
 
             const snappedWalls = snapCloseWallEndpoints(newWalls);
@@ -491,13 +606,14 @@ export default function BlueprintCanvas2D() {
             setFloorPlan({
               ...layout,
               walls: snappedWalls,
-              rooms: updatedRooms
+              rooms: updatedRooms,
             });
             setSelectedObject(newRoomId);
             toast.success(`Pasted room: ${newRoom.label}`);
           } else {
             const dx = targetPtFeet.x - (room.bounds.x + room.bounds.width / 2);
-            const dy = targetPtFeet.y - (room.bounds.y + room.bounds.height / 2);
+            const dy =
+              targetPtFeet.y - (room.bounds.y + room.bounds.height / 2);
             const newRoomId = generateElementId("room-copy");
             const newRoom: Room = {
               ...room,
@@ -506,13 +622,13 @@ export default function BlueprintCanvas2D() {
                 x: room.bounds.x + dx,
                 y: room.bounds.y + dy,
                 width: room.bounds.width,
-                height: room.bounds.height
-              }
+                height: room.bounds.height,
+              },
             };
             const updatedRooms = [...(layout.rooms || []), newRoom];
             setFloorPlan({
               ...layout,
-              rooms: updatedRooms
+              rooms: updatedRooms,
             });
             setSelectedObject(newRoomId);
             toast.success(`Pasted room: ${newRoom.label}`);
@@ -523,23 +639,45 @@ export default function BlueprintCanvas2D() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [sceneObjects, addSceneObject, setFloorPlan, setSelectedObject, setTool, drawingWallStart]);
+  }, [
+    sceneObjects,
+    addSceneObject,
+    setFloorPlan,
+    setSelectedObject,
+    setTool,
+    drawingWallStart,
+  ]);
 
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
       setMounted(true);
     });
-    
+
     if (!containerRef.current) return;
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
+        if (width <= 0 || height <= 0) continue;
         setStageSize({ width, height });
-        if (width > 0 && height > 0 && !isInitialized.current) {
-          setStageViewport(useEditorStore.getState().stageScale, width / 2, height / 2);
-          isInitialized.current = true;
-        }
+        const state = useEditorStore.getState();
+        const previous = viewportRef.current;
+        const key = `${projectId}:${floorPlanLayout?.id}:${fitRequest}`;
+        const untouched =
+          previous?.auto &&
+          Math.abs(state.stageX - previous.x) < 0.001 &&
+          Math.abs(state.stageY - previous.y) < 0.001 &&
+          Math.abs(state.stageScale - previous.scale) < 0.001;
+        const auto = !previous || previous.key !== key || Boolean(untouched);
+        const viewport = auto
+          ? fitPlanViewport(state.floorPlanLayout, width, height)
+          : {
+              scale: state.stageScale,
+              x: state.stageX + (width - previous.width) / 2,
+              y: state.stageY + (height - previous.height) / 2,
+            };
+        setStageViewport(viewport.scale, viewport.x, viewport.y);
+        viewportRef.current = { ...viewport, width, height, auto, key };
       }
     });
 
@@ -548,9 +686,12 @@ export default function BlueprintCanvas2D() {
       observer.disconnect();
       cancelAnimationFrame(handle);
     };
-  }, [mounted, setStageViewport]);
+  }, [mounted, setStageViewport, projectId, floorPlanLayout?.id, fitRequest]);
 
-  const handleStartRoomMove = (e: Konva.KonvaEventObject<MouseEvent>, roomId: string) => {
+  const handleStartRoomMove = (
+    e: Konva.KonvaEventObject<MouseEvent>,
+    roomId: string,
+  ) => {
     if (tool !== "select") return;
     const stage = e.target.getStage();
     if (!stage) return;
@@ -559,13 +700,21 @@ export default function BlueprintCanvas2D() {
       const layout = useEditorStore.getState().floorPlanLayout;
       if (layout) {
         useEditorStore.temporal.getState().pause();
-        dragContextRef.current = { type: "room-move", id: roomId, startMeters: pt, originalLayout: layout };
+        dragContextRef.current = {
+          type: "room-move",
+          id: roomId,
+          startMeters: pt,
+          originalLayout: layout,
+        };
       }
       e.cancelBubble = true;
     }
   };
 
-  const handleStartRoomRotate = (e: Konva.KonvaEventObject<MouseEvent>, roomId: string) => {
+  const handleStartRoomRotate = (
+    e: Konva.KonvaEventObject<MouseEvent>,
+    roomId: string,
+  ) => {
     const stage = e.target.getStage();
     if (!stage) return;
     const pt = getStagePointerMeters(stage);
@@ -573,13 +722,21 @@ export default function BlueprintCanvas2D() {
       const layout = useEditorStore.getState().floorPlanLayout;
       if (layout) {
         useEditorStore.temporal.getState().pause();
-        dragContextRef.current = { type: "room-rotate", id: roomId, startMeters: pt, originalLayout: layout };
+        dragContextRef.current = {
+          type: "room-rotate",
+          id: roomId,
+          startMeters: pt,
+          originalLayout: layout,
+        };
       }
       e.cancelBubble = true;
     }
   };
 
-  const handleStartRoomScale = (e: Konva.KonvaEventObject<MouseEvent>, roomId: string) => {
+  const handleStartRoomScale = (
+    e: Konva.KonvaEventObject<MouseEvent>,
+    roomId: string,
+  ) => {
     const stage = e.target.getStage();
     if (!stage) return;
     const pt = getStagePointerMeters(stage);
@@ -587,13 +744,21 @@ export default function BlueprintCanvas2D() {
       const layout = useEditorStore.getState().floorPlanLayout;
       if (layout) {
         useEditorStore.temporal.getState().pause();
-        dragContextRef.current = { type: "room-scale", id: roomId, startMeters: pt, originalLayout: layout };
+        dragContextRef.current = {
+          type: "room-scale",
+          id: roomId,
+          startMeters: pt,
+          originalLayout: layout,
+        };
       }
       e.cancelBubble = true;
     }
   };
 
-  const handleStartWallMove = (e: Konva.KonvaEventObject<MouseEvent>, wallId: string) => {
+  const handleStartWallMove = (
+    e: Konva.KonvaEventObject<MouseEvent>,
+    wallId: string,
+  ) => {
     if (tool !== "select") return;
     const stage = e.target.getStage();
     if (!stage) return;
@@ -603,13 +768,21 @@ export default function BlueprintCanvas2D() {
       const layout = useEditorStore.getState().floorPlanLayout;
       if (layout) {
         useEditorStore.temporal.getState().pause();
-        dragContextRef.current = { type: "wall-move", id: wallId, startMeters: pt, originalLayout: layout };
+        dragContextRef.current = {
+          type: "wall-move",
+          id: wallId,
+          startMeters: pt,
+          originalLayout: layout,
+        };
       }
       e.cancelBubble = true;
     }
   };
 
-  const handleStartWallRotate = (e: Konva.KonvaEventObject<MouseEvent>, wallId: string) => {
+  const handleStartWallRotate = (
+    e: Konva.KonvaEventObject<MouseEvent>,
+    wallId: string,
+  ) => {
     const stage = e.target.getStage();
     if (!stage) return;
     const pt = getStagePointerMeters(stage);
@@ -617,13 +790,21 @@ export default function BlueprintCanvas2D() {
       const layout = useEditorStore.getState().floorPlanLayout;
       if (layout) {
         useEditorStore.temporal.getState().pause();
-        dragContextRef.current = { type: "wall-rotate", id: wallId, startMeters: pt, originalLayout: layout };
+        dragContextRef.current = {
+          type: "wall-rotate",
+          id: wallId,
+          startMeters: pt,
+          originalLayout: layout,
+        };
       }
       e.cancelBubble = true;
     }
   };
 
-  const handleStartWallScale = (e: Konva.KonvaEventObject<MouseEvent>, wallId: string) => {
+  const handleStartWallScale = (
+    e: Konva.KonvaEventObject<MouseEvent>,
+    wallId: string,
+  ) => {
     const stage = e.target.getStage();
     if (!stage) return;
     const pt = getStagePointerMeters(stage);
@@ -631,7 +812,12 @@ export default function BlueprintCanvas2D() {
       const layout = useEditorStore.getState().floorPlanLayout;
       if (layout) {
         useEditorStore.temporal.getState().pause();
-        dragContextRef.current = { type: "wall-scale", id: wallId, startMeters: pt, originalLayout: layout };
+        dragContextRef.current = {
+          type: "wall-scale",
+          id: wallId,
+          startMeters: pt,
+          originalLayout: layout,
+        };
       }
       e.cancelBubble = true;
     }
@@ -640,7 +826,7 @@ export default function BlueprintCanvas2D() {
   if (!mounted || !floorPlanLayout) return null;
 
   const handleResizeWall2D = (wallId: string, newLengthFt: number) => {
-    if (isNaN(newLengthFt) || newLengthFt <= 0.5) return;
+    if (!Number.isFinite(newLengthFt) || newLengthFt <= 0.5) return;
     const layout = useEditorStore.getState().floorPlanLayout;
     if (!layout) return;
     const updatedWalls = layout.walls.map((w) => {
@@ -660,7 +846,7 @@ export default function BlueprintCanvas2D() {
       };
     });
     const snappedWalls = snapCloseWallEndpoints(updatedWalls);
-    const newRooms = detectAllRooms(snappedWalls);
+    const newRooms = detectAllRooms(snappedWalls, layout.rooms);
     setFloorPlan({ ...layout, walls: snappedWalls, rooms: newRooms });
   };
 
@@ -671,7 +857,7 @@ export default function BlueprintCanvas2D() {
     newYMeters: number,
     isDragEnd: boolean,
     shiftKey?: boolean,
-    altKey?: boolean
+    altKey?: boolean,
   ) => {
     if (!floorPlanLayout) return;
 
@@ -715,7 +901,7 @@ export default function BlueprintCanvas2D() {
     }
 
     // 2. Find originally connected endpoints (at the start of drag)
-    const draggedWall = floorPlanLayout.walls.find(w => w.id === wallId);
+    const draggedWall = floorPlanLayout.walls.find((w) => w.id === wallId);
     if (!draggedWall) return;
 
     const originalPos = isStart ? draggedWall.start : draggedWall.end;
@@ -724,10 +910,15 @@ export default function BlueprintCanvas2D() {
     if (!altKey) {
       (floorPlanLayout.walls || []).forEach((w) => {
         if (w.id === wallId) return;
-        if (Math.hypot(w.start.x - originalPos.x, w.start.y - originalPos.y) < 0.05) {
+        if (
+          Math.hypot(w.start.x - originalPos.x, w.start.y - originalPos.y) <
+          0.05
+        ) {
           connectedPoints.push({ wallId: w.id, isStart: true });
         }
-        if (Math.hypot(w.end.x - originalPos.x, w.end.y - originalPos.y) < 0.05) {
+        if (
+          Math.hypot(w.end.x - originalPos.x, w.end.y - originalPos.y) < 0.05
+        ) {
           connectedPoints.push({ wallId: w.id, isStart: false });
         }
       });
@@ -746,11 +937,15 @@ export default function BlueprintCanvas2D() {
       }
 
       if (!altKey && connectedPoints.length > 0) {
-        const matchStart = connectedPoints.find(cp => cp.wallId === w.id && cp.isStart);
+        const matchStart = connectedPoints.find(
+          (cp) => cp.wallId === w.id && cp.isStart,
+        );
         if (matchStart) {
           nextWall.start = { x: newXFt, y: newYFt };
         }
-        const matchEnd = connectedPoints.find(cp => cp.wallId === w.id && !cp.isStart);
+        const matchEnd = connectedPoints.find(
+          (cp) => cp.wallId === w.id && !cp.isStart,
+        );
         if (matchEnd) {
           nextWall.end = { x: newXFt, y: newYFt };
         }
@@ -760,11 +955,20 @@ export default function BlueprintCanvas2D() {
     });
 
     if (isDragEnd) {
-      const wallsChanged = JSON.stringify(floorPlanLayout.walls.map(w => ({ id: w.id, start: w.start, end: w.end }))) !== 
-                           JSON.stringify(updatedWalls.map(w => ({ id: w.id, start: w.start, end: w.end })));
+      const wallsChanged =
+        JSON.stringify(
+          floorPlanLayout.walls.map((w) => ({
+            id: w.id,
+            start: w.start,
+            end: w.end,
+          })),
+        ) !==
+        JSON.stringify(
+          updatedWalls.map((w) => ({ id: w.id, start: w.start, end: w.end })),
+        );
       if (wallsChanged) {
         const snappedWalls = snapCloseWallEndpoints(updatedWalls);
-        const newRooms = detectAllRooms(snappedWalls);
+        const newRooms = detectAllRooms(snappedWalls, floorPlanLayout.rooms);
         useEditorStore.temporal.getState().resume();
         setFloorPlan({
           ...floorPlanLayout,
@@ -788,7 +992,7 @@ export default function BlueprintCanvas2D() {
     newXMeters: number,
     newYMeters: number,
     isDragEnd: boolean,
-    shiftKey?: boolean
+    shiftKey?: boolean,
   ) => {
     const obj = sceneObjects.find((o) => o.id === objId);
     if (!obj) return;
@@ -803,7 +1007,9 @@ export default function BlueprintCanvas2D() {
     }
 
     if (isDragEnd) {
-      const posChanged = Math.abs(obj.position.x - x) > 0.001 || Math.abs(obj.position.z - z) > 0.001;
+      const posChanged =
+        Math.abs(obj.position.x - x) > 0.001 ||
+        Math.abs(obj.position.z - z) > 0.001;
       if (posChanged) {
         useEditorStore.temporal.getState().resume();
         updateSceneObject(objId, {
@@ -874,11 +1080,15 @@ export default function BlueprintCanvas2D() {
     const ptMeters = getStagePointerMeters(stage);
     if (!ptMeters) return;
     const ptFeet = { x: metersToFeet(ptMeters.x), y: metersToFeet(ptMeters.y) };
-    
+
     // Select Object Logic
     if (tool === "select") {
       // Find what was clicked. We can use e.target.id() if we set it, or just rely on react-konva events.
-      if (e.target === stage || e.target.name() === "master-group" || e.target.name() === "grid-bg") {
+      if (
+        e.target === stage ||
+        e.target.name() === "master-group" ||
+        e.target.name() === "grid-bg"
+      ) {
         setSelectedObject(null);
       }
       return; // Handled by onClick of individual items
@@ -889,7 +1099,10 @@ export default function BlueprintCanvas2D() {
 
     if (tool === "draw-wall") {
       // Snapping priority: wall endpoint -> wall midpoint -> 0.5ft grid
-      let snapPt = { x: Math.round(ptFeet.x * 2) / 2, y: Math.round(ptFeet.y * 2) / 2 };
+      let snapPt = {
+        x: Math.round(ptFeet.x * 2) / 2,
+        y: Math.round(ptFeet.y * 2) / 2,
+      };
       const snappedEp = snapToWallEndpoints(ptFeet, layout.walls, 0.8);
       if (snappedEp.x !== ptFeet.x || snappedEp.y !== ptFeet.y) {
         snapPt = snappedEp;
@@ -899,7 +1112,7 @@ export default function BlueprintCanvas2D() {
           snapPt = snappedMp;
         }
       }
-      
+
       if (!drawingWallStart) {
         setDrawingWallStart(snapPt);
         setDrawingMousePos(snapPt);
@@ -924,16 +1137,16 @@ export default function BlueprintCanvas2D() {
 
         const allWalls = [...layout.walls, newWall];
         const snappedWalls = snapCloseWallEndpoints(allWalls);
-        const newRooms = detectAllRooms(snappedWalls);
+        const newRooms = detectAllRooms(snappedWalls, layout.rooms);
 
         setFloorPlan({
           ...layout,
           walls: snappedWalls,
-          rooms: newRooms
+          rooms: newRooms,
         });
 
         // Set next wall start to the snapped end point of the placed wall
-        const snappedNewWall = snappedWalls.find(w => w.id === newWall.id);
+        const snappedNewWall = snappedWalls.find((w) => w.id === newWall.id);
         const nextStart = snappedNewWall ? snappedNewWall.end : newWall.end;
         setDrawingWallStart(nextStart);
         setDrawingMousePos(nextStart);
@@ -947,7 +1160,7 @@ export default function BlueprintCanvas2D() {
         position: { x: ptMeters.x, y: 0.1, z: ptMeters.y },
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
-        materialId: "color-#1f2937"
+        materialId: "color-#1f2937",
       };
       addSceneObject(newObj);
       setTool("select");
@@ -957,7 +1170,10 @@ export default function BlueprintCanvas2D() {
         setMeasureStart(ptMeters);
         setDrawingMousePos(ptFeet);
       } else {
-        const distMeters = Math.hypot(ptMeters.x - measureStart.x, ptMeters.y - measureStart.y);
+        const distMeters = Math.hypot(
+          ptMeters.x - measureStart.x,
+          ptMeters.y - measureStart.y,
+        );
         const distFeet = metersToFeet(distMeters);
         addDimensionLine({
           id: generateElementId("dim"),
@@ -980,7 +1196,9 @@ export default function BlueprintCanvas2D() {
         const lenSq = dx * dx + dy * dy;
         if (lenSq < 0.01) continue;
 
-        const t = ((ptFeet.x - wall.start.x) * dx + (ptFeet.y - wall.start.y) * dy) / lenSq;
+        const t =
+          ((ptFeet.x - wall.start.x) * dx + (ptFeet.y - wall.start.y) * dy) /
+          lenSq;
         const clampedT = Math.max(0.1, Math.min(0.9, t));
         const projX = wall.start.x + clampedT * dx;
         const projY = wall.start.y + clampedT * dy;
@@ -1034,7 +1252,9 @@ export default function BlueprintCanvas2D() {
       }
     } else if (tool === "add-stair") {
       const activeStorey = storeys.find((s) => s.id === activeStoreyId);
-      const elevationM = activeStorey ? feetToMeters(activeStorey.elevation) : 0;
+      const elevationM = activeStorey
+        ? feetToMeters(activeStorey.elevation)
+        : 0;
       const newStair: Staircase = {
         id: generateElementId("stair"),
         startStoreyId: activeStoreyId || "storey-1",
@@ -1061,13 +1281,23 @@ export default function BlueprintCanvas2D() {
 
     currentMousePosMetersRef.current = ptMeters;
 
-    // Pan with middle mouse, right mouse, or camera tool
-    if (e.evt.buttons === 4 || e.evt.buttons === 2 || tool === "camera") {
+    // Pan with left-click on empty space, middle mouse, right mouse, or camera tool
+    if (
+      isPanningRef.current ||
+      e.evt.buttons === 4 ||
+      e.evt.buttons === 2 ||
+      tool === "camera"
+    ) {
+      if (e.evt.buttons === 0 && isPanningRef.current) {
+        isPanningRef.current = false;
+        setCanvasCursor("default");
+        return;
+      }
       const state = useEditorStore.getState();
       setStageViewport(
         state.stageScale,
         state.stageX + e.evt.movementX,
-        state.stageY + e.evt.movementY
+        state.stageY + e.evt.movementY,
       );
       return;
     }
@@ -1079,100 +1309,206 @@ export default function BlueprintCanvas2D() {
       const dxFt = metersToFeet(ptMeters.x - startMeters.x);
       const dyFt = metersToFeet(ptMeters.y - startMeters.y);
 
+      if (type === "door-slide") {
+        const door = originalLayout.doors.find((d) => d.id === id);
+        const wall = door
+          ? originalLayout.walls.find((w) => w.id === door.wallId)
+          : undefined;
+        if (door && wall) {
+          const wdx = wall.end.x - wall.start.x;
+          const wdy = wall.end.y - wall.start.y;
+          const lenSq = wdx * wdx + wdy * wdy;
+          if (lenSq > 0.01) {
+            const ptXFt = metersToFeet(ptMeters.x);
+            const ptYFt = metersToFeet(ptMeters.y);
+            const rawT =
+              ((ptXFt - wall.start.x) * wdx + (ptYFt - wall.start.y) * wdy) /
+              lenSq;
+            const clampedT = Math.max(
+              0.08,
+              Math.min(0.92, Math.round(rawT * 100) / 100),
+            );
+            updateDoor(id, { position: clampedT });
+          }
+        }
+        return;
+      }
+
+      if (type === "window-slide") {
+        const win = originalLayout.windows.find((w) => w.id === id);
+        const wall = win
+          ? originalLayout.walls.find((w) => w.id === win.wallId)
+          : undefined;
+        if (win && wall) {
+          const wdx = wall.end.x - wall.start.x;
+          const wdy = wall.end.y - wall.start.y;
+          const lenSq = wdx * wdx + wdy * wdy;
+          if (lenSq > 0.01) {
+            const ptXFt = metersToFeet(ptMeters.x);
+            const ptYFt = metersToFeet(ptMeters.y);
+            const rawT =
+              ((ptXFt - wall.start.x) * wdx + (ptYFt - wall.start.y) * wdy) /
+              lenSq;
+            const clampedT = Math.max(
+              0.08,
+              Math.min(0.92, Math.round(rawT * 100) / 100),
+            );
+            updateWindow(id, { position: clampedT });
+          }
+        }
+        return;
+      }
+
       let updatedWalls = [...(originalLayout.walls || [])];
 
       if (type === "room-move") {
-        const room = originalLayout.rooms.find(r => r.id === id);
+        const room = originalLayout.rooms.find((r) => r.id === id);
         if (room && room.wallIds) {
-          updatedWalls = updatedWalls.map(w => {
+          updatedWalls = updatedWalls.map((w) => {
             if (room.wallIds!.includes(w.id)) {
-              return { ...w, start: { x: w.start.x + dxFt, y: w.start.y + dyFt }, end: { x: w.end.x + dxFt, y: w.end.y + dyFt } };
+              return {
+                ...w,
+                start: { x: w.start.x + dxFt, y: w.start.y + dyFt },
+                end: { x: w.end.x + dxFt, y: w.end.y + dyFt },
+              };
             }
             return w;
           });
         }
       } else if (type === "wall-move") {
-        const wall = originalLayout.walls.find(w => w.id === id);
+        const wall = originalLayout.walls.find((w) => w.id === id);
         if (wall) {
-          const isAttached = (p1: {x:number, y:number}, p2: {x:number, y:number}) => Math.hypot(p1.x - p2.x, p1.y - p2.y) < 0.1;
-          updatedWalls = updatedWalls.map(w => {
-            if (w.id === id) return { ...w, start: { x: w.start.x + dxFt, y: w.start.y + dyFt }, end: { x: w.end.x + dxFt, y: w.end.y + dyFt } };
-            let newStart = w.start; let newEnd = w.end;
-            if (isAttached(w.start, wall.start) || isAttached(w.start, wall.end)) newStart = { x: w.start.x + dxFt, y: w.start.y + dyFt };
-            if (isAttached(w.end, wall.start) || isAttached(w.end, wall.end)) newEnd = { x: w.end.x + dxFt, y: w.end.y + dyFt };
+          const isAttached = (
+            p1: { x: number; y: number },
+            p2: { x: number; y: number },
+          ) => Math.hypot(p1.x - p2.x, p1.y - p2.y) < 0.1;
+          updatedWalls = updatedWalls.map((w) => {
+            if (w.id === id)
+              return {
+                ...w,
+                start: { x: w.start.x + dxFt, y: w.start.y + dyFt },
+                end: { x: w.end.x + dxFt, y: w.end.y + dyFt },
+              };
+            let newStart = w.start;
+            let newEnd = w.end;
+            if (
+              isAttached(w.start, wall.start) ||
+              isAttached(w.start, wall.end)
+            )
+              newStart = { x: w.start.x + dxFt, y: w.start.y + dyFt };
+            if (isAttached(w.end, wall.start) || isAttached(w.end, wall.end))
+              newEnd = { x: w.end.x + dxFt, y: w.end.y + dyFt };
             return { ...w, start: newStart, end: newEnd };
           });
         }
       } else if (type === "room-rotate") {
-        const room = originalLayout.rooms.find(r => r.id === id);
+        const room = originalLayout.rooms.find((r) => r.id === id);
         if (room && room.wallIds) {
           const cx = room.bounds.x + room.bounds.width / 2;
           const cy = room.bounds.y + room.bounds.height / 2;
-          const startAngle = Math.atan2(metersToFeet(startMeters.y) - cy, metersToFeet(startMeters.x) - cx);
-          const currAngle = Math.atan2(metersToFeet(ptMeters.y) - cy, metersToFeet(ptMeters.x) - cx);
+          const startAngle = Math.atan2(
+            metersToFeet(startMeters.y) - cy,
+            metersToFeet(startMeters.x) - cx,
+          );
+          const currAngle = Math.atan2(
+            metersToFeet(ptMeters.y) - cy,
+            metersToFeet(ptMeters.x) - cx,
+          );
           const angleDelta = currAngle - startAngle;
-          
-          updatedWalls = updatedWalls.map(w => {
+
+          updatedWalls = updatedWalls.map((w) => {
             if (room.wallIds!.includes(w.id)) {
-               const rot = (p: {x:number, y:number}) => {
-                 const dx = p.x - cx; const dy = p.y - cy;
-                 return { x: cx + dx * Math.cos(angleDelta) - dy * Math.sin(angleDelta), y: cy + dx * Math.sin(angleDelta) + dy * Math.cos(angleDelta) };
-               }
-               return { ...w, start: rot(w.start), end: rot(w.end) };
+              const rot = (p: { x: number; y: number }) => {
+                const dx = p.x - cx;
+                const dy = p.y - cy;
+                return {
+                  x: cx + dx * Math.cos(angleDelta) - dy * Math.sin(angleDelta),
+                  y: cy + dx * Math.sin(angleDelta) + dy * Math.cos(angleDelta),
+                };
+              };
+              return { ...w, start: rot(w.start), end: rot(w.end) };
             }
             return w;
           });
         }
       } else if (type === "room-scale") {
-        const room = originalLayout.rooms.find(r => r.id === id);
+        const room = originalLayout.rooms.find((r) => r.id === id);
         if (room && room.wallIds) {
           const cx = room.bounds.x + room.bounds.width / 2;
           const cy = room.bounds.y + room.bounds.height / 2;
-          const startDist = Math.hypot(metersToFeet(startMeters.x) - cx, metersToFeet(startMeters.y) - cy);
-          const currDist = Math.hypot(metersToFeet(ptMeters.x) - cx, metersToFeet(ptMeters.y) - cy);
+          const startDist = Math.hypot(
+            metersToFeet(startMeters.x) - cx,
+            metersToFeet(startMeters.y) - cy,
+          );
+          const currDist = Math.hypot(
+            metersToFeet(ptMeters.x) - cx,
+            metersToFeet(ptMeters.y) - cy,
+          );
           const factor = startDist > 0 ? currDist / startDist : 1;
-          
-          updatedWalls = updatedWalls.map(w => {
+
+          updatedWalls = updatedWalls.map((w) => {
             if (room.wallIds!.includes(w.id)) {
-               const scl = (p: {x:number, y:number}) => ({ x: cx + (p.x - cx) * factor, y: cy + (p.y - cy) * factor });
-               return { ...w, start: scl(w.start), end: scl(w.end) };
+              const scl = (p: { x: number; y: number }) => ({
+                x: cx + (p.x - cx) * factor,
+                y: cy + (p.y - cy) * factor,
+              });
+              return { ...w, start: scl(w.start), end: scl(w.end) };
             }
             return w;
           });
         }
       } else if (type === "wall-rotate") {
-        const wall = originalLayout.walls.find(w => w.id === id);
+        const wall = originalLayout.walls.find((w) => w.id === id);
         if (wall) {
           const cx = (wall.start.x + wall.end.x) / 2;
           const cy = (wall.start.y + wall.end.y) / 2;
-          const startAngle = Math.atan2(metersToFeet(startMeters.y) - cy, metersToFeet(startMeters.x) - cx);
-          const currAngle = Math.atan2(metersToFeet(ptMeters.y) - cy, metersToFeet(ptMeters.x) - cx);
+          const startAngle = Math.atan2(
+            metersToFeet(startMeters.y) - cy,
+            metersToFeet(startMeters.x) - cx,
+          );
+          const currAngle = Math.atan2(
+            metersToFeet(ptMeters.y) - cy,
+            metersToFeet(ptMeters.x) - cx,
+          );
           const angleDelta = currAngle - startAngle;
-          
-          updatedWalls = updatedWalls.map(w => {
+
+          updatedWalls = updatedWalls.map((w) => {
             if (w.id === id) {
-               const rot = (p: {x:number, y:number}) => {
-                 const dx = p.x - cx; const dy = p.y - cy;
-                 return { x: cx + dx * Math.cos(angleDelta) - dy * Math.sin(angleDelta), y: cy + dx * Math.sin(angleDelta) + dy * Math.cos(angleDelta) };
-               }
-               return { ...w, start: rot(w.start), end: rot(w.end) };
+              const rot = (p: { x: number; y: number }) => {
+                const dx = p.x - cx;
+                const dy = p.y - cy;
+                return {
+                  x: cx + dx * Math.cos(angleDelta) - dy * Math.sin(angleDelta),
+                  y: cy + dx * Math.sin(angleDelta) + dy * Math.cos(angleDelta),
+                };
+              };
+              return { ...w, start: rot(w.start), end: rot(w.end) };
             }
             return w;
           });
         }
       } else if (type === "wall-scale") {
-        const wall = originalLayout.walls.find(w => w.id === id);
+        const wall = originalLayout.walls.find((w) => w.id === id);
         if (wall) {
           const cx = (wall.start.x + wall.end.x) / 2;
           const cy = (wall.start.y + wall.end.y) / 2;
-          const startDist = Math.hypot(metersToFeet(startMeters.x) - cx, metersToFeet(startMeters.y) - cy);
-          const currDist = Math.hypot(metersToFeet(ptMeters.x) - cx, metersToFeet(ptMeters.y) - cy);
+          const startDist = Math.hypot(
+            metersToFeet(startMeters.x) - cx,
+            metersToFeet(startMeters.y) - cy,
+          );
+          const currDist = Math.hypot(
+            metersToFeet(ptMeters.x) - cx,
+            metersToFeet(ptMeters.y) - cy,
+          );
           const factor = startDist > 0 ? currDist / startDist : 1;
-          
-          updatedWalls = updatedWalls.map(w => {
+
+          updatedWalls = updatedWalls.map((w) => {
             if (w.id === id) {
-               const scl = (p: {x:number, y:number}) => ({ x: cx + (p.x - cx) * factor, y: cy + (p.y - cy) * factor });
-               return { ...w, start: scl(w.start), end: scl(w.end) };
+              const scl = (p: { x: number; y: number }) => ({
+                x: cx + (p.x - cx) * factor,
+                y: cy + (p.y - cy) * factor,
+              });
+              return { ...w, start: scl(w.start), end: scl(w.end) };
             }
             return w;
           });
@@ -1185,11 +1521,21 @@ export default function BlueprintCanvas2D() {
       }
       return;
     }
-    
-    if (!drawingWallStart && !measureStart && tool !== "add-door" && tool !== "add-window" && tool !== "add-stair") return;
+
+    if (
+      !drawingWallStart &&
+      !measureStart &&
+      tool !== "add-door" &&
+      tool !== "add-window" &&
+      tool !== "add-stair"
+    )
+      return;
     // Snapping for live preview
     const ptFeet = { x: metersToFeet(ptMeters.x), y: metersToFeet(ptMeters.y) };
-    let snapPt = { x: Math.round(ptFeet.x * 2) / 2, y: Math.round(ptFeet.y * 2) / 2 };
+    let snapPt = {
+      x: Math.round(ptFeet.x * 2) / 2,
+      y: Math.round(ptFeet.y * 2) / 2,
+    };
 
     if (tool === "draw-wall") {
       const layout = useEditorStore.getState().floorPlanLayout;
@@ -1210,21 +1556,33 @@ export default function BlueprintCanvas2D() {
         if (e.evt.shiftKey) {
           targetPos = snapToAngle(drawingWallStart, ptFeet);
         } else {
-          targetPos = snapToAngle(drawingWallStart, snapPt, [0, 90, 180, 270], 4);
+          targetPos = snapToAngle(
+            drawingWallStart,
+            snapPt,
+            [0, 90, 180, 270],
+            4,
+          );
         }
       }
       setDrawingMousePos(targetPos);
     } else if (tool === "add-room") {
       setDrawingMousePos(e.evt.shiftKey ? ptFeet : snapPt);
-    } else if (tool === "measure" || tool === "add-door" || tool === "add-window" || tool === "add-stair") {
+    } else if (
+      tool === "measure" ||
+      tool === "add-door" ||
+      tool === "add-window" ||
+      tool === "add-stair"
+    ) {
       setDrawingMousePos(ptFeet);
     }
   };
 
-
-
   return (
-    <div ref={containerRef} id="blueprint-container" className="w-full h-full bg-transparent overflow-hidden relative">
+    <div
+      ref={containerRef}
+      id="blueprint-container"
+      className="w-full h-full bg-[#FAF8F5] overflow-hidden relative"
+    >
       <Stage
         width={stageSize.width}
         height={stageSize.height}
@@ -1233,8 +1591,9 @@ export default function BlueprintCanvas2D() {
         onMouseMove={handleStageMouseMove}
         onMouseDown={(e) => {
           const isMiddleOrRight = e.evt.button === 1 || e.evt.button === 2;
-          
+
           if (isMiddleOrRight) {
+            isPanningRef.current = true;
             setCanvasCursor("grabbing");
             return;
           }
@@ -1243,7 +1602,10 @@ export default function BlueprintCanvas2D() {
           if (!stage) return;
           const ptMeters = getStagePointerMeters(stage);
           if (!ptMeters) return;
-          const snapPt = { x: Math.round(metersToFeet(ptMeters.x) * 2) / 2, y: Math.round(metersToFeet(ptMeters.y) * 2) / 2 };
+          const snapPt = {
+            x: Math.round(metersToFeet(ptMeters.x) * 2) / 2,
+            y: Math.round(metersToFeet(ptMeters.y) * 2) / 2,
+          };
 
           if (tool === "add-room") {
             setDrawingWallStart(snapPt);
@@ -1251,19 +1613,33 @@ export default function BlueprintCanvas2D() {
             return;
           }
 
-          const isEmptySpace = e.target === stage || e.target.name() === "grid-bg" || e.target.name() === "master-group";
-          const isLeftClickOnEmpty = e.evt.button === 0 && isEmptySpace && tool === "select";
+          const isEmptySpace =
+            e.target === stage ||
+            e.target.name() === "grid-bg" ||
+            e.target.name() === "master-group";
+          const isLeftClickOnEmpty =
+            e.evt.button === 0 &&
+            isEmptySpace &&
+            (tool === "select" || tool === "camera");
 
           if (isLeftClickOnEmpty) {
+            isPanningRef.current = true;
             setCanvasCursor("grabbing");
           }
         }}
         onMouseUp={() => {
+          isPanningRef.current = false;
           if (dragContextRef.current) {
+            const dragType = dragContextRef.current.type;
             const layout = useEditorStore.getState().floorPlanLayout;
-            if (layout && hasDraggedRef.current) {
+            if (
+              layout &&
+              hasDraggedRef.current &&
+              dragType !== "door-slide" &&
+              dragType !== "window-slide"
+            ) {
               const snappedWalls = snapCloseWallEndpoints(layout.walls);
-              const newRooms = detectAllRooms(snappedWalls);
+              const newRooms = detectAllRooms(snappedWalls, layout.rooms);
               useEditorStore.temporal.getState().resume();
               setFloorPlan({ ...layout, walls: snappedWalls, rooms: newRooms });
             } else {
@@ -1277,28 +1653,73 @@ export default function BlueprintCanvas2D() {
 
           setCanvasCursor("default");
 
-          if (tool === "add-room" && activeDrawingWallStart && activeDrawingMousePos) {
-            const minX = Math.min(activeDrawingWallStart.x, activeDrawingMousePos.x);
-            const maxX = Math.max(activeDrawingWallStart.x, activeDrawingMousePos.x);
-            const minY = Math.min(activeDrawingWallStart.y, activeDrawingMousePos.y);
-            const maxY = Math.max(activeDrawingWallStart.y, activeDrawingMousePos.y);
+          if (
+            tool === "add-room" &&
+            activeDrawingWallStart &&
+            activeDrawingMousePos
+          ) {
+            const minX = Math.min(
+              activeDrawingWallStart.x,
+              activeDrawingMousePos.x,
+            );
+            const maxX = Math.max(
+              activeDrawingWallStart.x,
+              activeDrawingMousePos.x,
+            );
+            const minY = Math.min(
+              activeDrawingWallStart.y,
+              activeDrawingMousePos.y,
+            );
+            const maxY = Math.max(
+              activeDrawingWallStart.y,
+              activeDrawingMousePos.y,
+            );
 
-            if (maxX - minX >= 2 && maxY - minY >= 2) { // Minimum 2x2 room
+            if (maxX - minX >= 2 && maxY - minY >= 2) {
+              // Minimum 2x2 room
               const walls: Wall[] = [
-                { id: generateElementId("wall-ar1"), start: { x: minX, y: minY }, end: { x: maxX, y: minY }, thickness: 6, height: 10, isLoadBearing: false },
-                { id: generateElementId("wall-ar2"), start: { x: maxX, y: minY }, end: { x: maxX, y: maxY }, thickness: 6, height: 10, isLoadBearing: false },
-                { id: generateElementId("wall-ar3"), start: { x: maxX, y: maxY }, end: { x: minX, y: maxY }, thickness: 6, height: 10, isLoadBearing: false },
-                { id: generateElementId("wall-ar4"), start: { x: minX, y: maxY }, end: { x: minX, y: minY }, thickness: 6, height: 10, isLoadBearing: false }
+                {
+                  id: generateElementId("wall-ar1"),
+                  start: { x: minX, y: minY },
+                  end: { x: maxX, y: minY },
+                  thickness: 6,
+                  height: 10,
+                  isLoadBearing: false,
+                },
+                {
+                  id: generateElementId("wall-ar2"),
+                  start: { x: maxX, y: minY },
+                  end: { x: maxX, y: maxY },
+                  thickness: 6,
+                  height: 10,
+                  isLoadBearing: false,
+                },
+                {
+                  id: generateElementId("wall-ar3"),
+                  start: { x: maxX, y: maxY },
+                  end: { x: minX, y: maxY },
+                  thickness: 6,
+                  height: 10,
+                  isLoadBearing: false,
+                },
+                {
+                  id: generateElementId("wall-ar4"),
+                  start: { x: minX, y: maxY },
+                  end: { x: minX, y: minY },
+                  thickness: 6,
+                  height: 10,
+                  isLoadBearing: false,
+                },
               ];
               const layout = useEditorStore.getState().floorPlanLayout;
               if (layout) {
                 const allWalls = [...layout.walls, ...walls];
                 const snappedWalls = snapCloseWallEndpoints(allWalls);
-                const newRooms = detectAllRooms(snappedWalls);
+                const newRooms = detectAllRooms(snappedWalls, layout.rooms);
                 setFloorPlan({
                   ...layout,
                   walls: snappedWalls,
-                  rooms: newRooms
+                  rooms: newRooms,
                 });
                 toast.success("Room created.");
               }
@@ -1338,30 +1759,42 @@ export default function BlueprintCanvas2D() {
 
           <Group
             name="master-group"
+            listening={tool === "select"}
             ref={masterGroupRef}
             x={useEditorStore.getState().stageX}
             y={useEditorStore.getState().stageY}
             scaleX={useEditorStore.getState().stageScale}
             scaleY={useEditorStore.getState().stageScale}
           >
+            {floorPlanLayout.blueprint && (
+              <BlueprintUnderlay reference={floorPlanLayout.blueprint} />
+            )}
             {/* Grid — 1 ft spacing in world feet, drawn in meter world-space */}
             <Group>
               {(() => {
                 const grid = [];
                 // Draw every 1 foot. Convert to meters for world coords.
-                const range = 60;                  // ±60 feet visible
+                const range = 60; // ±60 feet visible
                 const rangeM = feetToMeters(range);
                 for (let ft = -range; ft <= range; ft++) {
                   const pos = feetToMeters(ft);
-                  const isMajor = ft % 5 === 0;   // every 5 ft is a heavier line
-                  const isAxis  = ft === 0;
-                  const stroke  = isAxis
+                  const isMajor = ft % 5 === 0; // every 5 ft is a heavier line
+                  const isAxis = ft === 0;
+                  const stroke = isAxis
                     ? "rgba(91, 106, 240, 0.5)"
                     : isMajor
                       ? "rgba(91, 106, 240, 0.18)"
                       : "rgba(100, 116, 139, 0.1)";
-                  const sw = isAxis ? 1.5 / SCALE : isMajor ? 1.0 / SCALE : 0.6 / SCALE;
-                  const dash: number[] = isAxis ? [] : isMajor ? [] : [3 / SCALE, 3 / SCALE];
+                  const sw = isAxis
+                    ? 1.5 / SCALE
+                    : isMajor
+                      ? 1.0 / SCALE
+                      : 0.6 / SCALE;
+                  const dash: number[] = isAxis
+                    ? []
+                    : isMajor
+                      ? []
+                      : [3 / SCALE, 3 / SCALE];
                   grid.push(
                     <KonvaLine
                       key={`v-${ft}`}
@@ -1369,7 +1802,7 @@ export default function BlueprintCanvas2D() {
                       stroke={stroke}
                       strokeWidth={sw}
                       dash={dash}
-                    />
+                    />,
                   );
                   grid.push(
                     <KonvaLine
@@ -1378,7 +1811,7 @@ export default function BlueprintCanvas2D() {
                       stroke={stroke}
                       strokeWidth={sw}
                       dash={dash}
-                    />
+                    />,
                   );
                 }
                 return grid;
@@ -1389,7 +1822,11 @@ export default function BlueprintCanvas2D() {
             <Group scaleX={SCALE} scaleY={SCALE}>
               {/* ─── Architectural Multi-Storey Onion-Skin / Ghost Underlay ─── */}
               {underlayStoreys.map((uStorey) => (
-                <Group key={`underlay-${uStorey.id}`} opacity={0.35} listening={false}>
+                <Group
+                  key={`underlay-${uStorey.id}`}
+                  opacity={0.35}
+                  listening={false}
+                >
                   {(uStorey.floorPlanLayout.walls || []).map((uWall) => {
                     const sx = feetToMeters(uWall.start.x);
                     const sy = feetToMeters(uWall.start.y);
@@ -1409,153 +1846,230 @@ export default function BlueprintCanvas2D() {
               ))}
 
               {/* Preview Lines for Wall Drawing */}
-              {activeDrawingWallStart && activeDrawingMousePos && tool === "draw-wall" && (
-                <DrawingWallPreview
-                  start={activeDrawingWallStart}
-                  end={activeDrawingMousePos}
-                  scale={SCALE}
-                />
-              )}
+              {activeDrawingWallStart &&
+                activeDrawingMousePos &&
+                tool === "draw-wall" && (
+                  <DrawingWallPreview
+                    start={activeDrawingWallStart}
+                    end={activeDrawingMousePos}
+                    scale={SCALE}
+                  />
+                )}
 
               {/* Preview Rect for Add Room */}
-              {activeDrawingWallStart && activeDrawingMousePos && tool === "add-room" && (
-                <Rect
-                  x={feetToMeters(Math.min(activeDrawingWallStart.x, activeDrawingMousePos.x))}
-                  y={feetToMeters(Math.min(activeDrawingWallStart.y, activeDrawingMousePos.y))}
-                  width={feetToMeters(Math.abs(activeDrawingWallStart.x - activeDrawingMousePos.x))}
-                  height={feetToMeters(Math.abs(activeDrawingWallStart.y - activeDrawingMousePos.y))}
-                  fill="rgba(91, 106, 240, 0.15)"
-                  stroke="#5B6AF0"
-                  strokeWidth={2 / SCALE}
-                  dash={[5 / SCALE, 5 / SCALE]}
-                />
-              )}
+              {activeDrawingWallStart &&
+                activeDrawingMousePos &&
+                tool === "add-room" && (
+                  <Rect
+                    x={feetToMeters(
+                      Math.min(
+                        activeDrawingWallStart.x,
+                        activeDrawingMousePos.x,
+                      ),
+                    )}
+                    y={feetToMeters(
+                      Math.min(
+                        activeDrawingWallStart.y,
+                        activeDrawingMousePos.y,
+                      ),
+                    )}
+                    width={feetToMeters(
+                      Math.abs(
+                        activeDrawingWallStart.x - activeDrawingMousePos.x,
+                      ),
+                    )}
+                    height={feetToMeters(
+                      Math.abs(
+                        activeDrawingWallStart.y - activeDrawingMousePos.y,
+                      ),
+                    )}
+                    fill="rgba(91, 106, 240, 0.15)"
+                    stroke="#9d9386"
+                    strokeWidth={2 / SCALE}
+                    dash={[5 / SCALE, 5 / SCALE]}
+                  />
+                )}
 
               {/* Preview Line for Measurement */}
-              {activeMeasureStart && activeDrawingMousePos && tool === "measure" && (() => {
-                const sx = activeMeasureStart.x;
-                const sy = activeMeasureStart.y;
-                const ex = feetToMeters(activeDrawingMousePos.x);
-                const ey = feetToMeters(activeDrawingMousePos.y);
-                const lenMeters = Math.hypot(ex - sx, ey - sy);
-                const lenFeet = metersToFeet(lenMeters);
-                const angleRad = Math.atan2(ey - sy, ex - sx);
-                let angleDeg = angleRad * (180 / Math.PI);
-                if (angleDeg > 90 || angleDeg < -90) angleDeg += 180;
+              {activeMeasureStart &&
+                activeDrawingMousePos &&
+                tool === "measure" &&
+                (() => {
+                  const sx = activeMeasureStart.x;
+                  const sy = activeMeasureStart.y;
+                  const ex = feetToMeters(activeDrawingMousePos.x);
+                  const ey = feetToMeters(activeDrawingMousePos.y);
+                  const lenMeters = Math.hypot(ex - sx, ey - sy);
+                  const lenFeet = metersToFeet(lenMeters);
+                  const angleRad = Math.atan2(ey - sy, ex - sx);
+                  let angleDeg = angleRad * (180 / Math.PI);
+                  if (angleDeg > 90 || angleDeg < -90) angleDeg += 180;
 
-                const mx = (sx + ex) / 2 - Math.sin(angleRad) * 0.5;
-                const my = (sy + ey) / 2 + Math.cos(angleRad) * 0.5;
-                const badgeW = 1.15;
-                const badgeH = 0.45;
-                return (
-                  <Group>
-                    <KonvaLine
-                      points={[sx, sy, ex, ey]}
-                      stroke="#FFD700"
-                      strokeWidth={3 / SCALE}
-                      dash={[5 / SCALE, 5 / SCALE]}
-                    />
-                    {lenFeet > 0.1 && (
-                      <Group x={mx} y={my} rotation={angleDeg}>
-                        <Rect
-                          x={-badgeW / 2} y={-badgeH / 2} width={badgeW} height={badgeH}
-                          fill="#ffffff" stroke="#FFD700" strokeWidth={2 / SCALE} cornerRadius={0.06}
-                        />
-                        <Text
-                          text={`${lenFeet.toFixed(1)} ft`}
-                          x={-badgeW / 2} y={-0.12} width={badgeW} align="center"
-                          fontSize={11 / SCALE} fontFamily="monospace" fill="#eab308" fontStyle="bold"
-                        />
-                      </Group>
-                    )}
-                  </Group>
-                );
-              })()}
+                  const mx = (sx + ex) / 2 - Math.sin(angleRad) * 0.5;
+                  const my = (sy + ey) / 2 + Math.cos(angleRad) * 0.5;
+                  const badgeW = 1.15;
+                  const badgeH = 0.45;
+                  return (
+                    <Group>
+                      <KonvaLine
+                        points={[sx, sy, ex, ey]}
+                        stroke="#85705c"
+                        strokeWidth={3 / SCALE}
+                        dash={[5 / SCALE, 5 / SCALE]}
+                      />
+                      {lenFeet > 0.1 && (
+                        <Group x={mx} y={my} rotation={angleDeg}>
+                          <Rect
+                            x={-badgeW / 2}
+                            y={-badgeH / 2}
+                            width={badgeW}
+                            height={badgeH}
+                            fill="#ffffff"
+                            stroke="#85705c"
+                            strokeWidth={2 / SCALE}
+                            cornerRadius={0.06}
+                          />
+                          <Text
+                            text={`${lenFeet.toFixed(1)} ft`}
+                            x={-badgeW / 2}
+                            y={-0.12}
+                            width={badgeW}
+                            align="center"
+                            fontSize={11 / SCALE}
+                            fontFamily="monospace"
+                            fill="#eab308"
+                            fontStyle="bold"
+                          />
+                        </Group>
+                      )}
+                    </Group>
+                  );
+                })()}
 
               {/* Ghost Hover Preview for Add Door / Add Window */}
-              {(tool === "add-door" || tool === "add-window") && activeDrawingMousePos && (() => {
-                const walls = floorPlanLayout?.walls || [];
-                let closestWall: Wall | null = null;
-                let minDist = 3.0;
-                let bestT = 0.5;
+              {(tool === "add-door" || tool === "add-window") &&
+                activeDrawingMousePos &&
+                (() => {
+                  const walls = floorPlanLayout?.walls || [];
+                  let closestWall: Wall | null = null;
+                  let minDist = 3.0;
+                  let bestT = 0.5;
 
-                for (const wall of walls) {
-                  const dx = wall.end.x - wall.start.x;
-                  const dy = wall.end.y - wall.start.y;
-                  const lenSq = dx * dx + dy * dy;
-                  if (lenSq < 0.01) continue;
-                  const t = ((activeDrawingMousePos.x - wall.start.x) * dx + (activeDrawingMousePos.y - wall.start.y) * dy) / lenSq;
-                  const clampedT = Math.max(0.1, Math.min(0.9, t));
-                  const px = wall.start.x + clampedT * dx;
-                  const py = wall.start.y + clampedT * dy;
-                  const dist = Math.hypot(activeDrawingMousePos.x - px, activeDrawingMousePos.y - py);
-                  if (dist < minDist) {
-                    minDist = dist;
-                    closestWall = wall;
-                    bestT = clampedT;
+                  for (const wall of walls) {
+                    const dx = wall.end.x - wall.start.x;
+                    const dy = wall.end.y - wall.start.y;
+                    const lenSq = dx * dx + dy * dy;
+                    if (lenSq < 0.01) continue;
+                    const t =
+                      ((activeDrawingMousePos.x - wall.start.x) * dx +
+                        (activeDrawingMousePos.y - wall.start.y) * dy) /
+                      lenSq;
+                    const clampedT = Math.max(0.1, Math.min(0.9, t));
+                    const px = wall.start.x + clampedT * dx;
+                    const py = wall.start.y + clampedT * dy;
+                    const dist = Math.hypot(
+                      activeDrawingMousePos.x - px,
+                      activeDrawingMousePos.y - py,
+                    );
+                    if (dist < minDist) {
+                      minDist = dist;
+                      closestWall = wall;
+                      bestT = clampedT;
+                    }
                   }
-                }
 
-                if (!closestWall) return null;
+                  if (!closestWall) return null;
 
-                const sx = feetToMeters(closestWall.start.x);
-                const sy = feetToMeters(closestWall.start.y);
-                const ex = feetToMeters(closestWall.end.x);
-                const ey = feetToMeters(closestWall.end.y);
-                const angleRad = Math.atan2(ey - sy, ex - sx);
-                const angleDeg = (angleRad * 180) / Math.PI;
+                  const sx = feetToMeters(closestWall.start.x);
+                  const sy = feetToMeters(closestWall.start.y);
+                  const ex = feetToMeters(closestWall.end.x);
+                  const ey = feetToMeters(closestWall.end.y);
+                  const angleRad = Math.atan2(ey - sy, ex - sx);
+                  const angleDeg = (angleRad * 180) / Math.PI;
 
-                const widthM = tool === "add-door" ? feetToMeters(3) : feetToMeters(4);
-                const thickM = feetToMeters(closestWall.thickness / 12);
-                const cx = sx + bestT * (ex - sx);
-                const cy = sy + bestT * (ey - sy);
+                  const widthM =
+                    tool === "add-door" ? feetToMeters(3) : feetToMeters(4);
+                  const thickM = feetToMeters(closestWall.thickness / 12);
+                  const cx = sx + bestT * (ex - sx);
+                  const cy = sy + bestT * (ey - sy);
 
-                return (
-                  <Group x={cx} y={cy} rotation={angleDeg} opacity={0.75} listening={false}>
-                    <Rect
-                      x={-widthM / 2}
-                      y={-thickM / 2 - 0.03}
-                      width={widthM}
-                      height={thickM + 0.06}
-                      fill="rgba(59, 130, 246, 0.2)"
-                      stroke="#2563eb"
-                      strokeWidth={2 / SCALE}
-                      dash={[4 / SCALE, 2 / SCALE]}
-                    />
-                    {tool === "add-door" ? (
-                      <Arc
+                  return (
+                    <Group
+                      x={cx}
+                      y={cy}
+                      rotation={angleDeg}
+                      opacity={0.75}
+                      listening={false}
+                    >
+                      <Rect
                         x={-widthM / 2}
-                        y={0}
-                        innerRadius={0}
-                        outerRadius={widthM}
-                        angle={90}
-                        rotation={0}
-                        stroke="#2563eb"
-                        strokeWidth={1.5 / SCALE}
-                        dash={[3 / SCALE, 2 / SCALE]}
-                      />
-                    ) : (
-                      <KonvaLine
-                        points={[-widthM / 2, 0, widthM / 2, 0]}
-                        stroke="#06b6d4"
+                        y={-thickM / 2 - 0.03}
+                        width={widthM}
+                        height={thickM + 0.06}
+                        fill="rgba(59, 130, 246, 0.2)"
+                        stroke="#8a5a36"
                         strokeWidth={2 / SCALE}
+                        dash={[4 / SCALE, 2 / SCALE]}
                       />
-                    )}
-                  </Group>
-                );
-              })()}
+                      {tool === "add-door" ? (
+                        <Arc
+                          x={-widthM / 2}
+                          y={0}
+                          innerRadius={0}
+                          outerRadius={widthM}
+                          angle={90}
+                          rotation={0}
+                          stroke="#8a5a36"
+                          strokeWidth={1.5 / SCALE}
+                          dash={[3 / SCALE, 2 / SCALE]}
+                        />
+                      ) : (
+                        <KonvaLine
+                          points={[-widthM / 2, 0, widthM / 2, 0]}
+                          stroke="#94785b"
+                          strokeWidth={2 / SCALE}
+                        />
+                      )}
+                    </Group>
+                  );
+                })()}
 
               {/* Draw Rooms */}
               {(floorPlanLayout.rooms || []).map((room) => {
-                const polygonPoints = getRoomPolygonPoints(room, floorPlanLayout.walls);
-                const flatPoints = polygonPoints.flatMap((p) => [feetToMeters(p.x), feetToMeters(p.y)]);
-                const cx = polygonPoints.reduce((sum, p) => sum + p.x, 0) / polygonPoints.length;
-                const cy = polygonPoints.reduce((sum, p) => sum + p.y, 0) / polygonPoints.length;
+                const polygonPoints = getRoomPolygonPoints(
+                  room,
+                  floorPlanLayout.walls,
+                );
+                const flatPoints = polygonPoints.flatMap((p) => [
+                  feetToMeters(p.x),
+                  feetToMeters(p.y),
+                ]);
+                const cx =
+                  polygonPoints.reduce((sum, p) => sum + p.x, 0) /
+                  polygonPoints.length;
+                const cy =
+                  polygonPoints.reduce((sum, p) => sum + p.y, 0) /
+                  polygonPoints.length;
                 const cxM = feetToMeters(cx);
                 const cyM = feetToMeters(cy);
                 const preciseAreaFt = calculatePolygonAreaFt(polygonPoints);
                 const isSelected = selectedObjectId === room.id;
-                const roomRotateGizmoY = cyM - feetToMeters(room.bounds.height / 2) - 0.6;
+                const roomRotateGizmoY =
+                  cyM - feetToMeters(room.bounds.height / 2) - 0.6;
+
+                const matFloorColors: Record<string, string> = {
+                  hardwood: "rgba(217, 171, 85, 0.14)",
+                  tile: "rgba(14, 165, 233, 0.10)",
+                  marble: "rgba(226, 232, 240, 0.45)",
+                  carpet: "rgba(139, 92, 246, 0.11)",
+                  concrete: "rgba(100, 116, 139, 0.14)",
+                  terrazzo: "rgba(244, 114, 182, 0.11)",
+                };
+                const baseRoomFill = room.noTexture
+                  ? "rgba(138, 119, 95, 0.02)"
+                  : (room.floorMaterial &&
+                      matFloorColors[room.floorMaterial.toLowerCase()]) ||
+                    "rgba(138, 119, 95, 0.04)";
 
                 return (
                   <Group
@@ -1569,18 +2083,20 @@ export default function BlueprintCanvas2D() {
                     {/* Selection and Border Layer */}
                     <KonvaLine
                       points={flatPoints}
-                      fill={isSelected ? "rgba(91, 106, 240, 0.1)" : "rgba(91, 106, 240, 0.02)"}
-                      stroke={isSelected ? "#3b82f6" : "#5B6AF0"}
+                      fill={
+                        isSelected ? "rgba(138, 90, 54, 0.12)" : baseRoomFill
+                      }
+                      stroke={isSelected ? "#8a5a36" : "#9d9386"}
                       strokeWidth={isSelected ? 3.5 / SCALE : 1.5 / SCALE}
                       closed
                     />
                     <Text
-                      text={`${room.label}\n${preciseAreaFt.toFixed(0)} sqft`}
-                      x={cxM - 1} 
+                      text={`${room.label}\n${preciseAreaFt.toFixed(0)} sqft${room.floorMaterial && !room.noTexture ? ` · ${room.floorMaterial}` : ""}`}
+                      x={cxM - 1.2}
                       y={cyM - 0.4}
-                      width={2}
+                      width={2.4}
                       align="center"
-                      fontSize={13 / SCALE}
+                      fontSize={12.5 / SCALE}
                       fill={isSelected ? "#1d4ed8" : "#1e293b"}
                       fontStyle="bold"
                       fontFamily="sans-serif"
@@ -1596,23 +2112,45 @@ export default function BlueprintCanvas2D() {
                         {/* Stem line from room top to rotate handle */}
                         <KonvaLine
                           points={[0, 0, 0, 0.6]}
-                          stroke="#8b5cf6"
+                          stroke="#8a5a36"
                           strokeWidth={1.5 / SCALE}
                         />
-                        <Circle radius={14/SCALE} fill="#8b5cf6" stroke="#fff" strokeWidth={2/SCALE} />
-                        <Text text="↻" x={-6/SCALE} y={-6/SCALE} fontSize={12/SCALE} fill="#fff" />
+                        <Circle
+                          radius={14 / SCALE}
+                          fill="#8a5a36"
+                          stroke="#fff"
+                          strokeWidth={2 / SCALE}
+                        />
+                        <Text
+                          text="↻"
+                          x={-6 / SCALE}
+                          y={-6 / SCALE}
+                          fontSize={12 / SCALE}
+                          fill="#fff"
+                        />
                       </Group>
                     )}
 
                     {/* Room Scale Gizmo */}
                     {isSelected && tool === "select" && (
                       <Group
-                        x={cxM + feetToMeters(room.bounds.width/2)}
-                        y={cyM + feetToMeters(room.bounds.height/2)}
+                        x={cxM + feetToMeters(room.bounds.width / 2)}
+                        y={cyM + feetToMeters(room.bounds.height / 2)}
                         onMouseDown={(e) => handleStartRoomScale(e, room.id)}
                       >
-                        <Circle radius={12/SCALE} fill="#3b82f6" stroke="#fff" strokeWidth={2/SCALE} />
-                        <Text text="⤡" x={-5/SCALE} y={-5/SCALE} fontSize={11/SCALE} fill="#fff" />
+                        <Circle
+                          radius={12 / SCALE}
+                          fill="#8a5a36"
+                          stroke="#fff"
+                          strokeWidth={2 / SCALE}
+                        />
+                        <Text
+                          text="⤡"
+                          x={-5 / SCALE}
+                          y={-5 / SCALE}
+                          fontSize={11 / SCALE}
+                          fill="#fff"
+                        />
                       </Group>
                     )}
                   </Group>
@@ -1627,33 +2165,65 @@ export default function BlueprintCanvas2D() {
                 let height = 0.8;
                 let isCircle = false;
 
-                if (name.includes("sofa")) { width = 2.0; height = 0.8; } 
-                else if (name.includes("bed")) { width = 1.6; height = 2.0; }
-                else if (name.includes("round")) { width = 1.2; height = 1.2; isCircle = true; }
-                else if (name.includes("table") || name.includes("desk")) { width = 1.6; height = 0.8; }
-                else if (name.includes("sideboard") || name.includes("bookcase")) { width = 1.2; height = 0.5; }
-                else if (name.includes("plant") || name.includes("vase")) { width = 0.4; height = 0.4; isCircle = true; }
+                if (name.includes("sofa")) {
+                  width = 2.0;
+                  height = 0.8;
+                } else if (name.includes("bed")) {
+                  width = 1.6;
+                  height = 2.0;
+                } else if (name.includes("round")) {
+                  width = 1.2;
+                  height = 1.2;
+                  isCircle = true;
+                } else if (name.includes("table") || name.includes("desk")) {
+                  width = 1.6;
+                  height = 0.8;
+                } else if (
+                  name.includes("sideboard") ||
+                  name.includes("bookcase")
+                ) {
+                  width = 1.2;
+                  height = 0.5;
+                } else if (name.includes("plant") || name.includes("vase")) {
+                  width = 0.4;
+                  height = 0.4;
+                  isCircle = true;
+                }
 
                 return (
                   <Group
                     key={obj.id}
                     x={obj.position.x}
                     y={obj.position.z}
-                    rotation={(obj.rotation.y || 0) * 180 / Math.PI}
+                    rotation={((obj.rotation.y || 0) * 180) / Math.PI}
                     draggable={tool === "select"}
                     onClick={(e) => {
                       e.cancelBubble = true;
                       setSelectedObject(obj.id);
                     }}
-                    onDragStart={() => useEditorStore.temporal.getState().pause()}
+                    onDragStart={() =>
+                      useEditorStore.temporal.getState().pause()
+                    }
                     onDragMove={(e) => {
-                      if (e.target.name() === 'furniture-group') {
-                        handleFurnitureDrag(obj.id, e.target.x(), e.target.y(), false, e.evt?.shiftKey);
+                      if (e.target.name() === "furniture-group") {
+                        handleFurnitureDrag(
+                          obj.id,
+                          e.target.x(),
+                          e.target.y(),
+                          false,
+                          e.evt?.shiftKey,
+                        );
                       }
                     }}
                     onDragEnd={(e) => {
-                      if (e.target.name() === 'furniture-group') {
-                        handleFurnitureDrag(obj.id, e.target.x(), e.target.y(), true, e.evt?.shiftKey);
+                      if (e.target.name() === "furniture-group") {
+                        handleFurnitureDrag(
+                          obj.id,
+                          e.target.x(),
+                          e.target.y(),
+                          true,
+                          e.evt?.shiftKey,
+                        );
                       }
                     }}
                     name="furniture-group"
@@ -1662,7 +2232,7 @@ export default function BlueprintCanvas2D() {
                       <Circle
                         radius={width / 2}
                         fill="rgba(255, 255, 255, 0.01)"
-                        stroke={isSelected ? "#2563eb" : "#5B6AF0"}
+                        stroke={isSelected ? "#8a5a36" : "#9d9386"}
                         strokeWidth={isSelected ? 2 / SCALE : 1 / SCALE}
                       />
                     ) : (
@@ -1672,23 +2242,28 @@ export default function BlueprintCanvas2D() {
                         width={width}
                         height={height}
                         fill="rgba(255, 255, 255, 0.01)"
-                        stroke={isSelected ? "#2563eb" : "#5B6AF0"}
+                        stroke={isSelected ? "#8a5a36" : "#9d9386"}
                         strokeWidth={isSelected ? 2 / SCALE : 1 / SCALE}
                         cornerRadius={0.06}
                       />
                     )}
-                    
+
                     {/* SVG Top-down stylization fallback */}
-                    {!obj.thumbnailUrl && !isCircle && name.includes("chair") && (
-                      <KonvaPath
-                        x={-width/4} y={-height/4}
-                        data="M0 0 H 0.4 V 0.4 H 0 Z"
-                        stroke="#5B6AF0" strokeWidth={1/SCALE}
-                      />
-                    )}
-                    
+                    {!obj.thumbnailUrl &&
+                      !isCircle &&
+                      name.includes("chair") && (
+                        <KonvaPath
+                          x={-width / 4}
+                          y={-height / 4}
+                          data="M0 0 H 0.4 V 0.4 H 0 Z"
+                          stroke="#9d9386"
+                          strokeWidth={1 / SCALE}
+                        />
+                      )}
+
                     <Text
                       text={obj.name}
+                      visible={isSelected}
                       x={-width / 2}
                       y={height / 2 + 0.05}
                       width={width}
@@ -1705,34 +2280,58 @@ export default function BlueprintCanvas2D() {
                         x={0}
                         y={-height / 2 - 0.4}
                         draggable
-                        onDragStart={() => useEditorStore.temporal.getState().pause()}
+                        onDragStart={() =>
+                          useEditorStore.temporal.getState().pause()
+                        }
                         onDragMove={(e) => {
                           // Simple rot dragging logic based on pointer
                           const stage = e.target.getStage();
                           if (stage) {
-                             const pt = getStagePointerMeters(stage);
-                             if (pt) {
-                               const angle = Math.atan2(pt.y - obj.position.z, pt.x - obj.position.x);
-                               updateSceneObject(obj.id, { rotation: { ...obj.rotation, y: angle + Math.PI/2 }});
-                             }
+                            const pt = getStagePointerMeters(stage);
+                            if (pt) {
+                              const angle = Math.atan2(
+                                pt.y - obj.position.z,
+                                pt.x - obj.position.x,
+                              );
+                              updateSceneObject(obj.id, {
+                                rotation: {
+                                  ...obj.rotation,
+                                  y: angle + Math.PI / 2,
+                                },
+                              });
+                            }
                           }
-                          e.target.x(0); e.target.y(-height/2 - 0.4);
+                          e.target.x(0);
+                          e.target.y(-height / 2 - 0.4);
                         }}
                         onDragEnd={(e) => {
                           useEditorStore.temporal.getState().resume();
                           const stage = e.target.getStage();
                           if (stage) {
-                             const pt = getStagePointerMeters(stage);
-                             if (pt) {
-                               const angle = Math.atan2(pt.y - obj.position.z, pt.x - obj.position.x);
-                               updateSceneObject(obj.id, { rotation: { ...obj.rotation, y: angle + Math.PI/2 }});
-                             }
+                            const pt = getStagePointerMeters(stage);
+                            if (pt) {
+                              const angle = Math.atan2(
+                                pt.y - obj.position.z,
+                                pt.x - obj.position.x,
+                              );
+                              updateSceneObject(obj.id, {
+                                rotation: {
+                                  ...obj.rotation,
+                                  y: angle + Math.PI / 2,
+                                },
+                              });
+                            }
                           }
-                          e.target.x(0); e.target.y(-height/2 - 0.4);
+                          e.target.x(0);
+                          e.target.y(-height / 2 - 0.4);
                         }}
                       >
-                        <KonvaLine points={[0, 0, 0, 0.4]} stroke="#2563eb" strokeWidth={1/SCALE} />
-                        <Circle radius={0.12} fill="#2563eb" />
+                        <KonvaLine
+                          points={[0, 0, 0, 0.4]}
+                          stroke="#8a5a36"
+                          strokeWidth={1 / SCALE}
+                        />
+                        <Circle radius={0.12} fill="#8a5a36" />
                       </Group>
                     )}
                   </Group>
@@ -1745,8 +2344,11 @@ export default function BlueprintCanvas2D() {
                 const sy = feetToMeters(wall.start.y);
                 const ex = feetToMeters(wall.end.x);
                 const ey = feetToMeters(wall.end.y);
-                const wallLengthFt = Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y);
-                
+                const wallLengthFt = Math.hypot(
+                  wall.end.x - wall.start.x,
+                  wall.end.y - wall.start.y,
+                );
+
                 const angleRad = Math.atan2(ey - sy, ex - sx);
                 let angleDeg = angleRad * (180 / Math.PI);
                 if (angleDeg > 90 || angleDeg < -90) angleDeg += 180;
@@ -1757,9 +2359,13 @@ export default function BlueprintCanvas2D() {
                 const badgeH = 0.45;
 
                 const isWallDirectlySelected = selectedObjectId === wall.id;
-                const selectedRoom = (floorPlanLayout.rooms || []).find(r => r.id === selectedObjectId);
-                const isWallPartOfSelectedRoom = selectedRoom?.wallIds?.includes(wall.id) || false;
-                const isSelected = isWallDirectlySelected || isWallPartOfSelectedRoom;
+                const selectedRoom = (floorPlanLayout.rooms || []).find(
+                  (r) => r.id === selectedObjectId,
+                );
+                const isWallPartOfSelectedRoom =
+                  selectedRoom?.wallIds?.includes(wall.id) || false;
+                const isSelected =
+                  isWallDirectlySelected || isWallPartOfSelectedRoom;
 
                 const rawWallAngle = Math.atan2(ey - sy, ex - sx);
                 const perpAngle = rawWallAngle + Math.PI / 2;
@@ -1770,7 +2376,7 @@ export default function BlueprintCanvas2D() {
                 const wallScaleGizmoY = ey + Math.sin(rawWallAngle) * 0.35;
 
                 return (
-                  <Group 
+                  <Group
                     key={wall.id}
                     name="wall-group"
                     onClick={() => setSelectedObject(wall.id)}
@@ -1778,51 +2384,139 @@ export default function BlueprintCanvas2D() {
                   >
                     <KonvaLine
                       name="wall-body"
-                      points={getWallPolygon(wall, (floorPlanLayout.walls || []))}
+                      points={getWallPolygon(wall, floorPlanLayout.walls || [])}
                       closed
-                      fill={wall.isLoadBearing ? "#1e293b" : "#475569"}
-                      stroke={isWallDirectlySelected ? "#2563eb" : isWallPartOfSelectedRoom ? "rgba(37, 99, 235, 0.6)" : "transparent"}
-                      strokeWidth={isWallDirectlySelected ? 3.5/SCALE : isWallPartOfSelectedRoom ? 2.5/SCALE : 0}
+                      fill={
+                        wall.color ||
+                        (wall.isLoadBearing ? "#1e293b" : "#475569")
+                      }
+                      stroke={
+                        isWallDirectlySelected
+                          ? "#8a5a36"
+                          : isWallPartOfSelectedRoom
+                            ? "rgba(37, 99, 235, 0.6)"
+                            : "transparent"
+                      }
+                      strokeWidth={
+                        isWallDirectlySelected
+                          ? 3.5 / SCALE
+                          : isWallPartOfSelectedRoom
+                            ? 2.5 / SCALE
+                            : 0
+                      }
                       lineJoin="miter"
                     />
 
-
                     {/* Endpoints */}
-                    <Circle
-                      x={sx} y={sy} radius={7 / SCALE}
-                      fill="#ffffff" stroke={isSelected ? "#2563eb" : "#5B6AF0"} strokeWidth={2 / SCALE}
-                      draggable
-                      onDragStart={() => useEditorStore.temporal.getState().pause()}
-                      onDragMove={(e) => handleWallEndpointDrag(wall.id, true, e.target.x(), e.target.y(), false, e.evt?.shiftKey, e.evt?.altKey)}
-                      onDragEnd={(e) => handleWallEndpointDrag(wall.id, true, e.target.x(), e.target.y(), true, e.evt?.shiftKey, e.evt?.altKey)}
-                    />
-                    <Circle
-                      x={ex} y={ey} radius={7 / SCALE}
-                      fill="#ffffff" stroke={isSelected ? "#2563eb" : "#5B6AF0"} strokeWidth={2 / SCALE}
-                      draggable
-                      onDragStart={() => useEditorStore.temporal.getState().pause()}
-                      onDragMove={(e) => handleWallEndpointDrag(wall.id, false, e.target.x(), e.target.y(), false, e.evt?.shiftKey, e.evt?.altKey)}
-                      onDragEnd={(e) => handleWallEndpointDrag(wall.id, false, e.target.x(), e.target.y(), true, e.evt?.shiftKey, e.evt?.altKey)}
-                    />
-
+                    {(isSelected || tool === "draw-wall") && (
+                      <>
+                        <Circle
+                          x={sx}
+                          y={sy}
+                          radius={7 / SCALE}
+                          fill="#ffffff"
+                          stroke={isSelected ? "#8a5a36" : "#9d9386"}
+                          strokeWidth={2 / SCALE}
+                          draggable
+                          onDragStart={() =>
+                            useEditorStore.temporal.getState().pause()
+                          }
+                          onDragMove={(e) =>
+                            handleWallEndpointDrag(
+                              wall.id,
+                              true,
+                              e.target.x(),
+                              e.target.y(),
+                              false,
+                              e.evt?.shiftKey,
+                              e.evt?.altKey,
+                            )
+                          }
+                          onDragEnd={(e) =>
+                            handleWallEndpointDrag(
+                              wall.id,
+                              true,
+                              e.target.x(),
+                              e.target.y(),
+                              true,
+                              e.evt?.shiftKey,
+                              e.evt?.altKey,
+                            )
+                          }
+                        />
+                        <Circle
+                          x={ex}
+                          y={ey}
+                          radius={7 / SCALE}
+                          fill="#ffffff"
+                          stroke={isSelected ? "#8a5a36" : "#9d9386"}
+                          strokeWidth={2 / SCALE}
+                          draggable
+                          onDragStart={() =>
+                            useEditorStore.temporal.getState().pause()
+                          }
+                          onDragMove={(e) =>
+                            handleWallEndpointDrag(
+                              wall.id,
+                              false,
+                              e.target.x(),
+                              e.target.y(),
+                              false,
+                              e.evt?.shiftKey,
+                              e.evt?.altKey,
+                            )
+                          }
+                          onDragEnd={(e) =>
+                            handleWallEndpointDrag(
+                              wall.id,
+                              false,
+                              e.target.x(),
+                              e.target.y(),
+                              true,
+                              e.evt?.shiftKey,
+                              e.evt?.altKey,
+                            )
+                          }
+                        />
+                      </>
+                    )}
                     {/* Dimension Badge */}
-                    <Group x={mx} y={my} rotation={angleDeg}>
-                      <Rect
-                        x={-badgeW / 2} y={-badgeH / 2} width={badgeW} height={badgeH}
-                        fill="#ffffff" stroke="#5B6AF0" strokeWidth={2 / SCALE} cornerRadius={0.06}
-                        onClick={(e) => {
-                          e.cancelBubble = true;
-                          const val = prompt(`Enter new wall length (in feet):`, wallLengthFt.toFixed(1));
-                          if (val) handleResizeWall2D(wall.id, parseFloat(val));
-                        }}
-                      />
-                      <Text
-                        text={`${wallLengthFt.toFixed(1)} ft`}
-                        x={-badgeW / 2} y={-0.12} width={badgeW} align="center"
-                        fontSize={11 / SCALE} fontFamily="monospace" fill="#1e1b4b" fontStyle="bold"
-                      />
-                    </Group>
-
+                    {(isSelected || showMeasurements) && (
+                      <>
+                        <Group x={mx} y={my} rotation={angleDeg}>
+                          <Rect
+                            x={-badgeW / 2}
+                            y={-badgeH / 2}
+                            width={badgeW}
+                            height={badgeH}
+                            fill="#ffffff"
+                            stroke="#9d9386"
+                            strokeWidth={2 / SCALE}
+                            cornerRadius={0.06}
+                            onClick={(e) => {
+                              e.cancelBubble = true;
+                              const val = prompt(
+                                `Enter new wall length (in feet):`,
+                                wallLengthFt.toFixed(1),
+                              );
+                              if (val)
+                                handleResizeWall2D(wall.id, parseFloat(val));
+                            }}
+                          />
+                          <Text
+                            text={`${wallLengthFt.toFixed(1)} ft`}
+                            x={-badgeW / 2}
+                            y={-0.12}
+                            width={badgeW}
+                            align="center"
+                            fontSize={11 / SCALE}
+                            fontFamily="monospace"
+                            fill="#4d3a2a"
+                            fontStyle="bold"
+                          />
+                        </Group>
+                      </>
+                    )}
                     {/* Wall Rotate Gizmo */}
                     {isWallDirectlySelected && tool === "select" && (
                       <Group
@@ -1831,12 +2525,28 @@ export default function BlueprintCanvas2D() {
                         onMouseDown={(e) => handleStartWallRotate(e, wall.id)}
                       >
                         <KonvaLine
-                          points={[0, 0, -Math.cos(perpAngle) * offsetDist, -Math.sin(perpAngle) * offsetDist]}
-                          stroke="#8b5cf6"
+                          points={[
+                            0,
+                            0,
+                            -Math.cos(perpAngle) * offsetDist,
+                            -Math.sin(perpAngle) * offsetDist,
+                          ]}
+                          stroke="#8a5a36"
                           strokeWidth={1.5 / SCALE}
                         />
-                        <Circle radius={12/SCALE} fill="#8b5cf6" stroke="#fff" strokeWidth={1.5/SCALE} />
-                        <Text text="↻" x={-5/SCALE} y={-5/SCALE} fontSize={10/SCALE} fill="#fff" />
+                        <Circle
+                          radius={12 / SCALE}
+                          fill="#8a5a36"
+                          stroke="#fff"
+                          strokeWidth={1.5 / SCALE}
+                        />
+                        <Text
+                          text="↻"
+                          x={-5 / SCALE}
+                          y={-5 / SCALE}
+                          fontSize={10 / SCALE}
+                          fill="#fff"
+                        />
                       </Group>
                     )}
 
@@ -1848,28 +2558,49 @@ export default function BlueprintCanvas2D() {
                         onMouseDown={(e) => handleStartWallScale(e, wall.id)}
                       >
                         <KonvaLine
-                          points={[0, 0, -Math.cos(rawWallAngle) * 0.35, -Math.sin(rawWallAngle) * 0.35]}
-                          stroke="#3b82f6"
+                          points={[
+                            0,
+                            0,
+                            -Math.cos(rawWallAngle) * 0.35,
+                            -Math.sin(rawWallAngle) * 0.35,
+                          ]}
+                          stroke="#8a5a36"
                           strokeWidth={1.5 / SCALE}
                           dash={[2 / SCALE, 2 / SCALE]}
                         />
-                        <Circle radius={12/SCALE} fill="#3b82f6" stroke="#fff" strokeWidth={1.5/SCALE} />
-                        <Text text="⤡" x={-5/SCALE} y={-5/SCALE} fontSize={10/SCALE} fill="#fff" />
+                        <Circle
+                          radius={12 / SCALE}
+                          fill="#8a5a36"
+                          stroke="#fff"
+                          strokeWidth={1.5 / SCALE}
+                        />
+                        <Text
+                          text="⤡"
+                          x={-5 / SCALE}
+                          y={-5 / SCALE}
+                          fontSize={10 / SCALE}
+                          fill="#fff"
+                        />
                       </Group>
                     )}
-
                   </Group>
                 );
               })}
 
-              {/* ── Architectural 2D Doors ── */}
+              {/* ── Architectural 2D Doors (Draggable Along Wall + Multi-Type Symbols) ── */}
               {(floorPlanLayout.doors || []).map((door) => {
-                const wall = (floorPlanLayout.walls || []).find((w) => w.id === door.wallId);
+                const wall = (floorPlanLayout.walls || []).find(
+                  (w) => w.id === door.wallId,
+                );
                 if (!wall) return null;
                 const sx = feetToMeters(wall.start.x);
                 const sy = feetToMeters(wall.start.y);
                 const ex = feetToMeters(wall.end.x);
                 const ey = feetToMeters(wall.end.y);
+                const wallLengthFt = Math.hypot(
+                  wall.end.x - wall.start.x,
+                  wall.end.y - wall.start.y,
+                );
                 const angleRad = Math.atan2(ey - sy, ex - sx);
                 const angleDeg = (angleRad * 180) / Math.PI;
 
@@ -1878,6 +2609,14 @@ export default function BlueprintCanvas2D() {
                 const cx = sx + door.position * (ex - sx);
                 const cy = sy + door.position * (ey - sy);
                 const isSelected = selectedObjectId === door.id;
+
+                const doorType = door.doorType || "single";
+                const swingSide = door.swingSide || "left";
+                const swingDir = door.swingDirection || "inward";
+                const dirSign = swingDir === "inward" ? 1 : -1;
+                const distFromStartFt = (door.position * wallLengthFt).toFixed(
+                  1,
+                );
 
                 return (
                   <Group
@@ -1888,6 +2627,41 @@ export default function BlueprintCanvas2D() {
                     onClick={(e) => {
                       e.cancelBubble = true;
                       setSelectedObject(door.id);
+                    }}
+                    onMouseDown={(e) => {
+                      if (tool !== "select") return;
+                      e.cancelBubble = true;
+                      setSelectedObject(door.id);
+                      const stage = e.target.getStage();
+                      if (!stage) return;
+                      const pt = getStagePointerMeters(stage);
+                      if (pt && floorPlanLayout) {
+                        useEditorStore.temporal.getState().pause();
+                        dragContextRef.current = {
+                          type: "door-slide",
+                          id: door.id,
+                          startMeters: pt,
+                          originalLayout: floorPlanLayout,
+                        };
+                      }
+                    }}
+                    onDblClick={(e) => {
+                      e.cancelBubble = true;
+                      const nextDir =
+                        swingDir === "inward" ? "outward" : "inward";
+                      const nextSide =
+                        swingDir === "outward"
+                          ? swingSide === "left"
+                            ? "right"
+                            : "left"
+                          : swingSide;
+                      updateDoor(door.id, {
+                        swingDirection: nextDir,
+                        swingSide: nextSide,
+                      });
+                      toast.success(
+                        `Flipped door swing (${nextSide} / ${nextDir})`,
+                      );
                     }}
                   >
                     {/* Wall opening cutout */}
@@ -1900,45 +2674,194 @@ export default function BlueprintCanvas2D() {
                     />
                     {/* Jamb boundary lines */}
                     <KonvaLine
-                      points={[-doorWidthM / 2, -wallThickM / 2, -doorWidthM / 2, wallThickM / 2]}
-                      stroke={isSelected ? "#2563eb" : "#0f172a"}
+                      points={[
+                        -doorWidthM / 2,
+                        -wallThickM / 2,
+                        -doorWidthM / 2,
+                        wallThickM / 2,
+                      ]}
+                      stroke={isSelected ? "#8a5a36" : "#0f172a"}
                       strokeWidth={2.5 / SCALE}
                     />
                     <KonvaLine
-                      points={[doorWidthM / 2, -wallThickM / 2, doorWidthM / 2, wallThickM / 2]}
-                      stroke={isSelected ? "#2563eb" : "#0f172a"}
+                      points={[
+                        doorWidthM / 2,
+                        -wallThickM / 2,
+                        doorWidthM / 2,
+                        wallThickM / 2,
+                      ]}
+                      stroke={isSelected ? "#8a5a36" : "#0f172a"}
                       strokeWidth={2.5 / SCALE}
                     />
-                    {/* Door leaf */}
-                    <KonvaLine
-                      points={[-doorWidthM / 2, 0, -doorWidthM / 2, doorWidthM]}
-                      stroke={isSelected ? "#2563eb" : "#0284c7"}
-                      strokeWidth={2.5 / SCALE}
-                    />
-                    {/* Door swing clearance arc */}
-                    <Arc
-                      x={-doorWidthM / 2}
-                      y={0}
-                      innerRadius={0}
-                      outerRadius={doorWidthM}
-                      angle={90}
-                      rotation={0}
-                      stroke={isSelected ? "#2563eb" : "#38bdf8"}
-                      strokeWidth={1.5 / SCALE}
-                      dash={[3 / SCALE, 2 / SCALE]}
-                    />
+
+                    {/* Door Type Specific CAD Symbol */}
+                    {doorType === "double" ? (
+                      <>
+                        <KonvaLine
+                          points={[
+                            -doorWidthM / 2,
+                            0,
+                            -doorWidthM / 2,
+                            dirSign * (doorWidthM / 2),
+                          ]}
+                          stroke={isSelected ? "#8a5a36" : "#85705c"}
+                          strokeWidth={2.5 / SCALE}
+                        />
+                        <KonvaLine
+                          points={[
+                            doorWidthM / 2,
+                            0,
+                            doorWidthM / 2,
+                            dirSign * (doorWidthM / 2),
+                          ]}
+                          stroke={isSelected ? "#8a5a36" : "#85705c"}
+                          strokeWidth={2.5 / SCALE}
+                        />
+                        <Arc
+                          x={-doorWidthM / 2}
+                          y={0}
+                          innerRadius={0}
+                          outerRadius={doorWidthM / 2}
+                          angle={90}
+                          rotation={dirSign > 0 ? 0 : -90}
+                          stroke={isSelected ? "#8a5a36" : "#a18e7a"}
+                          strokeWidth={1.5 / SCALE}
+                          dash={[3 / SCALE, 2 / SCALE]}
+                        />
+                        <Arc
+                          x={doorWidthM / 2}
+                          y={0}
+                          innerRadius={0}
+                          outerRadius={doorWidthM / 2}
+                          angle={90}
+                          rotation={dirSign > 0 ? 90 : 180}
+                          stroke={isSelected ? "#8a5a36" : "#a18e7a"}
+                          strokeWidth={1.5 / SCALE}
+                          dash={[3 / SCALE, 2 / SCALE]}
+                        />
+                      </>
+                    ) : doorType === "sliding" || doorType === "pocket" ? (
+                      <>
+                        <KonvaLine
+                          points={[-doorWidthM / 2, -0.025, 0.05, -0.025]}
+                          stroke={isSelected ? "#8a5a36" : "#85705c"}
+                          strokeWidth={2.5 / SCALE}
+                        />
+                        <KonvaLine
+                          points={[-0.05, 0.025, doorWidthM / 2, 0.025]}
+                          stroke={isSelected ? "#8a5a36" : "#a18e7a"}
+                          strokeWidth={2.5 / SCALE}
+                          dash={
+                            doorType === "pocket" ? [3 / SCALE, 2 / SCALE] : []
+                          }
+                        />
+                      </>
+                    ) : doorType === "bifold" ? (
+                      <KonvaLine
+                        points={[
+                          -doorWidthM / 2,
+                          0,
+                          -doorWidthM / 4,
+                          dirSign * (doorWidthM * 0.35),
+                          0,
+                          0,
+                          doorWidthM / 4,
+                          dirSign * (doorWidthM * 0.35),
+                          doorWidthM / 2,
+                          0,
+                        ]}
+                        stroke={isSelected ? "#8a5a36" : "#85705c"}
+                        strokeWidth={2.2 / SCALE}
+                      />
+                    ) : (
+                      <>
+                        <KonvaLine
+                          points={
+                            swingSide === "left"
+                              ? [
+                                  -doorWidthM / 2,
+                                  0,
+                                  -doorWidthM / 2,
+                                  dirSign * doorWidthM,
+                                ]
+                              : [
+                                  doorWidthM / 2,
+                                  0,
+                                  doorWidthM / 2,
+                                  dirSign * doorWidthM,
+                                ]
+                          }
+                          stroke={isSelected ? "#8a5a36" : "#85705c"}
+                          strokeWidth={2.5 / SCALE}
+                        />
+                        <Arc
+                          x={
+                            swingSide === "left"
+                              ? -doorWidthM / 2
+                              : doorWidthM / 2
+                          }
+                          y={0}
+                          innerRadius={0}
+                          outerRadius={doorWidthM}
+                          angle={90}
+                          rotation={
+                            swingSide === "left"
+                              ? dirSign > 0
+                                ? 0
+                                : -90
+                              : dirSign > 0
+                                ? 90
+                                : 180
+                          }
+                          stroke={isSelected ? "#8a5a36" : "#a18e7a"}
+                          strokeWidth={1.5 / SCALE}
+                          dash={[3 / SCALE, 2 / SCALE]}
+                        />
+                      </>
+                    )}
+
+                    {/* Live Position / Width Badge when selected */}
+                    {isSelected && (
+                      <Group x={0} y={-0.38}>
+                        <Rect
+                          x={-0.65}
+                          y={-0.16}
+                          width={1.3}
+                          height={0.32}
+                          fill="#1e293b"
+                          cornerRadius={0.05}
+                        />
+                        <Text
+                          text={`${door.width}" · @${distFromStartFt}ft`}
+                          x={-0.65}
+                          y={-0.09}
+                          width={1.3}
+                          align="center"
+                          fontSize={8.5 / SCALE}
+                          fontFamily="monospace"
+                          fill="#f8fafc"
+                          fontStyle="bold"
+                        />
+                      </Group>
+                    )}
                   </Group>
                 );
               })}
 
-              {/* ── Architectural 2D Windows ── */}
+              {/* ── Architectural 2D Windows (Draggable Along Wall) ── */}
               {(floorPlanLayout.windows || []).map((win) => {
-                const wall = (floorPlanLayout.walls || []).find((w) => w.id === win.wallId);
+                const wall = (floorPlanLayout.walls || []).find(
+                  (w) => w.id === win.wallId,
+                );
                 if (!wall) return null;
                 const sx = feetToMeters(wall.start.x);
                 const sy = feetToMeters(wall.start.y);
                 const ex = feetToMeters(wall.end.x);
                 const ey = feetToMeters(wall.end.y);
+                const wallLengthFt = Math.hypot(
+                  wall.end.x - wall.start.x,
+                  wall.end.y - wall.start.y,
+                );
                 const angleRad = Math.atan2(ey - sy, ex - sx);
                 const angleDeg = (angleRad * 180) / Math.PI;
 
@@ -1947,6 +2870,9 @@ export default function BlueprintCanvas2D() {
                 const cx = sx + win.position * (ex - sx);
                 const cy = sy + win.position * (ey - sy);
                 const isSelected = selectedObjectId === win.id;
+                const distFromStartFt = (win.position * wallLengthFt).toFixed(
+                  1,
+                );
 
                 return (
                   <Group
@@ -1957,6 +2883,23 @@ export default function BlueprintCanvas2D() {
                     onClick={(e) => {
                       e.cancelBubble = true;
                       setSelectedObject(win.id);
+                    }}
+                    onMouseDown={(e) => {
+                      if (tool !== "select") return;
+                      e.cancelBubble = true;
+                      setSelectedObject(win.id);
+                      const stage = e.target.getStage();
+                      if (!stage) return;
+                      const pt = getStagePointerMeters(stage);
+                      if (pt && floorPlanLayout) {
+                        useEditorStore.temporal.getState().pause();
+                        dragContextRef.current = {
+                          type: "window-slide",
+                          id: win.id,
+                          startMeters: pt,
+                          originalLayout: floorPlanLayout,
+                        };
+                      }
                     }}
                   >
                     {/* Window opening cut */}
@@ -1969,31 +2912,74 @@ export default function BlueprintCanvas2D() {
                     />
                     {/* Jamb lines */}
                     <KonvaLine
-                      points={[-winWidthM / 2, -wallThickM / 2, -winWidthM / 2, wallThickM / 2]}
-                      stroke={isSelected ? "#2563eb" : "#334155"}
+                      points={[
+                        -winWidthM / 2,
+                        -wallThickM / 2,
+                        -winWidthM / 2,
+                        wallThickM / 2,
+                      ]}
+                      stroke={isSelected ? "#8a5a36" : "#334155"}
                       strokeWidth={2 / SCALE}
                     />
                     <KonvaLine
-                      points={[winWidthM / 2, -wallThickM / 2, winWidthM / 2, wallThickM / 2]}
-                      stroke={isSelected ? "#2563eb" : "#334155"}
+                      points={[
+                        winWidthM / 2,
+                        -wallThickM / 2,
+                        winWidthM / 2,
+                        wallThickM / 2,
+                      ]}
+                      stroke={isSelected ? "#8a5a36" : "#334155"}
                       strokeWidth={2 / SCALE}
                     />
                     {/* Double-glazing glass lines */}
                     <KonvaLine
                       points={[-winWidthM / 2, -0.03, winWidthM / 2, -0.03]}
-                      stroke={isSelected ? "#2563eb" : "#06b6d4"}
+                      stroke={isSelected ? "#8a5a36" : "#94785b"}
                       strokeWidth={1.5 / SCALE}
                     />
                     <KonvaLine
                       points={[-winWidthM / 2, 0.03, winWidthM / 2, 0.03]}
-                      stroke={isSelected ? "#2563eb" : "#06b6d4"}
+                      stroke={isSelected ? "#8a5a36" : "#94785b"}
                       strokeWidth={1.5 / SCALE}
                     />
+                    {/* Center Mullion for grid-2x2 / double-hung / casement */}
+                    {(win.windowType === "grid-2x2" ||
+                      win.windowType === "casement" ||
+                      win.windowType === "double-hung") && (
+                      <KonvaLine
+                        points={[0, -wallThickM / 2, 0, wallThickM / 2]}
+                        stroke={isSelected ? "#8a5a36" : "#85705c"}
+                        strokeWidth={1.5 / SCALE}
+                      />
+                    )}
+                    {isSelected && (
+                      <Group x={0} y={-0.38}>
+                        <Rect
+                          x={-0.75}
+                          y={-0.16}
+                          width={1.5}
+                          height={0.32}
+                          fill="#0f172a"
+                          cornerRadius={0.05}
+                        />
+                        <Text
+                          text={`${win.width}"x${win.height}" · @${distFromStartFt}ft`}
+                          x={-0.75}
+                          y={-0.09}
+                          width={1.5}
+                          align="center"
+                          fontSize={8.5 / SCALE}
+                          fontFamily="monospace"
+                          fill="#a18e7a"
+                          fontStyle="bold"
+                        />
+                      </Group>
+                    )}
                   </Group>
                 );
               })}
 
-              {/* ── Architectural 2D Staircases ── */}
+              {/* ── Architectural 2D Staircases (Draggable, Rotatable & Multi-Type) ── */}
               {(staircases || []).map((stair) => {
                 const widthM = feetToMeters(stair.width / 12);
                 const riserDepthM = 0.28;
@@ -2007,53 +2993,157 @@ export default function BlueprintCanvas2D() {
                     x={stair.position.x}
                     y={stair.position.z}
                     rotation={angleDeg}
+                    draggable={tool === "select"}
                     onClick={(e) => {
                       e.cancelBubble = true;
                       setSelectedObject(stair.id);
                     }}
+                    onDragStart={() =>
+                      useEditorStore.temporal.getState().pause()
+                    }
+                    onDragMove={(e) => {
+                      updateStaircase(stair.id, {
+                        position: {
+                          ...stair.position,
+                          x: Math.round(e.target.x() * 10) / 10,
+                          z: Math.round(e.target.y() * 10) / 10,
+                        },
+                      });
+                    }}
+                    onDragEnd={(e) => {
+                      useEditorStore.temporal.getState().resume();
+                      updateStaircase(stair.id, {
+                        position: {
+                          ...stair.position,
+                          x: Math.round(e.target.x() * 10) / 10,
+                          z: Math.round(e.target.y() * 10) / 10,
+                        },
+                      });
+                    }}
                   >
-                    {/* Stair boundary */}
-                    <Rect
-                      x={-widthM / 2}
-                      y={-lengthM / 2}
-                      width={widthM}
-                      height={lengthM}
-                      fill="#FAF8F5"
-                      stroke={isSelected ? "#2563eb" : "#78716c"}
-                      strokeWidth={2 / SCALE}
-                    />
-                    {/* Treads */}
-                    {Array.from({ length: stair.riserCount }).map((_, idx) => {
-                      const ty = -lengthM / 2 + idx * riserDepthM;
-                      return (
-                        <KonvaLine
-                          key={idx}
-                          points={[-widthM / 2, ty, widthM / 2, ty]}
-                          stroke="#a8a29e"
-                          strokeWidth={1 / SCALE}
+                    {stair.type === "spiral" ? (
+                      <>
+                        <Circle
+                          radius={widthM}
+                          fill="#FAF8F5"
+                          stroke={isSelected ? "#8a5a36" : "#78716c"}
+                          strokeWidth={2 / SCALE}
                         />
-                      );
-                    })}
-                    {/* Ascent arrow & UP text */}
-                    <KonvaLine
-                      points={[0, lengthM / 2 - 0.2, 0, -lengthM / 2 + 0.3]}
-                      stroke={isSelected ? "#2563eb" : "#44403c"}
-                      strokeWidth={1.5 / SCALE}
-                    />
-                    <KonvaLine
-                      points={[-0.1, -lengthM / 2 + 0.5, 0, -lengthM / 2 + 0.3, 0.1, -lengthM / 2 + 0.5]}
-                      stroke={isSelected ? "#2563eb" : "#44403c"}
-                      strokeWidth={1.5 / SCALE}
-                    />
-                    <Text
-                      text="UP"
-                      x={-0.15}
-                      y={lengthM / 2 - 0.4}
-                      fontSize={11 / SCALE}
-                      fontFamily="sans-serif"
-                      fill="#44403c"
-                      fontStyle="bold"
-                    />
+                        <Circle
+                          radius={0.14}
+                          fill="#78716c"
+                          stroke={isSelected ? "#8a5a36" : "#44403c"}
+                          strokeWidth={1.5 / SCALE}
+                        />
+                        {Array.from({ length: 12 }).map((_, idx) => {
+                          const a = (idx / 12) * Math.PI * 2;
+                          return (
+                            <KonvaLine
+                              key={idx}
+                              points={[
+                                0,
+                                0,
+                                Math.cos(a) * widthM,
+                                Math.sin(a) * widthM,
+                              ]}
+                              stroke="#a8a29e"
+                              strokeWidth={1 / SCALE}
+                            />
+                          );
+                        })}
+                      </>
+                    ) : (
+                      <>
+                        {/* Stair boundary */}
+                        <Rect
+                          x={-widthM / 2}
+                          y={-lengthM / 2}
+                          width={widthM}
+                          height={lengthM}
+                          fill="#FAF8F5"
+                          stroke={isSelected ? "#8a5a36" : "#78716c"}
+                          strokeWidth={2 / SCALE}
+                        />
+                        {/* Treads */}
+                        {Array.from({ length: stair.riserCount }).map(
+                          (_, idx) => {
+                            const ty = -lengthM / 2 + idx * riserDepthM;
+                            return (
+                              <KonvaLine
+                                key={idx}
+                                points={[-widthM / 2, ty, widthM / 2, ty]}
+                                stroke="#a8a29e"
+                                strokeWidth={1 / SCALE}
+                              />
+                            );
+                          },
+                        )}
+                        {/* Ascent arrow & UP text */}
+                        <KonvaLine
+                          points={[0, lengthM / 2 - 0.2, 0, -lengthM / 2 + 0.3]}
+                          stroke={isSelected ? "#8a5a36" : "#44403c"}
+                          strokeWidth={1.5 / SCALE}
+                        />
+                        <KonvaLine
+                          points={[
+                            -0.1,
+                            -lengthM / 2 + 0.5,
+                            0,
+                            -lengthM / 2 + 0.3,
+                            0.1,
+                            -lengthM / 2 + 0.5,
+                          ]}
+                          stroke={isSelected ? "#8a5a36" : "#44403c"}
+                          strokeWidth={1.5 / SCALE}
+                        />
+                        <Text
+                          text={`UP (${stair.type.toUpperCase()})`}
+                          x={-widthM / 2}
+                          y={lengthM / 2 - 0.35}
+                          width={widthM}
+                          align="center"
+                          fontSize={9.5 / SCALE}
+                          fontFamily="sans-serif"
+                          fill="#44403c"
+                          fontStyle="bold"
+                        />
+                      </>
+                    )}
+
+                    {/* Stair Rotation Gizmo when Selected */}
+                    {isSelected && (
+                      <Group
+                        x={0}
+                        y={
+                          -(stair.type === "spiral" ? widthM : lengthM / 2) -
+                          0.4
+                        }
+                        onClick={(e) => {
+                          e.cancelBubble = true;
+                          const nextRot =
+                            ((stair.rotation.y || 0) + Math.PI / 2) %
+                            (Math.PI * 2);
+                          updateStaircase(stair.id, {
+                            rotation: { ...stair.rotation, y: nextRot },
+                          });
+                          toast.success("Rotated staircase 90°");
+                        }}
+                      >
+                        <Circle
+                          radius={12 / SCALE}
+                          fill="#8a5a36"
+                          stroke="#fff"
+                          strokeWidth={1.5 / SCALE}
+                        />
+                        <Text
+                          text="↻"
+                          x={-5 / SCALE}
+                          y={-5 / SCALE}
+                          fontSize={10 / SCALE}
+                          fill="#fff"
+                        />
+                      </Group>
+                    )}
                   </Group>
                 );
               })}
@@ -2065,7 +3155,7 @@ export default function BlueprintCanvas2D() {
                   <Group key={dim.id} onClick={() => setSelectedObject(dim.id)}>
                     <KonvaLine
                       points={[dim.start.x, dim.start.z, dim.end.x, dim.end.z]}
-                      stroke={isSelected ? "#3b82f6" : "#FFD700"}
+                      stroke={isSelected ? "#8a5a36" : "#85705c"}
                       strokeWidth={(isSelected ? 3 : 2) / SCALE}
                       dash={[5 / SCALE, 5 / SCALE]}
                     />
@@ -2074,27 +3164,15 @@ export default function BlueprintCanvas2D() {
                       x={(dim.start.x + dim.end.x) / 2}
                       y={(dim.start.z + dim.end.z) / 2 - 0.5}
                       fontSize={14 / SCALE}
-                      fill={isSelected ? "#3b82f6" : "#FFD700"}
+                      fill={isSelected ? "#8a5a36" : "#85705c"}
                     />
                   </Group>
                 );
               })}
-
             </Group>
           </Group>
         </Layer>
       </Stage>
-      
-      <div className="absolute bottom-6 left-6 text-slate-700 font-mono text-[10px] tracking-wider pointer-events-none select-none bg-white/95 px-4.5 py-2.5 rounded-xl border border-slate-200/80 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.06)] flex flex-col gap-1 z-10">
-        <span className="font-bold text-slate-800 uppercase tracking-widest block border-b border-slate-100 pb-1 mb-1">
-          Planner 5D CAD Editor controls:
-        </span>
-        <span>• DRAG endpoints to stretch walls (auto-connects when close).</span>
-        <span>• Hold ALT while dragging endpoint to DISCONNECT it from corners.</span>
-        <span>• CLICK & DRAG empty space to pan, or use MIDDLE MOUSE.</span>
-        <span>• SELECT walls/furniture, press DELETE to remove.</span>
-        <span>• SHIFT-CLICK to draw perfectly straight walls.</span>
-      </div>
     </div>
   );
 }

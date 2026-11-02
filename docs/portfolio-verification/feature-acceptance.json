@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "Pending model never inserts a fallback; only the completed model is added",
+    "Unsupported headset and AR requests never claim a connection",
+    "A failed model load is visibly marked instead of silently pretending the placeholder is the model",
+    "Generated alternatives contain different geometry and selecting one saves that geometry",
+    "Selected generated layout reopens after reload"
+  ],
+  "unexpectedPageErrors": [],
+  "expectedMissingModelErrors": [
+    "Could not load https://example.com/missing-review.glb: fetch for \"https://example.com/missing-review.glb\" responded with 404: Not Found"
+  ]
+}

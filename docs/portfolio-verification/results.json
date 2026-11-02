@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "Open a furnished example",
+    "Edit, undo, redo, and save",
+    "Apply material, reload, keep project identity",
+    "Place and import furniture, then reload",
+    "Download PDF plan sheet and DXF geometry",
+    "Gallery shows rooms, openings, and furniture",
+    "Reject unsupported uploads and trace bundled blueprint",
+    "Supporting pages describe the student demonstration",
+    "Mobile tool controls remain reachable"
+  ],
+  "uncaughtErrors": []
+}

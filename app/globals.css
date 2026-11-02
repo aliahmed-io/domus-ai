@@ -1,48 +1,48 @@
-/* ─── Google Fonts ──────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Google Fonts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap");
 
 @import "tailwindcss";
 
-/* ─── Design Tokens (Tailwind v4 theme) ─────────────────────────────────────── */
+/* â”€â”€â”€ Design Tokens (Tailwind v4 theme) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @theme inline {
   /* Fonts */
   --font-jakarta: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-inter: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 
-  /* Colors — Standard Architectural Brown, Cream, and White Palette */
-  --color-alabaster: #FAF8F5; /* Cozy architectural creamy white background */
+  /* Colors â€” Standard Architectural Brown, Cream, and White Palette */
+  --color-alabaster: #faf8f5; /* Cozy architectural creamy white background */
   --color-surface: #ffffff; /* Clean pure white card surfaces */
-  --color-dark-surface: #2C2621; /* Rich warm dark oak/charcoal background */
-  --color-dark-surface-alt: #1E1A17; /* Deeper dark oak/ebony */
+  --color-dark-surface: #2c2621; /* Rich warm dark oak/charcoal background */
+  --color-dark-surface-alt: #1e1a17; /* Deeper dark oak/ebony */
 
-  --color-charcoal: #2C2621; /* Primary text / dark headings */
-  --color-stone: #8A7E74; /* Warm stone-gray */
-  --color-muted: #B5AEA6; /* Soft warm gray-sand */
-  --color-on-dark: #FAF8F5; /* Cream text on dark backgrounds */
-  --color-on-dark-muted: #C5BDB5; /* Muted creamy sand text on dark */
+  --color-charcoal: #2c2621; /* Primary text / dark headings */
+  --color-stone: #8a7e74; /* Warm stone-gray */
+  --color-muted: #b5aea6; /* Soft warm gray-sand */
+  --color-on-dark: #faf8f5; /* Cream text on dark backgrounds */
+  --color-on-dark-muted: #c5bdb5; /* Muted creamy sand text on dark */
 
-  --color-indigo: #8C7662; /* Refined architectural clay brown (Primary Brand Color) */
-  --color-indigo-dark: #5A4A3A; /* Rich deep wood oak */
-  --color-indigo-light: #FAF7F2; /* Luxury soft cream tint */
-  --color-indigo-mid: #E6DFD5; /* Creamy sand border tint */
+  --color-indigo: #70472f; /* Refined architectural clay brown (Primary Brand Color) */
+  --color-indigo-dark: #503222; /* Rich deep wood oak */
+  --color-indigo-light: #f0dfce; /* Luxury soft cream tint */
+  --color-indigo-mid: #dfc4aa; /* Creamy sand border tint */
 
-  --color-gold: #C2A585; /* Brushed warm gold/brass accent */
-  --color-gold-light: #FAF4EB; /* Brushed brass warm tint */
+  --color-gold: #c2a585; /* Brushed warm gold/brass accent */
+  --color-gold-light: #faf4eb; /* Brushed brass warm tint */
 
-  --color-teal: #A88E75; /* Elegant metallic bronze accent */
-  --color-teal-light: #FAF5EF; /* Subtle warm bronze tint */
-  --color-amber: #D1A172; /* Warm amber wood */
-  --color-amber-light: #FAF6F0; /* Soft amber tint */
-  --color-error: #B23B3B; /* Muted deep architectural red */
-  --color-error-light: #FDF5F5; /* Soft red tint */
-  --color-success: #8C7662; /* Primary brand brown */
-  --color-success-light: #FAF7F2; /* Creamy brand tint */
+  --color-teal: #a88e75; /* Elegant metallic bronze accent */
+  --color-teal-light: #faf5ef; /* Subtle warm bronze tint */
+  --color-amber: #d1a172; /* Warm amber wood */
+  --color-amber-light: #faf6f0; /* Soft amber tint */
+  --color-error: #b23b3b; /* Muted deep architectural red */
+  --color-error-light: #fdf5f5; /* Soft red tint */
+  --color-success: #70472f; /* Primary brand brown */
+  --color-success-light: #f0dfce; /* Creamy brand tint */
 
-  --color-hairline: #EAE5DF; /* Refined creamy warm hairline borders */
-  --color-hairline-dark: #3D3631; /* Warm dark wood hairline borders */
+  --color-hairline: #eae5df; /* Refined creamy warm hairline borders */
+  --color-hairline-dark: #3d3631; /* Warm dark wood hairline borders */
 
-  /* Spacing — 8pt grid */
+  /* Spacing â€” 8pt grid */
   --spacing-0: 0px;
   --spacing-1: 4px;
   --spacing-2: 8px;
@@ -76,7 +76,7 @@
   --shadow-modal: 0 48px 100px rgba(0, 0, 0, 0.18);
 }
 
-/* ─── CSS Custom Properties ──────────────────────────────────────────────────── */
+/* â”€â”€â”€ CSS Custom Properties â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root {
   --nav-height: 64px;
   --sidebar-width: 240px;
@@ -87,7 +87,7 @@
   --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── Base Styles ────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Base Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 *,
 *::before,
 *::after {
@@ -102,7 +102,7 @@ html {
 }
 
 body {
-  background-color: #f9f9f8;
+  background-color: #eadaca;
   color: #2a2a2a;
   font-family: "Inter", system-ui, sans-serif;
   font-size: 16px;
@@ -110,7 +110,7 @@ body {
   min-height: 100dvh;
 }
 
-/* ─── Typography Utilities ───────────────────────────────────────────────────── */
+/* â”€â”€â”€ Typography Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .font-headline {
   font-family: "Plus Jakarta Sans", system-ui, sans-serif;
 }
@@ -191,7 +191,7 @@ body {
   text-transform: uppercase;
 }
 
-/* ─── Card Component ─────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Card Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .card {
   background: #ffffff;
   border-radius: 16px;
@@ -207,7 +207,7 @@ body {
   transform: translateY(-2px);
 }
 
-/* ─── Button Components ──────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Button Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -297,7 +297,7 @@ body {
   box-shadow: 0 4px 14px rgba(140, 118, 98, 0.25);
 }
 
-/* ─── Navbar Frosted Glass ───────────────────────────────────────────────────── */
+/* â”€â”€â”€ Navbar Frosted Glass â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .nav-frosted {
   background: rgba(249, 249, 248, 0.85);
   backdrop-filter: blur(20px);
@@ -305,7 +305,7 @@ body {
   border-bottom: 1px solid rgba(232, 232, 230, 0.6);
 }
 
-/* ─── Section Layout ─────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Section Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .section-py {
   padding-top: 96px;
   padding-bottom: 96px;
@@ -322,7 +322,7 @@ body {
   margin-right: auto;
 }
 
-/* ─── Gradient Accents ───────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Gradient Accents â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .gradient-indigo {
   background: linear-gradient(135deg, #8c7662 0%, #5a4a3a 100%);
 }
@@ -338,14 +338,14 @@ body {
   background-clip: text;
 }
 
-/* ─── Focus Styles ───────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Focus Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :focus-visible {
   outline: 2px solid #8c7662;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Scrollbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -364,7 +364,7 @@ body {
   background: #9ca3af;
 }
 
-/* ─── Motion Preferences ─────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Motion Preferences â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -376,7 +376,7 @@ body {
   }
 }
 
-/* ─── Dark section text overrides ────────────────────────────────────────────── */
+/* â”€â”€â”€ Dark section text overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .dark-section {
   background: #2c2621;
   color: #faf8f5;
@@ -390,13 +390,13 @@ body {
   color: inherit;
 }
 
-/* ─── Indigo tinted section ──────────────────────────────────────────────────── */
+/* â”€â”€â”€ Indigo tinted section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .indigo-tint {
   background: #faf7f2;
   border: 1px solid #e6dfd5;
 }
 
-/* ─── 3D Canvas container ────────────────────────────────────────────────────── */
+/* â”€â”€â”€ 3D Canvas container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .canvas-container {
   position: relative;
   background: #2c2621;
@@ -409,3 +409,1577 @@ body {
   width: 100% !important;
   height: 100% !important;
 }
+/* Domus workshop: paper, cobalt, and a working pinboard. */
+.studio-landing,
+.workshop-page {
+  color: #38261d;
+  background: #eadaca;
+  font-family: var(--font-jakarta);
+}
+.studio-landing h1,
+.workshop-page h1 {
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1.04;
+}
+.studio-landing h2,
+.workshop-page h2 {
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1.1;
+}
+.studio-button,
+.studio-outline-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 13px 23px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.2s;
+}
+.studio-button {
+  background: #68442e;
+  color: #fff7ed;
+  border: 1px solid #68442e;
+  box-shadow: inset 0 1px 0 #b38b6660, 0 3px 5px #744a2e15;
+}
+.studio-button:hover {
+  background: #573722;
+  transform: translateY(-2px);
+}
+.studio-outline-button {
+  border: 1px solid #b99c82;
+  background: transparent;
+  color: #503b2e;
+  gap: 10px;
+  box-shadow: none;
+}
+.studio-outline-button:hover {
+  background: #dfcbb8;
+}
+.studio-button-light {
+  background: #f3e2cf;
+  color: #42291b;
+  border-color: #f3e2cf;
+  box-shadow: inset 0 1px 0 #fff8ec, 0 3px 6px #25130925;
+}
+.studio-button-light:hover {
+  background: #f5e8dc;
+}
+.studio-landing :focus-visible,
+.workshop-page :focus-visible,
+.studio-nav :focus-visible,
+.workshop-rail :focus-visible {
+  outline: 3px solid #a35e2d;
+  outline-offset: 5px;
+}
+.studio-kicker {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.studio-kicker > span,
+.local-dot {
+  width: 7px;
+  height: 7px;
+  background: #70472f;
+  border-radius: 50%;
+  display: inline-block;
+}
+.studio-nav {
+  position: relative;
+  z-index: 50;
+  min-height: 90px;
+  padding: 20px max(5vw, 24px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #eadaca;
+  border-bottom: 1px solid #d4bca6;
+  gap: 20px;
+  color: #38261d;
+}
+.studio-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #38261d;
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -1.3px;
+}
+.studio-wordmark svg {
+  color: #70472f;
+}
+.studio-wordmark > span {
+  margin-left: 15px;
+  padding-left: 20px;
+  border-left: 1px solid #cbb39e;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #725a49;
+}
+.studio-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  font-size: 13px;
+}
+.studio-nav-links > a:not(.studio-button):hover {
+  color: #70472f;
+}
+.studio-menu-toggle {
+  display: none;
+}
+.landing-hero {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 64px 5vw 80px;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  align-items: center;
+  gap: 35px;
+  min-height: 730px;
+}
+.hero-copy {
+  position: relative;
+  z-index: 3;
+}
+.hero-copy h1 {
+  font-size: clamp(58px, 6.7vw, 104px);
+  margin: 28px 0 24px;
+}
+.hero-copy > p {
+  max-width: 360px;
+  font-size: 17px;
+  line-height: 1.8;
+  color: #725a49;
+}
+.hero-actions {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+.studio-text-link {
+  font-size: 13px;
+  border-bottom: 1px solid #a58870;
+  padding: 4px 0;
+}
+.hero-reassurance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 22px;
+  color: #725a49;
+  font-size: 11px;
+}
+.hero-reassurance > span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.design-board {
+  height: 660px;
+  position: relative;
+  isolation: isolate;
+}
+.board-photo {
+  position: absolute;
+  top: 20px;
+  right: 0;
+  width: 80%;
+  height: 410px;
+  transform: rotate(2deg);
+  overflow: hidden;
+  border: 6px solid #d6b594;
+  border-radius: 145px 145px 28px 28px;
+  box-shadow: inset 1px 1px 3px #fff1de, 6px 10px 20px #68412425;
+}
+.board-photo img {
+  object-fit: cover;
+}
+.photo-caption {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  padding: 12px 16px;
+  border-radius: 100px;
+  background: #f9ecdfed;
+  color: #503b2e;
+  font-size: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.board-plan {
+  position: absolute;
+  width: 76%;
+  left: -5px;
+  top: 270px;
+  padding: 20px;
+  background: #f3e4d2;
+  color: #70472f;
+  transform: rotate(-5deg);
+  border-radius: 22px;
+  box-shadow: inset 1px 1px 2px #fff9ee, inset -2px -2px 4px #b2906c20, 7px 12px 24px #67462c25;
+  --plan-paper: #f3e4d2;
+  border: 1px solid #f9eddf;
+}
+.plan-illustration {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.board-paper-heading,
+.board-paper-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  gap: 10px;
+}
+.board-paper-heading {
+  padding: 3px 0 10px;
+  border-bottom: 1px solid #dcc4ae;
+  font-weight: 600;
+}
+.board-paper-foot {
+  color: #725a49;
+}
+.board-material {
+  position: absolute;
+  right: -8px;
+  top: 425px;
+  width: 185px;
+  background: #d5b391;
+  padding: 22px;
+  transform: rotate(3deg);
+  border-radius: 18px;
+  box-shadow: inset 1px 1px 2px #fce4c9, 4px 7px 14px #67462c20;
+}
+.board-material > span {
+  font-size: 11px;
+}
+.board-material strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.board-material small {
+  display: block;
+  font-size: 9px;
+  margin-top: 5px;
+  color: #624630;
+}
+.finish-options {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0;
+}
+.finish-options button {
+  width: 39px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #38261d;
+  border: 1px solid #fff5e680;
+  border-radius: 50%;
+  box-shadow: inset 2px 2px 3px #fff8e880, inset -2px -3px 4px #6c4d3c40, 2px 3px 5px #6c4d3c30;
+}
+.finish-options button[aria-pressed="true"] {
+  outline: 2px solid #3c493a;
+  outline-offset: 3px;
+}
+.board-note {
+  position: absolute;
+  top: 28px;
+  left: -6px;
+  width: 125px;
+  height: 125px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: #f8ead9;
+  background: #70472f;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  transform: rotate(-14deg);
+  box-shadow: inset 3px 3px 4px #b68a6480, inset -3px -4px 5px #38211670, 6px 9px 16px #67462c30;
+}
+.landing-divider {
+  border-top: 1px solid #d4bca6;
+  border-bottom: 1px solid #d4bca6;
+  padding: 22px 5vw;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 12px;
+  color: #725a49;
+}
+.landing-inside {
+  max-width: 1320px;
+  margin: auto;
+  padding: 100px 5vw;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 80px;
+  scroll-margin-top: 30px;
+}
+.section-intro h2,
+.landing-inspiration h2 {
+  font-size: clamp(32px, 4vw, 54px);
+}
+.section-intro p {
+  color: #725a49;
+  max-width: 320px;
+  line-height: 1.8;
+  font-size: 14px;
+  margin-top: 20px;
+}
+.landing-tool-list > a {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 24px 0;
+  border-bottom: 1px solid #d4bca6;
+}
+.landing-tool-list > a:first-child {
+  padding-top: 0;
+}
+.landing-tool-list > a > svg {
+  flex-shrink: 0;
+  color: #70472f;
+}
+.landing-tool-list > a > svg:last-child {
+  margin-left: auto;
+}
+.landing-tool-list h3 {
+  font-weight: 600;
+  font-size: 16px;
+}
+.landing-tool-list p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #725a49;
+  margin-top: 7px;
+  max-width: 340px;
+}
+.landing-inspiration {
+  margin: 0 5vw 90px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 450px;
+  background: #dfc7b0;
+  border: 1px solid #f5e5d5;
+  border-radius: 44px;
+  overflow: hidden;
+  box-shadow: inset 2px 2px 4px #fff0e0, 10px 15px 30px #75523420;
+}
+.inspiration-image {
+  position: relative;
+  min-height: 400px;
+}
+.inspiration-image img {
+  object-fit: cover;
+}
+.landing-inspiration > div:last-child {
+  padding: 55px;
+  align-self: center;
+}
+.landing-inspiration h2 {
+  margin-top: 25px;
+}
+.landing-inspiration p {
+  margin: 20px 0 25px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #725a49;
+  max-width: 340px;
+}
+.landing-inspiration small {
+  display: block;
+  margin-top: 25px;
+  font-size: 10px;
+  color: #725a49;
+}
+.studio-footer {
+  background: #eadaca;
+  color: #725a49;
+  padding: 45px 5vw 25px;
+  border-top: 1px solid #d4bca6;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 25px;
+  justify-content: space-between;
+}
+.studio-footer p {
+  font-size: 12px;
+  margin-top: 10px;
+}
+.studio-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  font-size: 12px;
+}
+.studio-footer nav a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.studio-footer > small {
+  width: 100%;
+  font-size: 10px;
+  margin-top: 25px;
+}
+.workshop-rail {
+  width: 88px;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 9px 16px;
+  background: #e4cdb6;
+  border-right: 1px solid #f5e6d5;
+  box-shadow: inset -3px 0 6px #b28d6b30;
+  flex-shrink: 0;
+  z-index: 30;
+  font-family: var(--font-jakarta);
+}
+.rail-brand {
+  color: #70472f;
+  margin-bottom: 28px;
+  padding: 6px;
+}
+.workshop-rail nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.rail-link {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 58px;
+  border-radius: 8px;
+  color: #725a49;
+  font-size: 9px;
+  transition: background 0.2s;
+}
+.rail-link:hover {
+  background: #e4d0bc;
+}
+.rail-link.active {
+  background: #d4b492;
+  color: #42291c;
+  box-shadow: none;
+}
+.rail-bottom {
+  margin-top: auto;
+  color: #70472f;
+  font-size: 18px;
+  font-weight: 600;
+}
+.workshop-page {
+  height: 100%;
+  overflow-y: auto;
+  padding: 0 clamp(22px, 4.5vw, 76px);
+}
+.workshop-header {
+  padding: 26px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid #d4bca6;
+  font-size: 11px;
+  color: #725a49;
+}
+.workshop-header > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.local-dot {
+  background: #64816f;
+  width: 6px;
+  height: 6px;
+}
+.workshop-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  margin: 45px 0 35px;
+}
+.workshop-welcome h1 {
+  font-size: clamp(38px, 4vw, 60px);
+}
+.workshop-welcome p {
+  margin-top: 17px;
+  font-size: 13px;
+  color: #725a49;
+}
+.workshop-welcome .studio-outline-button {
+  min-height: 44px;
+  font-size: 12px;
+}
+.workshop-start {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #68472f;
+  color: #fff3e5;
+  border: 1px solid #896448;
+  border-radius: 26px;
+  overflow: hidden;
+  min-height: 340px;
+  box-shadow: inset 1px 1px 1px #d2ae8540, 4px 7px 16px #75523420;
+}
+.workshop-start-copy {
+  padding: 38px 40px;
+}
+.workshop-start h2 {
+  margin: 22px 0 14px;
+  font-size: clamp(29px, 3vw, 44px);
+}
+.workshop-start p {
+  font-size: 12px;
+  line-height: 1.8;
+  max-width: 300px;
+  color: #efdbc7;
+}
+.workshop-start .studio-kicker {
+  color: #efdbc7;
+  font-size: 11px;
+}
+.workshop-start .studio-button {
+  margin-top: 24px;
+  min-height: 44px;
+  font-size: 12px;
+}
+.workshop-start small {
+  display: block;
+  margin-top: 14px;
+  font-size: 10px;
+  color: #efdbc7;
+}
+.workshop-plan {
+  padding: 30px 25px 20px 0;
+  align-self: center;
+  color: #70472f;
+}
+.workshop-plan .plan-illustration {
+  background: #f1dfca;
+  border: 5px solid #d9b58f;
+  border-radius: 18px;
+  transform: rotate(-4deg);
+  box-shadow: 4px 7px 14px #321b1130;
+  --plan-paper: #f1dfca;
+}
+.drawing-label {
+  display: block;
+  margin-top: 22px;
+  text-align: center;
+  color: #efdbc7;
+  font-size: 10px;
+}
+.workshop-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 38px 0 20px;
+}
+.workshop-section-heading h2 {
+  font-size: 20px;
+}
+.workshop-section-heading > span {
+  font-size: 11px;
+  color: #725a49;
+}
+.tool-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+.visual-tool {
+  min-width: 0;
+}
+.tool-art {
+  height: 210px;
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  background: #d5b99e;
+  border: 1px solid #cbb094;
+  box-shadow: none;
+}
+.tool-info {
+  display: grid;
+  grid-template-columns: 20px 1fr 20px;
+  align-items: center;
+  gap: 8px;
+  padding: 17px 0;
+}
+.tool-info h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tool-info p {
+  grid-column: 2/4;
+  color: #725a49;
+  font-size: 11px;
+}
+.tool-info > svg {
+  color: #70472f;
+}
+.visual-tool:hover .tool-info > svg:last-of-type {
+  transform: translate(2px, -2px);
+}
+.tool-type {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  background: #f9ecdfed;
+  border-radius: 100px;
+  padding: 7px 12px;
+  font-size: 10px;
+  color: #503b2e;
+}
+.blueprint-stack {
+  position: absolute;
+  width: 78%;
+  top: 8px;
+  left: 11%;
+  transform: rotate(-12deg);
+  background: #f4e6d7;
+  color: #70472f;
+  box-shadow: 8px 8px 0 #b58b68;
+}
+.material-tool .tool-art {
+  background: #ebe6dc;
+}
+.material-samples {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding-bottom: 15px;
+}
+.material-samples i {
+  width: 70px;
+  height: 100px;
+  background: repeating-linear-gradient(
+    93deg,
+    #b79a78 0,
+    #c3a989 3px,
+    #b79a78 5px,
+    #a98d6d 6px
+  );
+  transform: rotate(-18deg);
+  border: 4px solid #f5f2eb;
+  box-shadow: 0 6px 12px #45342220;
+}
+.material-samples i:nth-child(2) {
+  background: repeating-linear-gradient(
+    0deg,
+    #c9c9bf 0,
+    #dadad3 2px,
+    #c9c9bf 3px
+  );
+  transform: rotate(4deg);
+  margin-left: -12px;
+}
+.material-samples i:nth-child(3) {
+  background: #627966;
+  transform: rotate(23deg);
+  margin-left: -12px;
+}
+.furniture-tool img {
+  object-fit: cover;
+  object-position: center 60%;
+  transition: transform 0.4s;
+}
+.furniture-tool:hover img {
+  transform: scale(1.04);
+}
+.workshop-experiment {
+  margin-top: 28px;
+  padding: 22px;
+  border: 1px solid #d4bca6;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.workshop-experiment > svg {
+  color: #725a49;
+  flex-shrink: 0;
+}
+.workshop-experiment h3 {
+  font-size: 13px;
+  font-weight: 600;
+}
+.workshop-experiment p {
+  font-size: 11px;
+  color: #725a49;
+  margin-top: 6px;
+  max-width: 510px;
+  line-height: 1.6;
+}
+.workshop-experiment > span {
+  margin-left: auto;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  color: #70472f;
+}
+.workshop-footnote {
+  padding: 28px 0;
+  font-size: 10px;
+  color: #725a49;
+}
+.entry-panel {
+  background: #eadaca;
+  color: #38261d;
+  max-width: 470px;
+  padding: 42px;
+  border-radius: 14px;
+}
+.entry-panel > svg {
+  color: #70472f;
+}
+.entry-panel h1 {
+  font-size: 36px;
+  line-height: 1.15;
+  letter-spacing: -1.5px;
+  margin: 25px 0 18px;
+}
+.entry-panel p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #725a49;
+}
+.entry-panel .studio-button {
+  margin-top: 25px;
+}
+.entry-panel small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 20px;
+  color: #725a49;
+}
+@media (min-width: 1600px) {
+  .workshop-page {
+    padding-left: 8vw;
+    padding-right: 8vw;
+  }
+}
+@media (max-width: 1000px) {
+  .studio-wordmark > span {
+    display: none;
+  }
+  .landing-hero {
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding-top: 45px;
+    min-height: 650px;
+  }
+  .design-board {
+    height: 520px;
+  }
+  .board-photo {
+    width: 85%;
+    height: 330px;
+  }
+  .board-plan {
+    width: 90%;
+    top: 210px;
+  }
+  .board-material {
+    top: 330px;
+    right: -5px;
+    width: 150px;
+    padding: 14px;
+  }
+  .board-note {
+    font-size: 18px;
+    left: -10px;
+  }
+  .hero-copy h1 {
+    font-size: 64px;
+  }
+  .hero-copy > p {
+    font-size: 15px;
+  }
+  .hero-actions {
+    gap: 18px;
+  }
+  .landing-inside {
+    gap: 35px;
+  }
+  .landing-inspiration > div:last-child {
+    padding: 35px;
+  }
+  .workshop-start-copy {
+    padding: 30px;
+  }
+  .workshop-start {
+    min-height: 300px;
+  }
+  .tool-art {
+    height: 155px;
+  }
+  .tool-preview-grid {
+    gap: 16px;
+  }
+  .tool-info h3 {
+    font-size: 12px;
+  }
+  .tool-info p {
+    font-size: 10px;
+  }
+  .workshop-experiment {
+    flex-wrap: wrap;
+  }
+  .workshop-experiment > span {
+    margin-left: 42px;
+  }
+}
+@media (max-width: 767px) {
+  .studio-nav {
+    min-height: 75px;
+    padding: 16px 22px;
+  }
+  .studio-menu-toggle {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+  }
+  .studio-nav-links {
+    display: none;
+  }
+  .studio-nav-links.is-open {
+    position: absolute;
+    display: flex;
+    top: 75px;
+    left: 0;
+    right: 0;
+    padding: 25px;
+    flex-direction: column;
+    background: #eadaca;
+    border-bottom: 1px solid #d4bca6;
+    align-items: stretch;
+    gap: 25px;
+  }
+  .landing-hero {
+    grid-template-columns: 1fr;
+    padding: 45px 24px 25px;
+    gap: 30px;
+  }
+  .hero-copy h1 {
+    font-size: clamp(51px, 11vw, 78px);
+  }
+  .hero-copy > p {
+    max-width: 340px;
+  }
+  .hero-actions {
+    gap: 18px;
+  }
+  .hero-actions .studio-button {
+    padding: 13px 17px;
+    font-size: 12px;
+  }
+  .hero-reassurance {
+    font-size: 10px;
+  }
+  .design-board {
+    height: 540px;
+    width: 100%;
+    max-width: 550px;
+    margin: 15px auto 0;
+  }
+  .board-photo {
+    height: 340px;
+    width: 78%;
+  }
+  .board-plan {
+    width: 80%;
+    top: 215px;
+    left: 0;
+  }
+  .board-material {
+    top: 345px;
+    right: 0;
+    width: 150px;
+  }
+  .board-note {
+    left: 3px;
+    top: 10px;
+    font-size: 19px;
+  }
+  .landing-divider {
+    padding: 20px 24px;
+    font-size: 11px;
+  }
+  .landing-divider > span:last-child {
+    display: none;
+  }
+  .landing-inside {
+    padding: 55px 24px;
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+  .section-intro h2 {
+    font-size: 38px;
+  }
+  .section-intro p {
+    max-width: 100%;
+  }
+  .landing-inspiration {
+    margin: 0 20px 50px;
+    grid-template-columns: 1fr;
+  }
+  .inspiration-image {
+    min-height: 280px;
+  }
+  .landing-inspiration > div:last-child {
+    padding: 30px;
+  }
+  .studio-footer {
+    padding: 30px 24px;
+  }
+  .studio-footer nav {
+    gap: 20px;
+  }
+  .workshop-rail {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    padding: 8px 12px;
+    border-right: 0;
+    border-bottom: 1px solid #d4bca6;
+    gap: 12px;
+  }
+  .rail-brand {
+    margin: 0;
+    padding: 5px;
+  }
+  .workshop-rail nav {
+    flex-direction: row;
+    overflow-x: auto;
+    width: auto;
+    flex: 1;
+    gap: 5px;
+  }
+  .rail-link {
+    min-width: 60px;
+    min-height: 50px;
+    gap: 4px;
+    font-size: 8px;
+  }
+  .rail-bottom {
+    display: none;
+  }
+  .workshop-header {
+    padding: 19px 0;
+    font-size: 10px;
+  }
+  .workshop-welcome {
+    margin: 30px 0;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .workshop-welcome h1 {
+    font-size: 42px;
+  }
+  .workshop-welcome p {
+    font-size: 12px;
+  }
+  .workshop-welcome .studio-outline-button {
+    padding: 10px 14px;
+  }
+  .workshop-start {
+    grid-template-columns: 1fr;
+  }
+  .workshop-start-copy {
+    padding: 28px;
+  }
+  .workshop-start h2 {
+    font-size: 34px;
+  }
+  .workshop-plan {
+    padding: 0 30px 25px;
+    width: 100%;
+    max-width: 430px;
+    justify-self: center;
+  }
+  .workshop-plan .plan-illustration {
+    transform: rotate(-3deg);
+  }
+  .workshop-start p {
+    max-width: 100%;
+  }
+  .drawing-label {
+    margin-top: 15px;
+  }
+  .workshop-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tool-preview-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .tool-art {
+    height: 210px;
+  }
+  .tool-info h3 {
+    font-size: 15px;
+  }
+  .tool-info p {
+    font-size: 12px;
+  }
+  .blueprint-stack {
+    width: 65%;
+    left: 18%;
+  }
+  .material-samples i {
+    width: 95px;
+    height: 135px;
+  }
+  .workshop-experiment {
+    padding: 18px;
+    align-items: flex-start;
+  }
+  .workshop-experiment > div {
+    flex: 1;
+  }
+  .workshop-experiment > span {
+    margin-left: 42px;
+    font-size: 10px;
+  }
+  .workshop-footnote {
+    line-height: 1.8;
+  }
+  .entry-panel {
+    padding: 28px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-landing *,
+  .workshop-page * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+.plan-entry {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  padding: 28px 5%;
+}
+.plan-entry > header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  gap: 15px;
+  color: #725a49;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #d4bca6;
+}
+.plan-entry > header a {
+  color: #70472f;
+}
+.plan-entry-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 50px;
+  min-height: calc(100% - 50px);
+  padding: 40px 0;
+}
+.plan-entry h1 {
+  font-size: clamp(35px, 4vw, 60px);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 1.1;
+  margin: 20px 0;
+}
+.plan-entry p {
+  font-size: 14px;
+  color: #725a49;
+}
+.plan-entry-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 30px;
+}
+.plan-entry-choices button {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 23px;
+  text-align: left;
+  border: 1px solid #ccd4e3;
+  background: white;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.plan-entry-choices button:hover {
+  border-color: #70472f;
+  background: #f0dfce;
+}
+.plan-entry-choices svg {
+  color: #70472f;
+  flex-shrink: 0;
+}
+.plan-entry-choices svg:last-child {
+  margin-left: auto;
+}
+.plan-entry-choices strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.plan-entry-choices small {
+  display: block;
+  margin-top: 7px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #725a49;
+}
+.plan-entry-note {
+  display: block;
+  margin-top: 24px;
+  font-size: 10px;
+  color: #725a49;
+}
+.plan-entry-drawing {
+  padding: 22px;
+  background: #dfc7b0;
+  color: #70472f;
+  transform: rotate(3deg);
+  border-radius: 3px;
+  --plan-paper: #f6f7f2;
+}
+.plan-entry-drawing > span {
+  display: block;
+  text-align: center;
+  margin: 15px 0;
+  font-family: Georgia, serif;
+  font-style: italic;
+  color: #4f6353;
+}
+@media (max-width: 767px) {
+  .plan-entry {
+    padding: 20px;
+  }
+  .plan-entry-content {
+    grid-template-columns: 1fr;
+    gap: 35px;
+    padding: 30px 0;
+  }
+  .plan-entry-drawing {
+    max-width: 420px;
+    justify-self: center;
+  }
+  .plan-entry h1 {
+    font-size: 38px;
+  }
+  .plan-entry > header > span {
+    display: none;
+  }
+  .plan-entry-choices button {
+    padding: 18px;
+  }
+  .plan-entry-choices strong {
+    font-size: 13px;
+  }
+}
+.local-settings {
+  padding: clamp(24px, 5vw, 65px);
+  color: #38261d;
+  max-width: 850px;
+  font-family: var(--font-jakarta);
+}
+.local-settings h1 {
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.15;
+  letter-spacing: -0.05em;
+  margin: 20px 0;
+}
+.local-settings p,
+.local-settings > small {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #725a49;
+}
+.local-settings form {
+  margin: 35px 0;
+}
+.local-settings label {
+  display: block;
+  margin: 22px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.local-settings input,
+.local-settings textarea {
+  width: 100%;
+  padding: 13px;
+  background: white;
+  color: #38261d;
+  border: 1px solid #cbb39e;
+  border-radius: 7px;
+  font-size: 14px;
+}
+.local-settings input:focus-visible,
+.local-settings textarea:focus-visible {
+  outline: 2px solid #70472f;
+  outline-offset: 3px;
+}
+.local-settings button {
+  margin-top: 25px;
+}
+.local-settings > small {
+  display: block;
+  max-width: 550px;
+  font-size: 11px;
+}
+.contact-draft {
+  padding: 30px;
+  background: #eadaca;
+  border-radius: 12px;
+}
+.contact-draft h2 {
+  font-size: 23px;
+  margin-bottom: 15px;
+}
+.local-gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 30px;
+}
+.local-gallery > a {
+  border: 1px solid #d4bca6;
+  background: white;
+  border-radius: 10px;
+  padding: 24px;
+}
+.local-gallery span {
+  color: #725a49;
+  font-size: 11px;
+}
+.local-gallery h2 {
+  margin: 12px 0;
+  font-size: 20px;
+}
+.local-gallery svg {
+  margin-top: 20px;
+  color: #70472f;
+}
+.gallery-empty {
+  padding: 40px 0;
+}
+.gallery-empty h2 {
+  margin: 20px 0;
+  font-size: 23px;
+}
+.gallery-empty .studio-button {
+  margin-top: 20px;
+}
+.saved-plan-preview {
+  width: 100%;
+  height: 380px;
+  color: #70472f;
+  background: #f0dfce;
+  border: 1px solid #d4bca6;
+  border-radius: 9px;
+  margin: 25px 0;
+}
+.project-detail .studio-text-link {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.project-detail > p {
+  margin: 15px 0;
+}
+@media (max-width: 600px) {
+  .local-gallery {
+    grid-template-columns: 1fr;
+  }
+  .saved-plan-preview {
+    height: 260px;
+  }
+}
+.cad-toolbar {
+  max-width: calc(100% - 32px);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.cad-toolbar > *,
+.cad-toolbar button {
+  flex-shrink: 0;
+}
+.cad-toolbar button:focus-visible {
+  outline: 2px solid #70472f;
+  outline-offset: 2px;
+}
+@media (max-width: 767px) {
+  .cad-toolbar {
+    top: 80px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    border-radius: 12px;
+    gap: 8px;
+    padding: 7px;
+  }
+  .cad-toolbar button {
+    min-height: 42px;
+    min-width: 42px;
+  }
+  .cad-toolbar button span {
+    white-space: nowrap;
+  }
+  .cad-workspace > div.absolute.right-20 {
+    top: 150px;
+    right: 12px;
+    bottom: 12px;
+    width: min(320px, calc(100% - 24px));
+    z-index: 35;
+  }
+  .cad-workspace > button.absolute.right-6 {
+    top: 18px;
+    right: 12px;
+  }
+  .cad-workspace .absolute.bottom-6.right-6 {
+    right: 12px;
+    bottom: 12px;
+  }
+}
+.project-info {
+  width: 100%;
+  margin: 30px auto;
+  max-width: 1000px;
+}
+.project-info-sections {
+  display: grid;
+  gap: 26px;
+  margin: 38px 0;
+}
+.project-info-sections h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.project-info-extra {
+  max-width: 870px;
+  margin: 0 auto 60px;
+  padding: 0 24px;
+}
+.workshop-start .demo-project-button {
+  color: #fff3e5;
+  background: transparent;
+  box-shadow: none;
+  border-color: #ffffff80;
+  margin-top: 18px;
+  font-size: 11px;
+  min-height: 40px;
+}
+.workshop-start .demo-project-button:hover {
+  background: #ffffff15;
+}
+@media (max-width: 767px) {
+  .tool-studio {
+    overflow-y: auto !important;
+    display: flex;
+    flex-direction: column;
+  }
+  .tool-studio > aside {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none;
+    overflow: visible !important;
+  }
+  .tool-studio > main,
+  .tool-studio > div.relative.flex-1 {
+    flex: none !important;
+    height: 420px !important;
+    min-height: 420px;
+  }
+  .tool-studio .absolute.top-6 {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tool-studio button {
+    min-height: 40px;
+  }
+}
+.blueprint-calibration { display:flex; flex-direction:column; gap:12px; font-size:12px; color:#34445c; }.blueprint-calibration h3 { font-weight:600; }.blueprint-calibration p { font-size:11px; line-height:1.7; }.calibration-image { width:100%; position:relative; background:white; border:1px solid #cbd5e1; cursor:crosshair; min-height:0!important; padding:0; }.calibration-image svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }.blueprint-calibration input { background:white; border:1px solid #cbd5e1; border-radius:5px; padding:8px; width:100%; }.blueprint-calibration details { font-size:11px; }.calibration-coordinates { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }.blueprint-calibration [role=status] { font-size:10px; color:#70472f; }
+
+/* Clay detail is reserved for the plan board and useful tactile controls. */
+.studio-wordmark { font-weight: 700; }
+.studio-kicker { font-weight: 500; }
+.landing-tool-list > a { align-items: center; }
+.workshop-section-heading h2 { font-weight: 600; font-size: 25px; }
+.workshop-welcome h1 { font-weight: 700; }
+.workshop-experiment { border-radius: 16px; background: transparent; border-color: #cbb094; }
+.material-samples i { border-radius: 10px; }
+.blueprint-stack { border-radius: 8px; }
+.studio-footer { background: #dfc7b0; }
+.studio-button:active, .studio-outline-button:active { transform: translateY(1px); }
+.viewport-control { background: #fbf5ed; color: #503b2e; border: 1px solid #c5b6a3; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 600; }
+.headset-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:min(480px,calc(100% - 40px)); background:#f5e9dc; color:#38261d; padding:30px; border:1px solid #cbb094; border-radius:20px; z-index:51; }
+.headset-dialog h2 { font-family:var(--font-jakarta); font-size:25px; font-weight:600; margin-bottom:20px; letter-spacing:-.03em; }
+.headset-dialog p { font-size:14px; line-height:1.7; margin-bottom:20px; }
+.layout-candidate { display:flex; flex-direction:column; gap:6px; padding:16px; text-align:left; border:1px solid #d4bca6; border-radius:12px; background:#fffaf3; color:#503b2e; font-size:12px; }
+.layout-candidate[aria-pressed=true] { background:#efdfcc; border-color:#70472f; }
+.layout-candidate small { font-size:11px; color:#725a49; }
+.cad-workspace :focus-visible, .tool-studio :focus-visible, .headset-dialog :focus-visible { outline:2px solid #a35e2d; outline-offset:3px; }
+.cad-workspace .uppercase, .tool-studio .uppercase { text-transform:none; letter-spacing:0; }
+.cad-workspace button, .tool-studio button { transition-property:background-color,color,border-color,opacity,transform; }
+@media (max-width: 767px) {
+  .hero-copy h1 { font-size:clamp(47px,11.8vw,76px); }
+  .board-photo { border-width:5px; border-radius:100px 100px 25px 25px; }
+  .board-plan { border-radius:18px; padding:14px; }
+  .board-material { border-radius:16px; }
+  .landing-inspiration { border-radius:24px; }
+  .workshop-start { border-radius:22px; }
+  .studio-nav-links.is-open { background:#eadaca; border-color:#d4bca6; }
+  .headset-dialog .flex { flex-wrap:wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior:auto; }
+  .studio-button, .studio-outline-button { transition:none; }
+  .cad-workspace *, .tool-studio * { animation:none!important; transition:none!important; }
+}
+
+.model-load-error { display:block; white-space:nowrap; padding:5px 9px; background:#fff3e8; border:1px solid #b45b41; border-radius:6px; color:#873a28; font:12px var(--font-inter); }
+
+/* Planning workspace: one neutral control system, with brown reserved for the active action. */
+.cad-workspace { background:#f2f1ed; color:#36332e; --editor-line:#e3e0da; --editor-surface:#fffefa; }
+.cad-scene { position:absolute; inset:64px 0 28px; z-index:0; }
+.cad-workspace[data-catalog-open=true] .cad-scene { left:320px; }
+.cad-workspace[data-generative=true] .cad-scene { left:300px; }
+.cad-workspace[data-project-open=true] .cad-scene { right:320px; }
+.cad-workspace[data-presenting=true] .cad-scene { inset:0; }
+.editor-command-bar { position:absolute; left:0; top:0; right:0; height:64px; padding:10px 18px; background:var(--editor-surface); border-bottom:1px solid var(--editor-line); z-index:40; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; font:12px var(--font-inter); }
+.editor-command-left,.editor-command-right { display:flex; align-items:center; gap:7px; min-width:0; }
+.editor-command-right { justify-content:flex-end; }
+.editor-command-bar button { min-height:38px; border-radius:8px; font-weight:500; white-space:nowrap; }
+.editor-text-button { padding:8px 12px; color:#514a40; background:transparent; border:1px solid transparent; }
+.editor-text-button:hover,.editor-icon-button:hover { background:#f1eee8; }
+.editor-text-button[aria-pressed=true] { border-color:#ab927b; background:#eee4d8; }
+.editor-add-button { background:#6f4b32; border:1px solid #6f4b32; color:#fffaf3; padding:8px 14px; }
+.editor-add-button:hover { background:#543722; }
+.editor-icon-button { width:36px; display:grid; place-items:center; color:#514a40; }
+.editor-command-bar button:disabled { opacity:.3; cursor:default; }
+.editor-mode-toggle { display:flex; padding:3px; gap:2px; border:1px solid #dfdad1; border-radius:9px; background:#f6f3ed; }
+.editor-mode-toggle button { padding:7px 19px; color:#6b6256; }
+.editor-mode-toggle button[aria-pressed=true] { background:#fffefa; color:#473322; box-shadow:0 1px 3px #47332218; }
+.editor-catalog-slot { position:absolute; top:64px; bottom:28px; left:0; width:320px; z-index:25; pointer-events:none; }
+.editor-catalog-slot > div { pointer-events:none; }
+.editor-catalog-slot aside { pointer-events:auto; }
+.editor-catalog-panel { display:flex; flex-direction:column; width:320px; height:100%; background:var(--editor-surface); border-right:1px solid var(--editor-line); color:#36332e; }
+.editor-catalog-panel > header { display:flex; justify-content:space-between; align-items:center; padding:20px 18px 14px; }
+.editor-catalog-panel h2 { font:600 16px var(--font-jakarta); letter-spacing:-.02em; }
+.editor-catalog-panel > header button { font-size:11px; color:#756a5b; padding:5px; }
+.editor-catalog-tabs { display:flex; gap:1px; border-bottom:1px solid #e3e0da; padding:0 10px; }
+.editor-catalog-tabs button { padding:11px 8px; font-size:11px; color:#756a5b; border-bottom:2px solid transparent; }
+.editor-catalog-tabs button[aria-pressed=true] { border-bottom-color:#704b31; color:#4d3524; font-weight:600; }
+.editor-catalog-content { display:flex; flex-direction:column; min-height:0; flex:1; }
+.editor-catalog-content > div { padding:18px; }
+.editor-catalog-panel .uppercase { text-transform:none; letter-spacing:0; }
+.editor-catalog-panel h4 { font-size:12px; }
+.editor-catalog-panel button { transition:background-color .15s,border-color .15s; }
+.editor-project-panel { position:absolute; top:64px; bottom:28px; right:0; width:320px; z-index:35; border-left:1px solid var(--editor-line); transform:translateX(100%); background:#fffefa; }
+.editor-project-panel[data-open=true] { transform:translateX(0); }
+.editor-statusbar { position:absolute; bottom:0; left:0; right:0; height:28px; display:flex; justify-content:space-between; align-items:center; padding:0 18px; border-top:1px solid var(--editor-line); background:#fffefa; color:#84796a; font:10px var(--font-inter); z-index:30; }
+.editor-view-panel,.editor-tools-menu { position:fixed; top:74px; right:20px; width:320px; max-height:calc(100dvh - 100px); overflow:auto; background:#fffefa; color:#36332e; border:1px solid #ded9d0; border-radius:12px; box-shadow:0 10px 35px #34271818; z-index:70; padding:20px; font:12px var(--font-inter); }
+.editor-view-panel > header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.editor-view-panel h2,.editor-tools-menu h2 { font:600 17px var(--font-jakarta); letter-spacing:-.02em; }
+.editor-view-panel header button { font-size:11px; color:#756a5b; }
+.editor-view-panel section { padding:15px 0; border-top:1px solid #ebe7df; }
+.editor-view-panel h3 { font-weight:600; margin-bottom:13px; }
+.editor-view-panel label { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0; }
+.editor-view-panel select,.editor-view-panel label > button,.editor-view-actions button { padding:8px 10px; border:1px solid #ded9d0; background:#fffefa; border-radius:7px; color:#514a40; font-size:12px; }
+.editor-view-panel .editor-check { justify-content:flex-start; }
+.editor-view-panel input[type=checkbox] { accent-color:#704b31; width:15px; height:15px; }
+.editor-view-panel p { color:#857969; font-size:11px; line-height:1.6; margin:12px 0; }
+.editor-view-panel summary { cursor:pointer; padding:12px 0; font-size:12px; }
+.editor-view-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.editor-view-panel button:hover,.editor-tools-menu button:hover { background:#f4eee5; }
+.editor-view-panel button:disabled { opacity:.5; }
+.editor-tools-menu { right:auto; left:205px; width:290px; }
+.editor-tools-menu h2 { margin-bottom:15px; }
+.editor-tools-menu > button { display:flex; justify-content:space-between; width:100%; text-align:left; padding:10px; border-radius:6px; font-size:12px; }
+.editor-tools-menu kbd { color:#9d9387; }
+.editor-sun-controls input { width:100%; accent-color:#704b31; }
+.editor-sun-controls output { color:#84796a; }
+.editor-sun-controls > div { display:flex; gap:4px; margin-top:10px; }
+.editor-sun-controls > div button { padding:6px; font-size:10px; border:1px solid #ded9d0; border-radius:5px; }
+.editor-sun-controls button[aria-pressed=true] { background:#eee4d8; border-color:#aa8d73; }
+.editor-catalog-slot > div > aside:not(.editor-catalog-panel) { width:300px; }
+.cad-workspace :focus-visible,.editor-view-panel :focus-visible,.editor-tools-menu :focus-visible { outline:2px solid #9c7654; outline-offset:3px; }
+@media(max-width:1100px) { .editor-command-bar { gap:8px; padding:10px; }.editor-text-button{padding:8px}.editor-command-right{gap:0}.editor-mode-toggle button{padding:7px 12px} }
+@media(max-width:1023px) { .cad-workspace[data-generative=true] .cad-scene { left:0; }.editor-catalog-slot > div > aside:not(.editor-catalog-panel){display:none} }
+@media(max-width:767px) {
+ .editor-command-bar { height:106px; grid-template-columns:1fr auto; grid-template-rows:42px 38px; padding:8px 10px; gap:4px; }
+ .editor-command-left { grid-column:1; grid-row:1; }.editor-command-bar>.editor-mode-toggle{grid-column:2;grid-row:1;}.editor-command-right{grid-column:1/3;grid-row:2;justify-content:space-between;}
+ .editor-command-bar button { min-height:36px; }.editor-text-button{font-size:11px;padding:7px}.editor-add-button{font-size:11px;padding:7px 9px}.editor-mode-toggle button{font-size:11px;padding:5px 9px;}
+ .cad-scene { top:106px; bottom:58px; }.cad-workspace[data-catalog-open=true] .cad-scene,.cad-workspace[data-project-open=true] .cad-scene{left:0;right:0;}
+ .editor-catalog-slot{top:106px;bottom:58px;width:min(320px,100%);}.editor-catalog-panel{width:100%;box-shadow:5px 0 18px #34271815;}
+ .editor-project-panel{top:106px;bottom:58px;width:min(320px,100%);}.editor-statusbar{display:none;}
+ .editor-view-panel,.editor-tools-menu{top:182px;right:10px;left:10px;width:auto;max-height:calc(100dvh - 205px);}
+}
+@media(max-width:767px) {
+ .cad-scene { bottom:0; }
+ .cad-workspace[data-generative=true] .cad-scene { bottom:58px; }
+ .editor-catalog-slot,.editor-project-panel { bottom:0; }
+ .mobile-layout-trigger { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); padding:10px 20px; border-radius:8px; background:#6f4b32; color:#fffaf3; font-size:12px; z-index:35; }
+ .mobile-layout-panel { position:fixed; inset:80px 12px 12px; z-index:60; background:#fffefa; border:1px solid #ded9d0; border-radius:12px; display:flex; flex-direction:column; overflow:hidden; }
+ .mobile-layout-panel>header { display:flex; padding:16px; justify-content:space-between; border-bottom:1px solid #ded9d0; }
+ .mobile-layout-panel>header h2 { font:600 15px var(--font-jakarta); }.mobile-layout-panel>header button {font-size:12px;color:#756a5b;}
+ .mobile-layout-panel>div { flex:1;min-height:0; }
+ .mobile-layout-panel aside {height:100%;}
+}
+.catalog-place-button { display:flex; flex-direction:column; gap:6px; align-items:stretch; text-align:left; width:100%; }
+@media(max-width:360px) { .editor-mode-toggle button{padding:5px 6px}.editor-command-left{gap:2px}.editor-add-button{padding:7px;font-size:10px} }
+.editor-drawing-help { margin:8px 0;padding:10px;border-top:1px solid #e3e0da;font-size:12px;color:#756a5b; }
+.editor-drawing-help summary{cursor:pointer}.editor-drawing-help p{font-size:11px;line-height:1.7;margin-top:10px;}

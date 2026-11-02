@@ -16,18 +16,22 @@ interface WallMeshProps {
 }
 
 function WallMaterial({
+  wallId,
   materialId,
+  wallColor,
   isSelected,
   hovered,
   isLoadBearing,
 }: {
+  wallId: string;
   materialId?: string | undefined;
+  wallColor?: string | undefined;
   isSelected: boolean;
   hovered: boolean;
   isLoadBearing: boolean;
 }) {
   const materials = useEditorStore((s) => s.materials);
-  const activeMaterial = materialId ? materials[materialId] : null;
+  const activeMaterial = (materialId ? materials[materialId] : null) || materials[wallId] || null;
 
   const mapUrl = activeMaterial?.texture.map || "";
   const normalMapUrl = activeMaterial?.texture.normalMap || "";
@@ -52,11 +56,13 @@ function WallMaterial({
           ? "#5B6AF0"
           : hovered
             ? "#8B95F5"
-            : activeMaterial
-              ? "#FFFFFF"
-              : isLoadBearing
-                ? "#726555"
-                : "#AFAFA9"
+            : wallColor
+              ? wallColor
+              : activeMaterial
+                ? activeMaterial.color || "#FFFFFF"
+                : isLoadBearing
+                  ? "#726555"
+                  : "#AFAFA9"
       }
       roughness={activeMaterial ? activeMaterial.roughness : 0.7}
       metalness={activeMaterial ? activeMaterial.metalness : 0.1}
@@ -286,7 +292,9 @@ export default function WallMesh({ wall }: WallMeshProps) {
       >
         {csgGeometry}
         <WallMaterial
-          materialId={(wall as { materialId?: string }).materialId}
+          wallId={wall.id}
+          materialId={wall.materialId}
+          wallColor={wall.color}
           isSelected={isSelected}
           hovered={hovered}
           isLoadBearing={wall.isLoadBearing}

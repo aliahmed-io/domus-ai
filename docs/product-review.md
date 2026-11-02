@@ -1,5 +1,7 @@
 # Developer and user review
 
+Historical baseline. See [fix status](fix-status.md) for changes made after this review.
+
 Reviewed on 2 November 2026. This review covers the local checkout and a production preview, not a live deployment. Product fixes are proposed below for owner review. This commit updates documentation and adds a repeatable browser review; it does not implement the proposed product changes.
 
 ## Verdict on the earlier assessment
@@ -28,7 +30,7 @@ The experience is not ready to call smooth end to end. Several actions promise r
 
 The first restricted test/build attempts failed because of file permissions. Rerunning with normal access passed. Those failures were environment problems, not test failures in application logic.
 
-Raw browser observations are in [browser-review.json](browser-review.json). Repeat with `scripts/review-smoke.cjs` against a running production preview. The check visits pages; it does not prove drawing, saving, exporting, or account services work.
+Raw browser observations are in [browser-review.json](browser-review.json). Repeat with `scripts/review-smoke.mjs` against a running production preview. The check visits pages; it does not prove drawing, saving, exporting, or account services work.
 
 ## Findings and proposed fixes
 

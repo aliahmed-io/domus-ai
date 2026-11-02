@@ -1,24 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Upload,
   Layers,
-  Cpu,
   CheckCircle,
   FileText,
   Info,
   Loader2,
   RefreshCw,
-  Ruler,
   ExternalLink,
-  Wand2,
 } from "lucide-react";
+import BlueprintCalibration from "@/components/editor/BlueprintCalibration";
+import {
+  calibrateBlueprint,
+  embedBlueprint,
+  referenceLayout,
+} from "@/lib/blueprint-reference";
 import EditorCanvas from "@/components/editor/EditorCanvas";
 import { useEditorStore } from "@/store/useEditorStore";
-import { vectorizeBlueprintImage, type VectorizerResult } from "@/lib/blueprint-vectorizer";
+import {
+  vectorizeBlueprintImage,
+  type VectorizerResult,
+} from "@/lib/blueprint-vectorizer";
 import { feetToMeters } from "@/lib/utils";
 import { useIsClient } from "@/lib/useIsClient";
 import { toast } from "sonner";
@@ -27,15 +33,25 @@ import type { FloorPlanLayout, ApiResult } from "@/types/puter";
 export default function BimLiftPage() {
   const router = useRouter();
   const mounted = useIsClient();
-  const setFloorPlan = useEditorStore((s) => s.setFloorPlan);
 
   const [file, setFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState("");
   const [wallHeight, setWallHeight] = useState(9); // feet
-  const [calibrationFeet, setCalibrationFeet] = useState(14); // reference wall calibration length
-  const [vectorResult, setVectorResult] = useState<VectorizerResult | null>(null);
+  const [calibrationFeet, setCalibrationFeet] = useState(24); // Known length between two selected image points
+  const [calibration, setCalibration] =
+    useState<ReturnType<typeof calibrateBlueprint>>(null);
+  const [vectorResult, setVectorResult] = useState<VectorizerResult | null>(
+    null,
+  );
+
+  useEffect(
+    () => () => {
+      if (imagePreview?.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+    },
+    [imagePreview],
+  );
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -46,47 +62,62 @@ export default function BimLiftPage() {
   };
 
   const handleFileSelected = (selectedFile: File) => {
-    if (!selectedFile.type.startsWith("image/") && !selectedFile.name.endsWith(".pdf")) {
-      toast.error("Please upload an image file (PNG, JPG, WebP) or PDF blueprint.");
+    if (
+      !["image/png", "image/jpeg", "image/webp"].includes(selectedFile.type) ||
+      selectedFile.size > 10 * 1024 * 1024
+    ) {
+      toast.error(
+        "Use PNG, JPEG, or WebP up to 10 MB. Export PDF pages as images first.",
+      );
       return;
     }
     setFile(selectedFile);
     const previewUrl = URL.createObjectURL(selectedFile);
     setImagePreview(previewUrl);
     setVectorResult(null);
+    setCalibration(null);
   };
 
   // 1. Algorithmic Vectorization (Fast, deterministic, client-side, $0 cost)
   const handleAlgorithmicLift = async () => {
-    if (!imagePreview) return;
+    if (!imagePreview || !calibration) return;
     setIsProcessing(true);
     setProcessingStatus("Running Otsu thresholding & wall graph clustering...");
-    toast.loading("Analyzing blueprint lines with CV vectorizer...", { id: "bim-lift" });
+    toast.loading("Analyzing blueprint lines with CV vectorizer...", {
+      id: "bim-lift",
+    });
 
     try {
       const img = new window.Image();
       img.crossOrigin = "anonymous";
-      img.src = imagePreview;
-
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Could not read this image."));
+        img.src = imagePreview;
       });
 
+      if (img.naturalWidth > 4000 || img.naturalHeight > 4000)
+        throw new Error("Resize the image to 4000 pixels per side or less.");
       const result = await vectorizeBlueprintImage(img, {
         calibrationFeet,
+        calibrationPixels: calibration.distancePixels,
         wallHeightFeet: wallHeight,
       });
 
       setVectorResult(result);
-      setFloorPlan(result.layout);
+
       toast.success(
-        `Algorithmic Extrusion Complete: ${result.wallCount} walls, ${result.roomCount} rooms (${result.confidence}% confidence)`,
-        { id: "bim-lift" }
+        `Algorithmic Extrusion Complete: ${result.wallCount} walls, ${result.roomCount} rooms (review the suggested openings)`,
+        { id: "bim-lift" },
       );
     } catch (err) {
       console.error("Vectorization error:", err);
-      toast.error("Algorithmic vectorization encountered an issue. Try AI Enhancement.", { id: "bim-lift" });
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not trace this image. Try the sample or a clean line drawing.",
+        { id: "bim-lift" },
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -94,14 +125,25 @@ export default function BimLiftPage() {
 
   // 2. Vision AI Semantic Fallback (GPT-4o Vision for complex/messy sketches)
   const handleAiEnhanceLift = async () => {
-    if (!file) return;
+    if (!file || !imagePreview || !calibration) return;
     setIsProcessing(true);
-    setProcessingStatus("Contacting GPT-4o Vision architectural parser...");
-    toast.loading("Parsing complex blueprint with AI Vision...", { id: "bim-lift" });
+    setProcessingStatus("Trying optional AI blueprint analysis...");
+    toast.loading("Parsing complex blueprint with AI Vision...", {
+      id: "bim-lift",
+    });
 
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      const reference = await embedBlueprint(
+        imagePreview,
+        calibration.pixelsPerFoot,
+      );
+      const imageBlob = await (await fetch(reference.imageDataUrl)).blob();
+      formData.append("file", imageBlob, "calibrated-blueprint.png");
+      formData.append("width", String(reference.widthPixels));
+      formData.append("height", String(reference.heightPixels));
+      formData.append("pixelsPerFoot", String(reference.pixelsPerFoot));
+      formData.append("wallHeight", String(wallHeight));
 
       const res = await fetch("/api/bim-analysis", {
         method: "POST",
@@ -109,8 +151,8 @@ export default function BimLiftPage() {
       });
 
       const json = (await res.json()) as ApiResult<FloorPlanLayout>;
-      if (!json.ok) {
-        throw new Error(json.error || "AI blueprint parsing failed.");
+      if (!res.ok || !json.ok) {
+        throw new Error(!json.ok ? json.error : "AI blueprint parsing failed.");
       }
       if (!json.data) {
         throw new Error("AI blueprint parsing returned empty data.");
@@ -120,35 +162,42 @@ export default function BimLiftPage() {
       const totalArea = layout.rooms.reduce((acc, r) => acc + (r.area || 0), 0);
       const aiResult: VectorizerResult = {
         layout,
-        confidence: 96,
+        confidence: 0,
         needsAiEnhancement: false,
         wallCount: layout.walls.length,
         roomCount: layout.rooms.length,
-        totalAreaSqFt: totalArea || 1200,
+        totalAreaSqFt: totalArea,
       };
 
       setVectorResult(aiResult);
-      setFloorPlan(layout);
+
       toast.success(
         `AI Blueprint Lift Complete: ${layout.walls.length} walls, ${layout.rooms.length} rooms mapped!`,
-        { id: "bim-lift" }
+        { id: "bim-lift" },
       );
     } catch (err) {
       console.error("AI Lift error:", err);
-      toast.error(err instanceof Error ? err.message : "AI processing failed.", { id: "bim-lift" });
+      toast.error(
+        err instanceof Error ? err.message : "AI processing failed.",
+        { id: "bim-lift" },
+      );
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleOpenInStudio = () => {
+    if (!vectorResult) return;
+    useEditorStore
+      .getState()
+      .loadProjectData(vectorResult.layout, [], "manual");
     router.push("/floor-plan");
   };
 
   const currentLayout = vectorResult?.layout;
 
   return (
-    <div className="flex-1 w-full h-full flex flex-col md:flex-row overflow-hidden bg-dark-surface select-none">
+    <div className="tool-studio flex-1 w-full h-full flex flex-col md:flex-row overflow-hidden bg-dark-surface select-none">
       {/* Parameter inputs (Left sidebar, 340px) */}
       <aside className="w-[340px] h-full bg-white border-r border-hairline flex flex-col shrink-0 overflow-y-auto p-6 gap-6 shadow-card z-20">
         <div className="flex items-center justify-between border-b border-hairline pb-4">
@@ -183,14 +232,14 @@ export default function BimLiftPage() {
                   Drag blueprint here
                 </p>
                 <p className="font-body text-[10px] text-stone mt-0.5">
-                  Supports PNG, JPG, or PDF
+                  PNG, JPEG, or WebP, up to 10 MB
                 </p>
               </div>
               <label className="btn-secondary text-[10px] font-bold uppercase tracking-wider py-1.5 px-3 bg-white border border-hairline rounded-lg cursor-pointer hover:bg-gray-50">
                 Browse Files
                 <input
                   type="file"
-                  accept="image/*,application/pdf"
+                  accept="image/png,image/jpeg,image/webp"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) handleFileSelected(f);
@@ -241,29 +290,75 @@ export default function BimLiftPage() {
           )}
         </div>
 
-        {/* Coohom Scale Calibration Ruler */}
-        <div className="space-y-2 p-3.5 bg-alabaster rounded-xl border border-hairline">
-          <div className="flex items-center justify-between">
-            <span className="font-jakarta text-xs font-bold text-charcoal flex items-center gap-1.5">
-              <Ruler size={13} className="text-indigo" />
-              <span>Calibration Scale</span>
-            </span>
-            <span className="font-body text-xs font-bold text-indigo">
-              {calibrationFeet} ft
-            </span>
-          </div>
-          <p className="text-[10px] text-stone leading-relaxed">
-            Coohom-style reference length: Set known dimension for millimeter accuracy.
-          </p>
-          <input
-            type="range"
-            min={8}
-            max={30}
-            value={calibrationFeet}
-            onChange={(e) => setCalibrationFeet(Number(e.target.value))}
-            className="w-full h-1.5 bg-indigo-light rounded-lg appearance-none cursor-pointer accent-indigo"
+        <button
+          type="button"
+          className="studio-outline-button"
+          onClick={async () => {
+            setImagePreview("/demo-blueprint.svg");
+            setCalibrationFeet(24);
+            setVectorResult(null);
+            try {
+              const response = await fetch("/demo-blueprint.svg", {
+                signal: AbortSignal.timeout(10000),
+              });
+              if (!response.ok)
+                throw new Error("Could not load the sample blueprint.");
+              const blob = await response.blob();
+              setFile(
+                new File([blob], "demo-blueprint.svg", {
+                  type: "image/svg+xml",
+                }),
+              );
+            } catch {
+              toast.error(
+                "Could not load the sample image. Try uploading a clean PNG instead.",
+              );
+            }
+          }}
+        >
+          Try a sample blueprint
+        </button>
+        <p className="text-xs text-stone leading-relaxed">
+          Tracing works best with clean line drawings. Check the walls, then add
+          doors, windows, and room names yourself.
+        </p>
+        {imagePreview && (
+          <BlueprintCalibration
+            key={imagePreview}
+            src={imagePreview}
+            lengthFeet={calibrationFeet}
+            onLengthChange={setCalibrationFeet}
+            onChange={setCalibration}
           />
-        </div>
+        )}
+        <button
+          type="button"
+          className="studio-outline-button"
+          disabled={!imagePreview || !calibration || isProcessing}
+          onClick={async () => {
+            if (!imagePreview || !calibration) return;
+            setIsProcessing(true);
+            try {
+              const blueprint = await embedBlueprint(
+                imagePreview,
+                calibration.pixelsPerFoot,
+              );
+              const layout = referenceLayout(blueprint);
+              useEditorStore.getState().loadProjectData(layout, [], "manual");
+              router.push("/floor-plan");
+            } catch (error) {
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : "Could not open the tracing reference.",
+              );
+            } finally {
+              setIsProcessing(false);
+            }
+          }}
+        >
+          Trace this image in the editor
+        </button>
 
         {/* Wall Height parameter */}
         <div className="space-y-2">
@@ -279,6 +374,7 @@ export default function BimLiftPage() {
             type="range"
             min={8}
             max={14}
+            aria-label="Wall height in feet"
             value={wallHeight}
             onChange={(e) => setWallHeight(Number(e.target.value))}
             className="w-full h-1.5 bg-teal-light rounded-lg appearance-none cursor-pointer accent-teal"
@@ -291,7 +387,7 @@ export default function BimLiftPage() {
           <button
             type="button"
             onClick={handleAlgorithmicLift}
-            disabled={!file || isProcessing}
+            disabled={!imagePreview || !calibration || isProcessing}
             className="w-full h-11 btn-primary bg-indigo hover:bg-indigoDark text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-button transition-colors disabled:opacity-50 cursor-pointer"
           >
             {isProcessing ? (
@@ -301,7 +397,6 @@ export default function BimLiftPage() {
               </>
             ) : (
               <>
-                <Cpu size={14} />
                 <span>Algorithmic Vectorize (Instant)</span>
               </>
             )}
@@ -311,10 +406,9 @@ export default function BimLiftPage() {
           <button
             type="button"
             onClick={handleAiEnhanceLift}
-            disabled={!file || isProcessing}
+            disabled={!file || !calibration || isProcessing}
             className="w-full h-9 bg-white border border-hairline hover:bg-gray-50 text-charcoal text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <Wand2 size={13} className="text-teal" />
             <span>Enhance with Vision AI</span>
           </button>
         </div>
@@ -349,7 +443,9 @@ export default function BimLiftPage() {
                   WebGL Viewport Ready
                 </h3>
                 <p className="font-body text-xs text-stone mt-1 max-w-[280px] mx-auto leading-relaxed">
-                  Upload a blueprint sketch on the left and click &ldquo;Algorithmic Vectorize&rdquo; to build your 3D digital twin.
+                  Upload a blueprint sketch on the left and click
+                  &ldquo;Algorithmic Vectorize&rdquo; to build your 3D digital
+                  twin.
                 </p>
               </div>
             </div>
@@ -375,7 +471,11 @@ export default function BimLiftPage() {
                     receiveShadow
                   >
                     <boxGeometry args={[len, hMeters, thickM]} />
-                    <meshStandardMaterial color="#FAF8F5" roughness={0.7} metalness={0.05} />
+                    <meshStandardMaterial
+                      color="#FAF8F5"
+                      roughness={0.7}
+                      metalness={0.05}
+                    />
                   </mesh>
                 );
               })}
@@ -396,13 +496,21 @@ export default function BimLiftPage() {
                     receiveShadow
                   >
                     <planeGeometry args={[wM, hM]} />
-                    <meshStandardMaterial color="#2C2621" roughness={0.4} metalness={0.1} />
+                    <meshStandardMaterial
+                      color="#2C2621"
+                      roughness={0.4}
+                      metalness={0.1}
+                    />
                   </mesh>
                 );
               })}
 
               {/* Infinite Ground */}
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+              <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, -0.1, 0]}
+                receiveShadow
+              >
                 <planeGeometry args={[100, 100]} />
                 <meshStandardMaterial color="#1a1a2e" roughness={1.0} />
               </mesh>
@@ -435,36 +543,49 @@ export default function BimLiftPage() {
               <div className="p-3.5 bg-alabaster border border-hairline rounded-xl space-y-2 text-[10px] font-body text-charcoal">
                 <div className="flex justify-between items-center border-b border-hairline/60 pb-1.5">
                   <span>Extruded Wall Solids</span>
-                  <span className="font-mono font-bold">{vectorResult.wallCount} walls</span>
+                  <span className="font-mono font-bold">
+                    {vectorResult.wallCount} walls
+                  </span>
                 </div>
                 <div className="flex justify-between items-center border-b border-hairline/60 pb-1.5">
                   <span>Detected Room Zones</span>
-                  <span className="font-mono font-bold">{vectorResult.roomCount} rooms</span>
+                  <span className="font-mono font-bold">
+                    {vectorResult.roomCount} rooms
+                  </span>
                 </div>
                 <div className="flex justify-between items-center border-b border-hairline/60 pb-1.5">
-                  <span>Total Calculated Footprint</span>
-                  <span className="font-mono font-bold">{vectorResult.totalAreaSqFt} sq ft</span>
+                  <span>Detected closed-room area</span>
+                  <span className="font-mono font-bold">
+                    {vectorResult.totalAreaSqFt} sq ft
+                  </span>
                 </div>
                 <div className="flex justify-between items-center border-b border-hairline/60 pb-1.5">
                   <span>Wall Height Set</span>
-                  <span className="font-mono font-bold">{wallHeight} ft ({feetToMeters(wallHeight)}m)</span>
+                  <span className="font-mono font-bold">
+                    {wallHeight} ft ({feetToMeters(wallHeight)}m)
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pt-0.5">
-                  <span>Mathematical Confidence</span>
-                  <span className="font-mono font-bold text-success">{vectorResult.confidence}%</span>
+                  <span>Trace heuristic score</span>
+                  <span className="font-mono font-bold text-success">
+                    {vectorResult.confidence > 0
+                      ? `${vectorResult.confidence}/100`
+                      : "Not measured"}
+                  </span>
                 </div>
               </div>
 
               <div className="bg-successLight border border-success/10 text-success rounded-xl p-3 flex items-center gap-2 text-[10px] font-body">
                 <CheckCircle size={14} className="shrink-0" />
                 <span className="font-bold uppercase tracking-wider">
-                  IBC Standard compliance met
+                  Review the trace before using it
                 </span>
               </div>
             </div>
           ) : (
             <p className="font-body text-[10px] text-stone italic text-center p-4 bg-alabaster border border-hairline rounded-xl">
-              Upload blueprint sketch to calculate parameters and extrude 3D model.
+              Upload blueprint sketch to calculate parameters and extrude 3D
+              model.
             </p>
           )}
         </div>

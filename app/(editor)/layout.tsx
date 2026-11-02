@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import React from "react";
+import ProjectSession from "@/components/editor/ProjectSession";
 
 const Sidebar = dynamic(() => import("@/components/shared/Sidebar"), {
   ssr: true,
@@ -17,9 +18,10 @@ export default function EditorLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-dark-surface select-none">
+    <div className="flex flex-col md:flex-row h-dvh w-full overflow-hidden bg-dark-surface select-none">
       {/* Dynamic left sidebar navigation - default collapsed state will be managed within sidebar */}
       <Sidebar />
+      <ProjectSession />
 
       {/* Primary viewport space */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">

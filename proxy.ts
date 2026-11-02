@@ -1,17 +1,6 @@
 import { NextResponse } from "next/server";
 
-/**
- * Domus Route Protection Middleware
- *
- * Protected routes: /dashboard/* and /editor/*
- * Auth signal: `puter_session` cookie set by Puter.js SDK after sign-in.
- * If missing, redirect to /login with the original URL as `callbackUrl`.
- *
- * Note: Puter.js sets the cookie client-side. This middleware provides a
- * lightweight first-pass guard — actual auth validation happens via
- * puter.auth.isSignedIn() in each protected page's client component.
- */
-
+// The prototype is open access. Headers apply without an account gate.
 export function proxy(): NextResponse {
   // Direct open access — auth gating removed
   const response = NextResponse.next();

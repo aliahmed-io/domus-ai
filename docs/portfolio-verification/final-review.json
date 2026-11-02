@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-02",
+  "target": "Built app at http://127.0.0.1:3131",
+  "softwareChecks": [
+    "77 regression tests",
+    "TypeScript",
+    "Lint with no warnings",
+    "Optimized build",
+    "Rendered perspective and orthographic matrices",
+    "Walk camera changes",
+    "Pending model waits for completion",
+    "Failed model is visibly marked",
+    "Unsupported headset rejection",
+    "Real layout alternatives and reload",
+    "Materials and furniture import reload",
+    "PDF and DXF downloads",
+    "Gallery geometry",
+    "Measured blueprint reference reload",
+    "Drawing inside existing rooms, undo and redo"
+  ],
+  "visualReview": {
+    "accepted": [
+      "One neutral editor toolbar",
+      "Labeled catalog with loaded thumbnails",
+      "Grouped view settings",
+      "Cutaway and full-height walls",
+      "Balanced studio light and local floor grain",
+      "Desktop and phone layouts",
+      "Centered 2D drawing after viewport resize"
+    ],
+    "rejectedAndCorrected": [
+      "Missing button padding",
+      "Overexposed first studio render",
+      "Permanent floating solar controls",
+      "Duplicate mobile shortcut bar",
+      "Old 2D help overlay and off-center drawing after resize",
+      "Bright blue 2D opening symbols outside the neutral palette"
+    ]
+  },
+  "unverified": [
+    "Live AI visual quality without provider credentials",
+    "Physical headsets and measured room scanning",
+    "External CAD round trips",
+    "Full real-device touch drafting"
+  ],
+  "evidence": [
+    "results.json",
+    "feature-acceptance.json",
+    "3d-control-audit.json",
+    "calibration-results.json",
+    "diagnostics.json"
+  ]
+}

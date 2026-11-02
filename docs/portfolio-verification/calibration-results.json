@@ -1,0 +1,8 @@
+{
+  "checks": [
+    "Measured scale",
+    "Manual reference preserves empty geometry",
+    "Reference persists through reload"
+  ],
+  "uncaughtErrors": []
+}

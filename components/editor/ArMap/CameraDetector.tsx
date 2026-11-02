@@ -1,33 +1,50 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { Camera, ShieldAlert, Cpu, Check } from "lucide-react";
+import { Camera, ShieldAlert, Check } from "lucide-react";
+import { toast } from "sonner";
 
 interface CameraDetectorProps {
   onObjectLifted: (category: string) => void;
 }
 
-/**
- * On-device camera scanning detector using Google MediaPipe Objectron
- * Detects 3D bounding boxes and coordinates of furniture elements locally
- * Features a built-in local GPU computation privacy alert.
- */
-export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) {
+/** Camera preview with explicitly labeled sample tracking. */
+export default function CameraDetector({
+  onObjectLifted,
+}: CameraDetectorProps) {
+  const streamRef = useRef<MediaStream | null>(null);
+  const requestId = useRef(0);
+  useEffect(
+    () => () => {
+      requestId.current++;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    },
+    [],
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  const [permission, setPermission] = useState<"idle" | "granted" | "denied">("idle");
+
+  const [permission, setPermission] = useState<"idle" | "granted" | "denied">(
+    "idle",
+  );
   const [detectedObj, setDetectedObj] = useState<string | null>(null);
- 
+
   // Request camera permissions locally
   const requestCamera = async () => {
+    const currentRequest = ++requestId.current;
     setPermission("idle");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
       });
+      if (currentRequest !== requestId.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = stream;
       setPermission("granted");
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
@@ -35,30 +52,31 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
       setPermission("denied");
     }
   };
- 
+
   useEffect(() => {
     if (permission !== "granted") return;
- 
+
     const currentVideo = videoRef.current;
+    if (currentVideo) currentVideo.srcObject = streamRef.current;
     let active = true;
     let frameId = 0;
- 
+
     // Simulated local computer vision bounding-box loop
     const runDetectionLoop = () => {
       if (!active || !canvasRef.current || !currentVideo) return;
-      
+
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) {
         ctx.clearRect(0, 0, 320, 240);
-        
+
         // Render dynamic neon computer vision tracking rings & 3D box coordinates
         const time = Date.now() * 0.003;
         const x = 160 + Math.sin(time) * 40;
         const y = 120 + Math.cos(time * 1.5) * 20;
- 
+
         ctx.strokeStyle = "#5B6AF0";
         ctx.lineWidth = 2.5;
-        
+
         // Draw 3D bounding box corners
         ctx.beginPath();
         // Top face
@@ -67,7 +85,7 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
         ctx.lineTo(x + 40, y + 10);
         ctx.lineTo(x - 20, y + 10);
         ctx.closePath();
-        
+
         // Vertical pillars
         ctx.moveTo(x - 30, y - 20);
         ctx.lineTo(x - 30, y + 30);
@@ -77,7 +95,7 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
         ctx.lineTo(x + 40, y + 60);
         ctx.moveTo(x - 20, y + 10);
         ctx.lineTo(x - 20, y + 60);
-        
+
         // Bottom face
         ctx.moveTo(x - 30, y + 30);
         ctx.lineTo(x + 30, y + 30);
@@ -85,28 +103,28 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
         ctx.lineTo(x - 20, y + 60);
         ctx.closePath();
         ctx.stroke();
- 
+
         // Object label highlight
         ctx.fillStyle = "#5B6AF0";
         ctx.font = "bold 9px monospace";
-        ctx.fillText("OBJECT: CHAIR (94% ACC)", x - 28, y - 25);
-        
+        ctx.fillText("SAMPLE MARKER: CHAIR", x - 28, y - 25);
+
         if (Math.abs(Math.sin(time)) > 0.8) {
-          setDetectedObj("Søren Lounge Chair");
+          setDetectedObj("Sample lounge chair");
         } else {
           setDetectedObj(null);
         }
       }
- 
+
       frameId = requestAnimationFrame(runDetectionLoop);
     };
- 
+
     runDetectionLoop();
- 
+
     return () => {
       active = false;
       cancelAnimationFrame(frameId);
-      
+
       // Release camera streams cleanly on unmount
       if (currentVideo?.srcObject) {
         const stream = currentVideo.srcObject as MediaStream;
@@ -117,18 +135,17 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
 
   return (
     <div className="bg-alabaster border border-hairline rounded-2xl p-4 flex flex-col gap-4 shadow-sm select-none">
-      
       {/* Header */}
       <div className="flex justify-between items-center border-b border-hairline/60 pb-2.5">
         <div className="flex items-center gap-1.5">
           <Camera size={15} className="text-indigo" />
           <span className="font-jakarta text-xs font-bold text-charcoal uppercase tracking-wider">
-            On-Device LiDAR Vision
+            Camera preview
           </span>
         </div>
         <span className="px-2 py-0.5 bg-indigo-light text-indigo text-[9px] font-bold rounded-full border border-indigo/10 flex items-center gap-1">
-          <Cpu size={9} />
-          GPU Core
+
+          Sample mode
         </span>
       </div>
 
@@ -140,7 +157,7 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
               Webcam Feed Required
             </h4>
             <p className="font-body text-[9.5px] text-stone mt-1 leading-relaxed">
-              Required to scan physical items locally and extract 3D coordinates.
+              Preview your camera. Tracking markers are a demonstration.
             </p>
           </div>
 
@@ -177,7 +194,8 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
             On-Device privacy guard
           </span>
           <p>
-            All video frames are analyzed locally on your device GPU via TensorFlow.js. Zero images or video feeds are ever sent over the network.
+            This is a local camera preview with sample tracking markers. It does
+            not detect or measure real furniture.
           </p>
         </div>
       </div>
@@ -186,8 +204,8 @@ export default function CameraDetector({ onObjectLifted }: CameraDetectorProps) 
       {permission === "granted" && (
         <button
           onClick={() => {
-            onObjectLifted(detectedObj || "Søren Lounge Chair");
-            alert("LiDAR detected chair successfully lifted to active workspace!");
+            onObjectLifted(detectedObj || "Sample lounge chair");
+            toast.success("Sample chair added to your local workspace.");
           }}
           disabled={!detectedObj}
           className="w-full h-10 bg-[#2A7A6E] hover:bg-[#1E5C52] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-button disabled:opacity-50 transition-colors outline-none cursor-pointer"

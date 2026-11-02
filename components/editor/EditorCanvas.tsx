@@ -14,14 +14,15 @@ import {
   PointerLockControls,
   Grid,
   Environment,
-  Bvh,
-  AccumulativeShadows,
-  RandomizedLight,
+  Lightformer,
+  ContactShadows,
   Loader,
+  PerspectiveCamera,
+  OrthographicCamera,
 } from "@react-three/drei";
 import { feetToMeters } from "@/lib/utils";
 import { useIsClient } from "@/lib/useIsClient";
-import { XR } from "@react-three/xr";
+import { XR, createXRStore } from "@react-three/xr";
 import { Physics } from "@react-three/rapier";
 
 // CameraSync aligns the Three.js camera to the Konva 2D stage position and zoom
@@ -65,7 +66,9 @@ function SectionCutManager() {
   useFrame(({ gl }) => {
     if (sectionCutHeight !== null) {
       const heightM = feetToMeters(sectionCutHeight);
-      gl.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, -1, 0), heightM)];
+      gl.clippingPlanes = [
+        new THREE.Plane(new THREE.Vector3(0, -1, 0), heightM),
+      ];
     } else if (gl.clippingPlanes.length > 0) {
       gl.clippingPlanes = [];
     }
@@ -141,16 +144,60 @@ function FirstPersonWalkController() {
   return <PointerLockControls makeDefault />;
 }
 
-import type { XRStore } from "@react-three/xr";
-
-// We must create the XR store outside of the React render loop
-let xrStore: XRStore | null = null;
-if (typeof window !== "undefined") {
-  import("@react-three/xr").then((m) => {
-    xrStore = m.createXRStore() as unknown as XRStore;
-  });
+// Called only after mount or from a user interaction. Server and first client renders stay identical.
+let sharedXRStore: ReturnType<typeof createXRStore> | null = null;
+const xrListeners = new Set<() => void>();
+export function getXRStore() {
+  if (!sharedXRStore) {
+    sharedXRStore = createXRStore({ emulate: false });
+    xrListeners.forEach((listener) => listener());
+  }
+  return sharedXRStore;
 }
-export { xrStore };
+const subscribeXR = (listener: () => void) => {
+  xrListeners.add(listener);
+  getXRStore();
+  return () => {
+    xrListeners.delete(listener);
+  };
+};
+const getXRRuntime = () => sharedXRStore;
+const getServerXRRuntime = () => null;
+
+function SceneCamera({
+  orthographic,
+  center,
+  span,
+}: {
+  orthographic: boolean;
+  center: [number, number, number];
+  span: number;
+}) {
+  const size = useThree((state) => state.size);
+  const zoom = Math.min(size.width, size.height) / Math.max(span * 1.5, 10);
+  const position: [number, number, number] = [
+    center[0] + span * 1.1 * Math.max(1, size.height / size.width),
+    span * 1.3 * Math.max(1, size.height / size.width),
+    center[2] + span * 1.1 * Math.max(1, size.height / size.width),
+  ];
+  return orthographic ? (
+    <OrthographicCamera
+      makeDefault
+      position={position}
+      zoom={zoom}
+      near={0.01}
+      far={2000}
+    />
+  ) : (
+    <PerspectiveCamera
+      makeDefault
+      position={position}
+      fov={42}
+      near={0.05}
+      far={2000}
+    />
+  );
+}
 
 interface EditorCanvasProps {
   children?: React.ReactNode;
@@ -161,29 +208,45 @@ interface EditorCanvasProps {
 export default function EditorCanvas({
   children,
   cameraMode = "perspective",
-  showGrid = true,
+  showGrid = false,
 }: EditorCanvasProps) {
   const mounted = useIsClient();
+  const xrRuntime = React.useSyncExternalStore(
+    subscribeXR,
+    getXRRuntime,
+    getServerXRRuntime,
+  );
+  const lighting = useEditorStore((state) => state.sceneLighting);
   const isDev = process.env.NODE_ENV === "development";
   const mode = useEditorStore((s) => s.mode);
   const xrScale = useEditorStore((s) => s.xrScale);
 
-  // Defer WebXR AR trigger until the Three.js canvas has mounted and bound successfully
-  React.useEffect(() => {
-    if (mounted && mode === "ar" && xrStore) {
-      const t = setTimeout(() => {
-        xrStore?.enterAR().catch((err) => {
-          console.warn("WebGL XR Session error, could not start AR:", err);
-        });
-      }, 800);
-      return () => clearTimeout(t);
-    }
-  }, [mode, mounted]);
+  const layout = useEditorStore((state) => state.floorPlanLayout);
+  const framing = React.useMemo(() => {
+    const points =
+      layout?.walls.flatMap((wall) => [wall.start, wall.end]) ?? [];
+    if (!points.length)
+      return { center: [0, 0, 0] as [number, number, number], span: 8 };
+    const xs = points.map((point) => feetToMeters(point.x));
+    const zs = points.map((point) => feetToMeters(point.y));
+    const minX = Math.min(...xs),
+      maxX = Math.max(...xs),
+      minZ = Math.min(...zs),
+      maxZ = Math.max(...zs);
+    return {
+      center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [
+        number,
+        number,
+        number,
+      ],
+      span: Math.max(maxX - minX, maxZ - minZ, 4),
+    };
+  }, [layout]);
 
   // Initialize WebRTC Y.js Multiplayer Synchronization
   useMultiplayerSync();
 
-  if (!mounted) {
+  if (!mounted || !xrRuntime) {
     return (
       <div className="relative w-full h-full bg-dark-surface-alt flex flex-col items-center justify-center text-stone gap-3">
         <Loader2 size={32} className="animate-spin text-indigo" />
@@ -208,53 +271,79 @@ export default function EditorCanvas({
         }
       >
         <Canvas
-          frameloop="demand"
+          frameloop={mode === "walk" || mode === "ar" ? "always" : "demand"}
           shadows={{ type: THREE.PCFShadowMap }}
-          gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}
-          camera={
-            cameraMode === "orthographic" || mode === "2d"
-              ? { position: [0, 15, 0], fov: 50, up: [0, 0, -1] }
-              : { position: [8, 8, 8], fov: 45 }
-          }
+          gl={{
+            antialias: true,
+            preserveDrawingBuffer: true,
+            localClippingEnabled: true,
+          }}
         >
+          <color attach="background" args={["#f2f1ed"]} />
+          <SceneCamera
+            key={`${mode}-${cameraMode}`}
+            orthographic={
+              mode !== "walk" &&
+              (cameraMode === "orthographic" || mode === "2d")
+            }
+            center={framing.center}
+            span={framing.span}
+          />
           {/* Synchronize camera viewport with 2D stage in 2D mode */}
           <CameraSync />
 
-          {/* General Scene Lighting */}
-          <Environment preset="apartment" />
-          <ambientLight intensity={0.5} />
-          <SunLight />
-          <pointLight position={[-10, 10, -10]} intensity={0.4} />
-
-          {/* High Fidelity Baked Shadows */}
-          <AccumulativeShadows
-            temporal
-            frames={100}
-            color="black"
-            colorBlend={0.5}
-            alphaTest={0.9}
-            scale={50}
-            position={[0, -0.005, 0]}
-          >
-            <RandomizedLight
-              amount={8}
-              radius={4}
-              ambient={0.5}
-              intensity={1}
-              position={[5, 5, -10]}
-              bias={0.001}
+          <ambientLight intensity={0.3} />
+          <hemisphereLight args={["#ffffff", "#e2ddd5", 0.65]} />
+          <Environment resolution={128} frames={1} environmentIntensity={0.45}>
+            <Lightformer
+              intensity={1.3}
+              position={[0, 8, 0]}
+              scale={12}
+              target={[0, 0, 0]}
             />
-          </AccumulativeShadows>
+            <Lightformer
+              intensity={1}
+              position={[-8, 4, 6]}
+              scale={8}
+              target={[0, 0, 0]}
+            />
+          </Environment>
+          {lighting === "sun" ? (
+            <SunLight />
+          ) : (
+            <directionalLight
+              position={[-6, 12, 8]}
+              intensity={1.1}
+              castShadow
+              shadow-mapSize-width={1024}
+              shadow-mapSize-height={1024}
+              shadow-bias={-0.0005}
+              shadow-radius={4}
+            />
+          )}
+          <ContactShadows
+            position={[0, -0.019, 0]}
+            opacity={0.18}
+            scale={35}
+            blur={2.5}
+            far={5}
+            resolution={512}
+            color="#8b8175"
+          />
 
           {/* Section Plane Manager */}
           <SectionCutManager />
 
           {/* Interactive controls */}
           <OrbitControls
+            makeDefault
+            target={framing.center}
             enabled={mode !== "2d" && mode !== "walk"}
             enableDamping
             dampingFactor={0.05}
-            maxPolarAngle={cameraMode === "orthographic" ? Math.PI / 2.1 : Math.PI / 2}
+            maxPolarAngle={
+              cameraMode === "orthographic" ? Math.PI / 2.1 : Math.PI / 2
+            }
           />
 
           {/* First-Person Architectural Walk Controls */}
@@ -268,39 +357,35 @@ export default function EditorCanvas({
               args={[30, 30]}
               cellSize={0.5}
               cellThickness={0.5}
-              cellColor="#6f738a"
+              cellColor="#b8aa99"
               sectionSize={2}
               sectionThickness={1}
-              sectionColor="#5B6AF0"
+              sectionColor="#9e8c79"
               fadeDistance={25}
               infiniteGrid
             />
           )}
 
           {/* Render children models inside high-speed Bvh raycaster and Physics simulator */}
-          {xrStore ? (
-            <XR store={xrStore}>
+          {xrRuntime ? (
+            <XR store={xrRuntime}>
               <group scale={[xrScale, xrScale, xrScale]}>
                 <Physics gravity={[0, -9.81, 0]}>
-                  <Bvh firstHitOnly>
-                    {children}
-                  </Bvh>
+                  <>{children}</>
                 </Physics>
               </group>
             </XR>
           ) : (
             <group scale={[xrScale, xrScale, xrScale]}>
               <Physics gravity={[0, -9.81, 0]}>
-                <Bvh firstHitOnly>
-                  {children}
-                </Bvh>
+                <>{children}</>
               </Physics>
             </group>
           )}
 
           {/* Post-Processing Pipeline */}
           <EffectComposer multisampling={0}>
-            <N8AO aoRadius={2} intensity={1} />
+            <N8AO aoRadius={0.5} intensity={0.35} />
             <Bloom luminanceThreshold={1} mipmapBlur intensity={0.4} />
             <SMAA />
           </EffectComposer>
@@ -313,11 +398,12 @@ export default function EditorCanvas({
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="font-medium">Walk Mode Active</span>
           <span className="text-white/40">|</span>
-          <span className="text-white/80">Click canvas to lock cursor · WASD to walk · ESC to unlock</span>
+          <span className="text-white/80">
+            Click canvas to lock cursor · WASD to walk · ESC to unlock
+          </span>
         </div>
       )}
       <Loader />
     </div>
   );
 }
-

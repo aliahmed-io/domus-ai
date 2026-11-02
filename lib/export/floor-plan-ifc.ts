@@ -1,16 +1,16 @@
-import type { FloorPlanLayout, BuildingStorey, Wall, Door, Window2D } from "@/types/puter";
+import type {
+  FloorPlanLayout,
+  BuildingStorey,
+  Wall,
+  Door,
+  Window2D,
+} from "@/types/puter";
 import { feetToMeters } from "@/lib/utils";
 
-/**
- * Enterprise-grade IFC4 (ISO-10303-21) Physical STEP File Generator.
- * Outputs fully compliant OpenBIM geometry (IfcExtrudedAreaSolid) for walls,
- * spatial hierarchy for multi-storey buildings (IfcBuildingStorey),
- * and parametric openings for doors and windows.
- * Validates in Autodesk Revit, Solibri, BlenderBIM, and Web-IFC.
- */
+/** IFC4 export. Regression fixtures are read and meshed with web-ifc; universal CAD compatibility is not assumed. */
 export function generateFloorPlanIFC(
   layout: FloorPlanLayout,
-  storeys?: BuildingStorey[]
+  storeys?: BuildingStorey[],
 ): string {
   let entityId = 1;
   const nextId = () => entityId++;
@@ -38,7 +38,7 @@ DATA;
 
   // ── 2. Units Definition (SI Metres & Square Metres) ──
   const idDimExp = nextId();
-  step += `#${idDimExp}=IFCDIMENSIONALEXPOSITIONS(0,0,0,0,0,0,0);\n`;
+  step += `#${idDimExp}=IFCDIMENSIONALEXPONENTS(0,0,0,0,0,0,0);\n`;
   const idSiLength = nextId();
   step += `#${idSiLength}=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);\n`;
   const idSiArea = nextId();
@@ -127,10 +127,52 @@ DATA;
     const idStoreyPlacement = nextId();
     step += `#${idStoreyPlacement}=IFCLOCALPLACEMENT(#${idBldgPlacement},#${idStoreyCoord});\n`;
     const idStorey = nextId();
-    step += `#${idStorey}=IFCBUILDINGSTOREY('${generateIfcGuid()}',#${idOwnerHist},'${storey.name}',$,$,#${idStoreyPlacement},$,$,.ELEMENT.,${elevMeters.toFixed(4)});\n`;
+    step += `#${idStorey}=IFCBUILDINGSTOREY('${generateIfcGuid()}',#${idOwnerHist},'${storey.name.replaceAll("'", "''")}',$,$,#${idStoreyPlacement},$,$,.ELEMENT.,${elevMeters.toFixed(4)});\n`;
     storeyEntityIds.push(idStorey);
 
     const containedElementIds: number[] = [];
+    const exportedWalls = new Map<
+      string,
+      { element: number; placement: number; source: Wall }
+    >();
+    const createOpening = (
+      wallId: string,
+      position: number,
+      width: number,
+      height: number,
+      sill: number,
+    ) => {
+      const parent = exportedWalls.get(wallId);
+      if (!parent) return null;
+      const length = feetToMeters(
+        Math.hypot(
+          parent.source.end.x - parent.source.start.x,
+          parent.source.end.y - parent.source.start.y,
+        ),
+      );
+      const point = nextId(),
+        axis = nextId(),
+        placement = nextId();
+      step += `#${point}=IFCCARTESIANPOINT((${(position * length - width / 2).toFixed(4)},0.,${sill.toFixed(4)}));\n`;
+      step += `#${axis}=IFCAXIS2PLACEMENT3D(#${point},#${idAxisZ},#${idAxisX});\n`;
+      step += `#${placement}=IFCLOCALPLACEMENT(#${parent.placement},#${axis});\n`;
+      const profilePoint = nextId(),
+        profileAxis = nextId(),
+        profile = nextId();
+      step += `#${profilePoint}=IFCCARTESIANPOINT((${(width / 2).toFixed(4)},0.));\n`;
+      step += `#${profileAxis}=IFCAXIS2PLACEMENT2D(#${profilePoint},$);\n`;
+      step += `#${profile}=IFCRECTANGLEPROFILEDEF(.AREA.,$,#${profileAxis},${width.toFixed(4)},${(parent.source.thickness * 0.0254 + 0.02).toFixed(4)});\n`;
+      const solid = nextId(),
+        shape = nextId(),
+        definition = nextId(),
+        opening = nextId();
+      step += `#${solid}=IFCEXTRUDEDAREASOLID(#${profile},#${idWorldCoord},#${idAxisZ},${height.toFixed(4)});\n`;
+      step += `#${shape}=IFCSHAPEREPRESENTATION(#${idModelContext},'Body','SweptSolid',(#${solid}));\n`;
+      step += `#${definition}=IFCPRODUCTDEFINITIONSHAPE($,$,(#${shape}));\n`;
+      step += `#${opening}=IFCOPENINGELEMENT('${generateIfcGuid()}',#${idOwnerHist},'Opening-${opening}',$,$,#${placement},#${definition},$,.OPENING.);\n`;
+      step += `#${nextId()}=IFCRELVOIDSELEMENT('${generateIfcGuid()}',#${idOwnerHist},$,$,#${parent.element},#${opening});\n`;
+      return opening;
+    };
 
     // ── Export Walls with Real 3D Extruded Geometry (IfcExtrudedAreaSolid) ──
     storey.walls.forEach((wall, wIdx) => {
@@ -148,8 +190,8 @@ DATA;
       const dirX = Math.cos(angleRad);
       const dirY = Math.sin(angleRad);
 
-      const thicknessM = Math.max(0.1, (wall.thickness / 12) * 0.3048);
-      const heightM = Math.max(1.0, wall.height * 0.3048);
+      const thicknessM = (wall.thickness / 12) * 0.3048;
+      const heightM = wall.height * 0.3048;
 
       // Wall Origin Placement
       const idWallPos = nextId();
@@ -163,7 +205,7 @@ DATA;
 
       // Profile: Rectangle centered on length axis
       const idProfilePos = nextId();
-      step += `#${idProfilePos}=IFCCARTESIANPOINT((${ (lenMeters / 2).toFixed(4) },0.));\n`;
+      step += `#${idProfilePos}=IFCCARTESIANPOINT((${(lenMeters / 2).toFixed(4)},0.));\n`;
       const idProfileDir = nextId();
       step += `#${idProfileDir}=IFCDIRECTION((1.,0.));\n`;
       const idProfileAxis = nextId();
@@ -185,43 +227,163 @@ DATA;
 
       // IFC Wall Entity
       const idWall = nextId();
-      const wallTag = wall.isLoadBearing ? 'LoadBearing' : 'Partition';
+      const wallTag = wall.isLoadBearing ? "LoadBearing" : "Partition";
       step += `#${idWall}=IFCWALL('${generateIfcGuid()}',#${idOwnerHist},'Wall-L${sIdx + 1}-${wIdx + 1}','${wallTag}',$,#${idWallLocalPlacement},#${idProdDefShape},$,.SOLIDWALL.);\n`;
 
+      exportedWalls.set(wall.id, {
+        element: idWall,
+        placement: idWallLocalPlacement,
+        source: wall,
+      });
       containedElementIds.push(idWall);
     });
 
-    // ── Export Doors ──
+    // ── Export Storey Floor Slab (IFCSLAB) ──
+    if (storey.walls.length > 0) {
+      let slabMinX = Infinity,
+        slabMaxX = -Infinity,
+        slabMinY = Infinity,
+        slabMaxY = -Infinity;
+      storey.walls.forEach((w) => {
+        const sx = feetToMeters(w.start.x);
+        const sy = feetToMeters(w.start.y);
+        const ex = feetToMeters(w.end.x);
+        const ey = feetToMeters(w.end.y);
+        slabMinX = Math.min(slabMinX, sx, ex);
+        slabMaxX = Math.max(slabMaxX, sx, ex);
+        slabMinY = Math.min(slabMinY, sy, ey);
+        slabMaxY = Math.max(slabMaxY, sy, ey);
+      });
+      const slabW = slabMaxX - slabMinX + 0.3;
+      const slabD = slabMaxY - slabMinY + 0.3;
+      const slabCx = (slabMinX + slabMaxX) / 2;
+      const slabCy = (slabMinY + slabMaxY) / 2;
+      const slabThickM = 0.25;
+
+      const idSlabPos = nextId();
+      step += `#${idSlabPos}=IFCCARTESIANPOINT((${slabCx.toFixed(4)},${slabCy.toFixed(4)},${(-slabThickM).toFixed(4)}));\n`;
+      const idSlabPlacement3D = nextId();
+      step += `#${idSlabPlacement3D}=IFCAXIS2PLACEMENT3D(#${idSlabPos},#${idAxisZ},#${idAxisX});\n`;
+      const idSlabLocalPlacement = nextId();
+      step += `#${idSlabLocalPlacement}=IFCLOCALPLACEMENT(#${idStoreyPlacement},#${idSlabPlacement3D});\n`;
+
+      const idSlabProfilePos = nextId();
+      step += `#${idSlabProfilePos}=IFCCARTESIANPOINT((0.,0.));\n`;
+      const idSlabProfileDir = nextId();
+      step += `#${idSlabProfileDir}=IFCDIRECTION((1.,0.));\n`;
+      const idSlabProfileAxis = nextId();
+      step += `#${idSlabProfileAxis}=IFCAXIS2PLACEMENT2D(#${idSlabProfilePos},#${idSlabProfileDir});\n`;
+      const idSlabProfile = nextId();
+      step += `#${idSlabProfile}=IFCRECTANGLEPROFILEDEF(.AREA.,'SlabProfile-L${sIdx + 1}',#${idSlabProfileAxis},${slabW.toFixed(4)},${slabD.toFixed(4)});\n`;
+
+      const idSlabExtrude = nextId();
+      step += `#${idSlabExtrude}=IFCEXTRUDEDAREASOLID(#${idSlabProfile},#${idWorldCoord},#${idAxisZ},${slabThickM.toFixed(4)});\n`;
+      const idSlabRep = nextId();
+      step += `#${idSlabRep}=IFCSHAPEREPRESENTATION(#${idModelContext},'Body','SweptSolid',(#${idSlabExtrude}));\n`;
+      const idSlabProdShape = nextId();
+      step += `#${idSlabProdShape}=IFCPRODUCTDEFINITIONSHAPE($,$,(#${idSlabRep}));\n`;
+
+      const idSlab = nextId();
+      step += `#${idSlab}=IFCSLAB('${generateIfcGuid()}',#${idOwnerHist},'FloorSlab-L${sIdx + 1}','StructuralSlab',$,#${idSlabLocalPlacement},#${idSlabProdShape},$,.FLOOR.);\n`;
+      containedElementIds.push(idSlab);
+    }
+
+    // ── Export Doors with Exact Wall Placement & Direction ──
     storey.doors.forEach((door, dIdx) => {
       const widthM = (door.width / 12) * 0.3048;
-      const heightM = (door.height ? door.height / 12 : 7.0) * 0.3048;
+      const heightM = (door.height ? door.height / 12 : 6.8) * 0.3048;
+
+      const parentWall =
+        storey.walls.find((w) => w.id === door.wallId) || storey.walls[0];
+      let doorX = 0;
+      let doorY = 0;
+      let dirX = 1;
+      let dirY = 0;
+
+      if (parentWall) {
+        const sx = feetToMeters(parentWall.start.x);
+        const sy = feetToMeters(parentWall.start.y);
+        const ex = feetToMeters(parentWall.end.x);
+        const ey = feetToMeters(parentWall.end.y);
+        const dx = ex - sx;
+        const dy = ey - sy;
+        const angleRad = Math.atan2(dy, dx);
+        dirX = Math.cos(angleRad);
+        dirY = Math.sin(angleRad);
+        doorX = sx + door.position * dx;
+        doorY = sy + door.position * dy;
+      }
 
       const idDoorPoint = nextId();
-      step += `#${idDoorPoint}=IFCCARTESIANPOINT((0.,0.,0.));\n`;
+      step += `#${idDoorPoint}=IFCCARTESIANPOINT((${doorX.toFixed(4)},${doorY.toFixed(4)},0.));\n`;
+      const idDoorDir = nextId();
+      step += `#${idDoorDir}=IFCDIRECTION((${dirX.toFixed(4)},${dirY.toFixed(4)},0.));\n`;
       const idDoorPlacement3D = nextId();
-      step += `#${idDoorPlacement3D}=IFCAXIS2PLACEMENT3D(#${idDoorPoint},#${idAxisZ},#${idAxisX});\n`;
+      step += `#${idDoorPlacement3D}=IFCAXIS2PLACEMENT3D(#${idDoorPoint},#${idAxisZ},#${idDoorDir});\n`;
       const idDoorLocalPlacement = nextId();
       step += `#${idDoorLocalPlacement}=IFCLOCALPLACEMENT(#${idStoreyPlacement},#${idDoorPlacement3D});\n`;
 
       const idDoor = nextId();
       step += `#${idDoor}=IFCDOOR('${generateIfcGuid()}',#${idOwnerHist},'Door-L${sIdx + 1}-${dIdx + 1}','${door.doorType ?? "single"}',$,#${idDoorLocalPlacement},$,$,${heightM.toFixed(3)},${widthM.toFixed(3)},.DOOR.,.NOTDEFINED.,$);\n`;
+      const opening = createOpening(
+        door.wallId,
+        door.position,
+        widthM,
+        heightM,
+        0,
+      );
+      if (opening)
+        step += `#${nextId()}=IFCRELFILLSELEMENT('${generateIfcGuid()}',#${idOwnerHist},$,$,#${opening},#${idDoor});\n`;
       containedElementIds.push(idDoor);
     });
 
-    // ── Export Windows ──
+    // ── Export Windows with Exact Wall Placement & Sill Height ──
     storey.windows.forEach((win, wIdx) => {
       const widthM = (win.width / 12) * 0.3048;
       const heightM = (win.height / 12) * 0.3048;
+      const sillMeters = feetToMeters((win.sillHeight ?? 36) / 12);
+
+      const parentWall =
+        storey.walls.find((w) => w.id === win.wallId) || storey.walls[0];
+      let winX = 0;
+      let winY = 0;
+      let dirX = 1;
+      let dirY = 0;
+
+      if (parentWall) {
+        const sx = feetToMeters(parentWall.start.x);
+        const sy = feetToMeters(parentWall.start.y);
+        const ex = feetToMeters(parentWall.end.x);
+        const ey = feetToMeters(parentWall.end.y);
+        const dx = ex - sx;
+        const dy = ey - sy;
+        const angleRad = Math.atan2(dy, dx);
+        dirX = Math.cos(angleRad);
+        dirY = Math.sin(angleRad);
+        winX = sx + win.position * dx;
+        winY = sy + win.position * dy;
+      }
 
       const idWinPoint = nextId();
-      step += `#${idWinPoint}=IFCCARTESIANPOINT((0.,0.,${feetToMeters(win.sillHeight ? win.sillHeight / 12 : 3).toFixed(3)}));\n`;
+      step += `#${idWinPoint}=IFCCARTESIANPOINT((${winX.toFixed(4)},${winY.toFixed(4)},${sillMeters.toFixed(4)}));\n`;
+      const idWinDir = nextId();
+      step += `#${idWinDir}=IFCDIRECTION((${dirX.toFixed(4)},${dirY.toFixed(4)},0.));\n`;
       const idWinPlacement3D = nextId();
-      step += `#${idWinPlacement3D}=IFCAXIS2PLACEMENT3D(#${idWinPoint},#${idAxisZ},#${idAxisX});\n`;
+      step += `#${idWinPlacement3D}=IFCAXIS2PLACEMENT3D(#${idWinPoint},#${idAxisZ},#${idWinDir});\n`;
       const idWinLocalPlacement = nextId();
       step += `#${idWinLocalPlacement}=IFCLOCALPLACEMENT(#${idStoreyPlacement},#${idWinPlacement3D});\n`;
 
       const idWindow = nextId();
       step += `#${idWindow}=IFCWINDOW('${generateIfcGuid()}',#${idOwnerHist},'Window-L${sIdx + 1}-${wIdx + 1}','${win.windowType ?? "picture"}',$,#${idWinLocalPlacement},$,$,${heightM.toFixed(3)},${widthM.toFixed(3)},.WINDOW.,.NOTDEFINED.,$);\n`;
+      const opening = createOpening(
+        win.wallId,
+        win.position,
+        widthM,
+        heightM,
+        sillMeters,
+      );
+      if (opening)
+        step += `#${nextId()}=IFCRELFILLSELEMENT('${generateIfcGuid()}',#${idOwnerHist},$,$,#${opening},#${idWindow});\n`;
       containedElementIds.push(idWindow);
     });
 
@@ -251,12 +413,15 @@ END-ISO-10303-21;
  * Generates an IFC-compliant 22-character unique identifier using the standard IFC base64 character set.
  */
 function generateIfcGuid(): string {
-  const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
-  let str = "";
+  const chars =
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  let value = 0n;
+  for (const byte of bytes) value = (value << 8n) | BigInt(byte);
+  let result = "";
   for (let i = 0; i < 22; i++) {
-    const randIdx = Math.floor(Math.random() * chars.length);
-    str += chars[randIdx] ?? "A";
+    result = chars[Number(value & 63n)]! + result;
+    value >>= 6n;
   }
-  return str;
+  return result;
 }
-

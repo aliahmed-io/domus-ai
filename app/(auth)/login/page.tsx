@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import LoginClient from "@/components/auth/LoginClient";
+import LocalEntry from "@/components/auth/LocalEntry";
 
 export const metadata: Metadata = {
-  title: "Sign In | Domus",
-  description: "Sign in to your Domus spatial workspace using Puter identity services.",
+  title: "Enter the workshop",
+  description: "Open your local Domus workshop. No account needed.",
 };
 
 export default function LoginPage() {
-  return <LoginClient />;
+  return <LocalEntry />;
 }

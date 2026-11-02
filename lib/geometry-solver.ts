@@ -1,5 +1,6 @@
 import type { Room, Wall, Door, Window2D, SceneObject } from "@/types/puter";
 import { StandardCatalog } from "./standard-catalog";
+import { buildPlanTopology } from "./plan-topology";
 import { nanoid } from "./utils";
 
 /**
@@ -7,136 +8,82 @@ import { nanoid } from "./utils";
  * Takes a raw array of Room bounds and extrudes precise structural Walls,
  * interior Doors along shared room boundaries, and exterior Windows.
  */
-export function solveLayoutGeometry(rooms: Room[]): { walls: Wall[]; doors: Door[]; windows: Window2D[] } {
-  const walls: Wall[] = [];
-  const doors: Door[] = [];
-  const windows: Window2D[] = [];
-  
-  const WALL_THICKNESS = 6; // inches
-  const WALL_HEIGHT = 10; // feet
-
-  // Helper to check if two values are approximately equal
-  const approx = (a: number, b: number) => Math.abs(a - b) < 0.1;
-
-  // 1. Detect Shared Interior Boundary Segments between all room pairs
-  for (let i = 0; i < rooms.length; i++) {
-    for (let j = i + 1; j < rooms.length; j++) {
-      const r1 = rooms[i]?.bounds;
-      const r2 = rooms[j]?.bounds;
-
-      if (!r1 || !r2) continue;
-
-      // Check vertical shared wall (X aligns)
-      if (approx(r1.x + r1.width, r2.x) || approx(r2.x + r2.width, r1.x)) {
-        const x = approx(r1.x + r1.width, r2.x) ? r1.x + r1.width : r2.x + r2.width;
-        // Overlap in Y
-        const yStart = Math.max(r1.y, r2.y);
-        const yEnd = Math.min(r1.y + r1.height, r2.y + r2.height);
-        
-        if (yStart < yEnd) {
-          const wallId = `wall-int-v-${nanoid()}`;
-          walls.push({
-            id: wallId,
-            start: { x, y: yStart },
-            end: { x, y: yEnd },
-            thickness: WALL_THICKNESS,
-            height: WALL_HEIGHT,
-            isLoadBearing: false
-          });
-
-          // Place an interior door on this shared wall if it's long enough
-          if (yEnd - yStart > 3) {
-            doors.push({
-              id: `door-int-${nanoid()}`,
-              wallId: wallId,
-              position: 0.5, // middle of the shared segment
-              width: 32, // standard 32" interior door
-              isExterior: false
-            });
-          }
-        }
-      }
-
-      // Check horizontal shared wall (Y aligns)
-      if (approx(r1.y + r1.height, r2.y) || approx(r2.y + r2.height, r1.y)) {
-        const y = approx(r1.y + r1.height, r2.y) ? r1.y + r1.height : r2.y + r2.height;
-        // Overlap in X
-        const xStart = Math.max(r1.x, r2.x);
-        const xEnd = Math.min(r1.x + r1.width, r2.x + r2.width);
-        
-        if (xStart < xEnd) {
-          const wallId = `wall-int-h-${nanoid()}`;
-          walls.push({
-            id: wallId,
-            start: { x: xStart, y },
-            end: { x: xEnd, y },
-            thickness: WALL_THICKNESS,
-            height: WALL_HEIGHT,
-            isLoadBearing: false
-          });
-
-          // Place an interior door
-          if (xEnd - xStart > 3) {
-            doors.push({
-              id: `door-int-${nanoid()}`,
-              wallId: wallId,
-              position: 0.5,
-              width: 32,
-              isExterior: false
-            });
-          }
-        }
-      }
-    }
-  }
-
-  // 2. Calculate the global bounding box (Exterior Perimeter)
-  if (rooms.length > 0) {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    rooms.forEach(r => {
-      if (r.bounds.x < minX) minX = r.bounds.x;
-      if (r.bounds.y < minY) minY = r.bounds.y;
-      if (r.bounds.x + r.bounds.width > maxX) maxX = r.bounds.x + r.bounds.width;
-      if (r.bounds.y + r.bounds.height > maxY) maxY = r.bounds.y + r.bounds.height;
-    });
-
-    const extWalls = [
-      { id: `wall-ext-top`, start: { x: minX, y: minY }, end: { x: maxX, y: minY } },
-      { id: `wall-ext-bottom`, start: { x: minX, y: maxY }, end: { x: maxX, y: maxY } },
-      { id: `wall-ext-left`, start: { x: minX, y: minY }, end: { x: minX, y: maxY } },
-      { id: `wall-ext-right`, start: { x: maxX, y: minY }, end: { x: maxX, y: maxY } }
+export function solveLayoutGeometry(
+  rooms: Room[],
+  options: { naturalLight?: boolean; accessible?: boolean } = {},
+): { walls: Wall[]; doors: Door[]; windows: Window2D[] } {
+  const sources: Wall[] = [];
+  const owners = new Map<string, Room>();
+  for (const room of rooms) {
+    const { x, y, width, height } = room.bounds;
+    const corners = [
+      { x, y },
+      { x: x + width, y },
+      { x: x + width, y: y + height },
+      { x, y: y + height },
     ];
-
-    extWalls.forEach(w => {
-      walls.push({
-        ...w,
-        thickness: 9, // Exterior load-bearing walls are thicker
-        height: WALL_HEIGHT,
-        isLoadBearing: true
+    corners.forEach((start, index) => {
+      const id = `${room.id}-edge-${index}`;
+      sources.push({
+        id,
+        start,
+        end: corners[(index + 1) % 4]!,
+        thickness: 6,
+        height: 9,
+        isLoadBearing: false,
       });
-      
-      // Place a window on every exterior wall
+      owners.set(id, room);
+    });
+  }
+  const graph = buildPlanTopology(sources);
+  const walls: Wall[] = [],
+    doors: Door[] = [],
+    windows: Window2D[] = [];
+  let entrancePlaced = false;
+  for (const edge of graph.edges) {
+    const adjacent = [...new Set(edge.wallIds.map((id) => owners.get(id)!))];
+    const exterior = adjacent.length === 1;
+    const start = graph.vertices[edge.from]!,
+      end = graph.vertices[edge.to]!;
+    const length = Math.hypot(end.x - start.x, end.y - start.y);
+    const wall: Wall = {
+      id: `wall-${nanoid()}`,
+      start,
+      end,
+      thickness: exterior ? 9 : 6,
+      height: 9,
+      isLoadBearing: exterior,
+    };
+    walls.push(wall);
+    const circulation = adjacent.some(
+      (room) => room.type === "hallway" || room.type === "living",
+    );
+    if (length >= 4 && circulation && (!exterior || !entrancePlaced)) {
+      doors.push({
+        id: `door-${nanoid()}`,
+        wallId: wall.id,
+        position: 0.5,
+        width: options.accessible ? 36 : exterior ? 36 : 32,
+        height: 80,
+        isExterior: exterior,
+      });
+      if (exterior) entrancePlaced = true;
+    } else if (
+      exterior &&
+      options.naturalLight !== false &&
+      length >= 6 &&
+      adjacent[0]?.type !== "hallway"
+    ) {
       windows.push({
-        id: `window-ext-${nanoid()}`,
-        wallId: w.id,
+        id: `window-${nanoid()}`,
+        wallId: wall.id,
         position: 0.5,
         width: 48,
-        height: 60,
-        sillHeight: 24
+        height: 48,
+        sillHeight: 30,
       });
-    });
-
-    // Replace front window with an Entry Door
-    windows.pop(); // remove last window on right wall
-    doors.push({
-      id: `door-ext-main`,
-      wallId: `wall-ext-right`,
-      position: 0.5,
-      width: 40, // Large exterior door
-      isExterior: true
-    });
+    }
   }
-
   return { walls, doors, windows };
 }
 
@@ -153,15 +100,60 @@ export function furnishRooms(rooms: Room[]): SceneObject[] {
     const cz = (room.bounds.y + room.bounds.height / 2) * 0.3048;
     const yFloor = 0;
 
-    const spawn = (catalogId: string, offsetX: number = 0, offsetZ: number = 0, rotY: number = 0) => {
+    const occupied: { x: number; z: number; width: number; depth: number }[] =
+      [];
+    const spawn = (
+      catalogId: string,
+      offsetX: number = 0,
+      offsetZ: number = 0,
+      rotY: number = 0,
+    ) => {
+      const catalog = StandardCatalog[catalogId];
+      if (!catalog) return;
+      const width =
+        Math.abs(Math.sin(rotY)) > 0.5
+          ? catalog.dimensions.depth
+          : catalog.dimensions.width;
+      const depth =
+        Math.abs(Math.sin(rotY)) > 0.5
+          ? catalog.dimensions.width
+          : catalog.dimensions.depth;
+      const minX = room.bounds.x * 0.3048,
+        minZ = room.bounds.y * 0.3048;
+      const maxX = (room.bounds.x + room.bounds.width) * 0.3048,
+        maxZ = (room.bounds.y + room.bounds.height) * 0.3048;
+      const candidates = [
+        { x: cx + offsetX, z: cz + offsetZ },
+        ...[-1, 1].flatMap((x) =>
+          [-1, 1].map((z) => ({
+            x: cx + x * ((maxX - minX - width) / 2 - 0.1),
+            z: cz + z * ((maxZ - minZ - depth) / 2 - 0.1),
+          })),
+        ),
+      ];
+      const placement = candidates.find(
+        (p) =>
+          p.x - width / 2 >= minX + 0.05 &&
+          p.x + width / 2 <= maxX - 0.05 &&
+          p.z - depth / 2 >= minZ + 0.05 &&
+          p.z + depth / 2 <= maxZ - 0.05 &&
+          !occupied.some(
+            (other) =>
+              Math.abs(other.x - p.x) < (other.width + width) / 2 + 0.05 &&
+              Math.abs(other.z - p.z) < (other.depth + depth) / 2 + 0.05,
+          ),
+      );
+      if (!placement) return;
+      occupied.push({ ...placement, width, depth });
       objects.push({
         id: `furnish-${room.id}-${catalogId}-${nanoid()}`,
         type: "furniture",
         name: StandardCatalog[catalogId]?.name || catalogId,
-        position: { x: cx + offsetX, y: yFloor, z: cz + offsetZ },
+        position: { x: placement.x, y: yFloor, z: placement.z },
         rotation: { x: 0, y: rotY, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
-        materialId: `color-${StandardCatalog[catalogId]?.color || "#fff"}` // We can parse this later in UI
+        gltfPath: catalog.gltfUrl,
+        materialId: `color-${StandardCatalog[catalogId]?.color || "#fff"}`, // We can parse this later in UI
       });
     };
 

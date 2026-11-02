@@ -1,4 +1,4 @@
-import type { Wall, Door, Window2D, FloorPlanLayout } from "@/types/puter";
+import type { Wall, FloorPlanLayout } from "@/types/puter";
 import { detectAllRooms } from "@/lib/room-detection";
 import { snapCloseWallEndpoints } from "@/lib/snap";
 
@@ -29,14 +29,16 @@ export interface VectorizerResult {
  */
 export async function vectorizeBlueprintImage(
   imageSource: HTMLImageElement | ImageData | HTMLCanvasElement,
-  options: VectorizerOptions = {}
+  options: VectorizerOptions = {},
 ): Promise<VectorizerResult> {
   const wallThickness = options.wallThicknessInches || 6;
   const wallHeight = options.wallHeightFeet || 9;
 
   let width = 0;
   let height = 0;
-  let imgData: ImageData | { width: number; height: number; data: Uint8ClampedArray };
+  let imgData:
+    | ImageData
+    | { width: number; height: number; data: Uint8ClampedArray };
 
   const isRawImageData =
     (typeof ImageData !== "undefined" && imageSource instanceof ImageData) ||
@@ -55,7 +57,8 @@ export async function vectorizeBlueprintImage(
     const canvas = document.createElement("canvas");
     const source = imageSource as CanvasImageSource;
     width = (imageSource as HTMLImageElement | HTMLCanvasElement).width || 800;
-    height = (imageSource as HTMLImageElement | HTMLCanvasElement).height || 600;
+    height =
+      (imageSource as HTMLImageElement | HTMLCanvasElement).height || 600;
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -115,11 +118,14 @@ export async function vectorizeBlueprintImage(
   let borderSum = 0;
   let borderSamples = 0;
   for (let x = 0; x < width; x += Math.max(1, Math.floor(width / 20))) {
-    borderSum += (grayPixels[x] ?? 255) + (grayPixels[(height - 1) * width + x] ?? 255);
+    borderSum +=
+      (grayPixels[x] ?? 255) + (grayPixels[(height - 1) * width + x] ?? 255);
     borderSamples += 2;
   }
   for (let y = 0; y < height; y += Math.max(1, Math.floor(height / 20))) {
-    borderSum += (grayPixels[y * width] ?? 255) + (grayPixels[y * width + (width - 1)] ?? 255);
+    borderSum +=
+      (grayPixels[y * width] ?? 255) +
+      (grayPixels[y * width + (width - 1)] ?? 255);
     borderSamples += 2;
   }
   const avgBorderLuma = borderSamples > 0 ? borderSum / borderSamples : 255;
@@ -129,12 +135,13 @@ export async function vectorizeBlueprintImage(
   const isWallPixel = (x: number, y: number) => {
     if (x < 0 || x >= width || y < 0 || y >= height) return false;
     const luma = grayPixels[y * width + x] ?? 255;
-    return isInverted ? luma > threshold : luma < threshold;
+    return isInverted ? luma > threshold : luma <= threshold;
   };
 
   // Sample grid intervals (every 8-12px for high performance and noise tolerance)
   const step = Math.max(8, Math.floor(Math.min(width, height) / 80));
-  const rawHorizontalSegments: { y: number; startX: number; endX: number }[] = [];
+  const rawHorizontalSegments: { y: number; startX: number; endX: number }[] =
+    [];
   const rawVerticalSegments: { x: number; startY: number; endY: number }[] = [];
 
   // Scan horizontal lines
@@ -179,24 +186,21 @@ export async function vectorizeBlueprintImage(
     }
   }
 
-  // 3. Scale Calibration
-  // If user provided a calibration ruler (e.g. 14 ft = 180 px), use that exact ratio.
-  // Otherwise, calculate default architectural scale based on standard 30-50ft building footprints.
-  let pixelsPerFoot = 15; // default fallback
-  if (options.calibrationFeet && options.calibrationPixels && options.calibrationPixels > 0) {
-    pixelsPerFoot = options.calibrationPixels / options.calibrationFeet;
-  } else {
-    // Auto-calibrate: assume largest dimension spans ~36 feet standard residential width
-    const maxDimensionPx = Math.max(width, height);
-    pixelsPerFoot = Math.max(8, maxDimensionPx / 36);
+  // Scale must come from a measured reference, never an assumed building size.
+  const { calibrationPixels, calibrationFeet } = options;
+  if (!Number.isFinite(calibrationPixels) || !Number.isFinite(calibrationFeet) ||
+      !calibrationPixels || !calibrationFeet || calibrationPixels <= 0 || calibrationFeet <= 0) {
+    throw new Error("Set two calibration points and their known length before tracing.");
   }
+  const pixelsPerFoot = calibrationPixels / calibrationFeet;
 
   // 4. Cluster parallel segments into unified walls
   const clusteredWalls: Wall[] = [];
   const minLengthFeet = 3.5;
 
   // Cluster horizontal wall centerlines
-  const hBins: { y: number; count: number; startX: number; endX: number }[] = [];
+  const hBins: { y: number; count: number; startX: number; endX: number }[] =
+    [];
   for (const seg of rawHorizontalSegments) {
     const existing = hBins.find((b) => Math.abs(b.y - seg.y) < step * 2);
     if (existing) {
@@ -210,7 +214,8 @@ export async function vectorizeBlueprintImage(
   }
 
   // Cluster vertical wall centerlines
-  const vBins: { x: number; count: number; startY: number; endY: number }[] = [];
+  const vBins: { x: number; count: number; startY: number; endY: number }[] =
+    [];
   for (const seg of rawVerticalSegments) {
     const existing = vBins.find((b) => Math.abs(b.x - seg.x) < step * 2);
     if (existing) {
@@ -268,22 +273,12 @@ export async function vectorizeBlueprintImage(
     }
   }
 
-  // 5. Fallback perimeter if sketch is too faint or unsegmented
-  let finalWalls: Wall[] = clusteredWalls;
-  if (finalWalls.length < 4) {
-    // Generate clean bounding shell matching sketch dimensions
-    const halfW = Math.round((width / (pixelsPerFoot * 2)) * 10) / 10;
-    const halfH = Math.round((height / (pixelsPerFoot * 2)) * 10) / 10;
-    finalWalls = [
-      { id: "wall-p1", start: { x: -halfW, y: -halfH }, end: { x: halfW, y: -halfH }, thickness: wallThickness, height: wallHeight, isLoadBearing: true },
-      { id: "wall-p2", start: { x: halfW, y: -halfH }, end: { x: halfW, y: halfH }, thickness: wallThickness, height: wallHeight, isLoadBearing: true },
-      { id: "wall-p3", start: { x: halfW, y: halfH }, end: { x: -halfW, y: halfH }, thickness: wallThickness, height: wallHeight, isLoadBearing: true },
-      { id: "wall-p4", start: { x: -halfW, y: halfH }, end: { x: -halfW, y: -halfH }, thickness: wallThickness, height: wallHeight, isLoadBearing: true },
-    ];
-  } else {
-    // Weld close endpoints to form watertight architectural room boundaries
-    finalWalls = snapCloseWallEndpoints(finalWalls, 1.5);
-  }
+  // Do not invent a room when the uploaded image contains no usable wall network.
+  if (clusteredWalls.length < 4)
+    throw new Error(
+      "No clear wall network found. Try the sample blueprint or a clean line drawing.",
+    );
+  const finalWalls: Wall[] = snapCloseWallEndpoints(clusteredWalls, 1.5);
 
   // 6. Compute Planar Graph Closed Rooms
   let minX = Infinity;
@@ -298,75 +293,37 @@ export async function vectorizeBlueprintImage(
     maxY = Math.max(maxY, w.start.y, w.end.y);
   }
 
-  const spanW = Math.max(12, Math.round(maxX - minX));
-  const spanH = Math.max(12, Math.round(maxY - minY));
+  const spanW = Math.max(0.1, maxX - minX);
+  const spanH = Math.max(0.1, maxY - minY);
+  const rooms = detectAllRooms(finalWalls);
+  const calculatedTotalArea = rooms.reduce((sum, room) => sum + room.area, 0);
 
-  // Run topological planar face detection
-  let rooms = detectAllRooms(finalWalls);
-
-  if (rooms.length === 0) {
-    rooms = [
-      {
-        id: "room-main-living",
-        type: "living",
-        label: "Main Living & Gallery",
-        bounds: { x: minX, y: minY, width: spanW, height: spanH },
-        area: spanW * spanH,
-        color: "#2C2621",
-        ceilingHeight: wallHeight * 0.3048,
-      },
-    ];
-  }
-
-  const calculatedTotalArea = rooms.reduce((acc, r) => acc + (r.area || 0), 0) || spanW * spanH;
-
-  // 7. Add default architectural openings
-  const doors: Door[] = [
-    {
-      id: "door-entrance-1",
-      wallId: finalWalls[0]?.id || "wall-p1",
-      position: 0.5,
-      width: 36,
-      isExterior: true,
-      doorType: "single",
-      swingSide: "left",
-      swingDirection: "inward",
-    },
-  ];
-
-  const windows: Window2D[] = [
-    {
-      id: "win-view-1",
-      wallId: finalWalls[1]?.id || "wall-p2",
-      position: 0.5,
-      width: 48,
-      height: 60,
-      sillHeight: 24,
-      windowType: "picture",
-    },
-  ];
-
+  // Pixel runs do not identify opening symbols or room functions.
+  // Leave these for the user instead of inventing architectural details.
   // Calculate Confidence Score: based on wall orthogonality, closure, and segment counts
-  const confidence = Math.min(98, Math.max(55, Math.round(50 + finalWalls.length * 3 + rooms.length * 5)));
+  const confidence = Math.min(
+    98,
+    Math.max(55, Math.round(50 + finalWalls.length * 3 + rooms.length * 5)),
+  );
   const needsAiEnhancement = confidence < 75;
 
   const layout: FloorPlanLayout = {
     id: `layout-vec-${Date.now()}`,
     rooms,
     walls: finalWalls,
-    doors,
-    windows,
+    doors: [],
+    windows: [],
     dimensions: { width: spanW, height: spanH },
     parameters: {
-      bedrooms: Math.max(1, rooms.filter((r) => r.type === "bedroom").length),
-      bathrooms: Math.max(1, rooms.filter((r) => r.type === "bathroom").length),
+      bedrooms: rooms.filter((r) => r.type === "bedroom").length,
+      bathrooms: rooms.filter((r) => r.type === "bathroom").length,
       totalArea: calculatedTotalArea,
       floors: 1,
       style: "open-plan",
       features: ["Vectorized Blueprint Twin"],
     },
-    efficiency: 92,
-    naturalLight: 85,
+    efficiency: 0,
+    naturalLight: 0,
     generatedAt: new Date().toISOString(),
   };
 

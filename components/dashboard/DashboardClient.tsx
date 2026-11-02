@@ -9,12 +9,11 @@ import {
   Layers,
   Scan,
   FolderOpen,
-  LogOut,
   TrendingUp,
 } from "lucide-react";
 import { useProjectStore } from "@/store/useProjectStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { listProjects, getUser, signOut } from "@/lib/puter";
+import { listProjects, getUser } from "@/lib/puter";
 import ProjectCard from "./ProjectCard";
 import type { ProjectType, PuterUser } from "@/types/puter";
 
@@ -47,13 +46,6 @@ export default function DashboardClient() {
     initDashboard();
   }, [setProjects, setUser, setLoading]);
 
-  // Handle Logout / Profile Reset
-  const handleLogout = async () => {
-    await signOut();
-    document.cookie = "puter_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    setUser({ uuid: "guest-user", username: "Guest Architect" } as PuterUser);
-  };
-
   // Filter projects by activeTab
   const filteredProjects = projects.filter((p) => {
     if (activeTab === "all") return true;
@@ -85,19 +77,13 @@ export default function DashboardClient() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/editor"
+            href="/floor-plan?new=1"
             className="btn-primary flex items-center gap-2 shadow-button text-sm py-2.5 px-5 font-semibold bg-indigo text-white rounded-lg hover:bg-indigoDark transition-colors"
           >
             <Plus size={16} />
             <span>New Project</span>
           </Link>
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center p-2.5 rounded-lg border border-hairline text-stone hover:text-charcoal hover:bg-white transition-colors"
-            title="Sign Out"
-          >
-            <LogOut size={18} />
-          </button>
+
         </div>
       </header>
 
@@ -150,7 +136,7 @@ export default function DashboardClient() {
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-stone">
           <TrendingUp size={14} className="text-teal" />
-          <span>Active Session • Cloud Sync ON</span>
+          <span>Saved in this browser</span>
         </div>
       </section>
 
@@ -183,7 +169,7 @@ export default function DashboardClient() {
               : `You don't have any projects categorized under ${activeTab}.`}
           </p>
           <Link
-            href="/editor"
+            href="/floor-plan?new=1"
             className="btn-primary inline-flex items-center gap-2 shadow-button text-sm py-2.5 px-6 font-semibold bg-indigo text-white rounded-lg hover:bg-indigoDark transition-colors"
           >
             <Plus size={16} />

@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import React, { useState } from "react";
 import Link from "next/link";
 import {
@@ -28,7 +29,11 @@ interface ProjectCardProps {
 
 const TYPE_CONFIG: Record<
   ProjectType,
-  { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; badgeClass: string }
+  {
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    label: string;
+    badgeClass: string;
+  }
 > = {
   "floor-plan": {
     icon: Brain,
@@ -50,12 +55,12 @@ const TYPE_CONFIG: Record<
     label: "Material Lab",
     badgeClass: "bg-indigo-light text-indigo border-indigo/20",
   },
-  "furniture": {
+  furniture: {
     icon: Package,
     label: "Furniture Swap",
     badgeClass: "bg-gray-100 text-charcoal border-gray-200",
   },
-  "comparison": {
+  comparison: {
     icon: Layers,
     label: "Comparison",
     badgeClass: "bg-teal-light text-teal border-teal/20",
@@ -200,7 +205,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             className={`w-7 h-7 rounded-lg flex items-center justify-center text-stone border border-transparent ${
               isUpdating ? "animate-pulse" : ""
             }`}
-            title={project.isPublic ? "Public Project" : "Private Workspace"}
+            title={project.isPublic ? "In local gallery" : "Local project"}
           >
             {project.isPublic ? <Globe size={15} /> : <Lock size={15} />}
           </div>
@@ -224,20 +229,32 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                   className="flex items-center gap-2 px-3 py-2 text-xs text-stone hover:text-charcoal hover:bg-gray-50 rounded-lg outline-none cursor-pointer"
                 >
                   <Globe size={14} />
-                  <span>{project.isPublic ? "Make Private" : "Make Public"}</span>
+                  <span>
+                    {project.isPublic
+                      ? "Remove from gallery"
+                      : "Add to local gallery"}
+                  </span>
                 </DropdownMenu.Item>
 
                 <DropdownMenu.Item
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/community/${project.id}`
-                    );
-                    alert("Project link copied to clipboard!");
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(
+                        `${window.location.origin}/community/${encodeURIComponent(project.id)}`,
+                      );
+                      toast.success(
+                        "Local link copied. It opens only in this browser.",
+                      );
+                    } catch {
+                      toast.error(
+                        "Clipboard access was denied. Copy the URL from the project page instead.",
+                      );
+                    }
                   }}
                   className="flex items-center gap-2 px-3 py-2 text-xs text-stone hover:text-charcoal hover:bg-gray-50 rounded-lg outline-none cursor-pointer"
                 >
                   <Share2 size={14} />
-                  <span>Copy Share Link</span>
+                  <span>Copy local project link</span>
                 </DropdownMenu.Item>
 
                 <DropdownMenu.Separator className="h-px bg-hairline my-1" />

@@ -1,256 +1,173 @@
-/**
- * Puter.js client wrapper
- * All Puter interactions are client-side only.
- * Never import this in Server Components or API routes.
- */
+/** Browser-local project storage. The filename preserves existing imports during the prototype. */
 "use client";
 
+import { readProjectDocument } from "@/lib/project-document";
 import type { PuterUser, PuterProject } from "@/types/puter";
 
-// Polls until window.puter is available (SDK loads with async defer)
-// Returns null only if it times out after 10s (user truly offline)
-async function waitForPuter(timeoutMs = 10_000): Promise<typeof window.puter | null> {
-  if (typeof window === "undefined") return null;
-  if (window.puter) return window.puter;
+const PREFIX = "domus:local:v1:";
+const visitor: PuterUser = { uuid: "local-workshop", username: "Designer" };
 
-  return new Promise((resolve) => {
-    const start = Date.now();
-    const poll = () => {
-      if (window.puter) return resolve(window.puter);
-      if (Date.now() - start > timeoutMs) {
-        console.warn("[puter] SDK did not load within timeout — operating offline.");
-        return resolve(null);
-      }
-      setTimeout(poll, 100);
-    };
-    poll();
-  });
+export async function getUser(): Promise<PuterUser> {
+  const profile = await kvGet<{ name: string }>("profile");
+  return {
+    ...visitor,
+    username:
+      typeof profile?.name === "string" && profile.name.trim()
+        ? profile.name.trim()
+        : visitor.username,
+  };
 }
-
-// Sync accessor for non-async contexts only (returns null if SDK not yet loaded)
-export function getPuter(): typeof window.puter | null {
-  if (typeof window === "undefined") return null;
-  return window.puter ?? null;
-}
-
-// Timeout helper: races a promise against a time limit to prevent client UI freeze if cloud APIs hang
-function withTimeout<T>(promise: Promise<T>, timeoutMs = 5000, fallback: T): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<T>((resolve) => {
-    timeoutId = setTimeout(() => {
-      console.warn(`Puter API call timed out after ${timeoutMs}ms. Invoking safe fallback.`);
-      resolve(fallback);
-    }, timeoutMs);
-  });
-  return Promise.race([
-    promise.then((res) => {
-      clearTimeout(timeoutId);
-      return res;
-    }),
-    timeoutPromise,
-  ]);
-}
-
-// ─── Auth ────────────────────────────────────────────────────────────────────
-
-export async function signIn(): Promise<PuterUser | null> {
-  const puter = await waitForPuter();
-  if (!puter) return null;
-  try {
-    await puter.auth.signIn();
-    return getUser();
-  } catch {
-    return null;
-  }
-}
-
-export async function signOut(): Promise<void> {
-  const puter = await waitForPuter();
-  if (!puter) return;
-  await puter.auth.signOut();
-}
-
-export async function getUser(): Promise<PuterUser | null> {
-  const puter = await waitForPuter();
-  if (!puter) return null;
-  try {
-    const user = await puter.auth.getUser();
-    return user as PuterUser;
-  } catch {
-    return null;
-  }
-}
-
-export async function isSignedIn(): Promise<boolean> {
-  const puter = await waitForPuter();
-  if (!puter) return false;
-  try {
-    return await puter.auth.isSignedIn();
-  } catch {
-    return false;
-  }
-}
-
-// ─── KV Storage ──────────────────────────────────────────────────────────────
 
 export async function kvGet<T>(key: string): Promise<T | null> {
-  const puter = await waitForPuter();
-  if (!puter) return null;
+  if (typeof window === "undefined") return null;
   try {
-    const apiCall = puter.kv.get(key).then((value) => {
-      if (!value) return null;
-      return JSON.parse(value as string) as T;
-    }).catch(() => null);
-    return await withTimeout(apiCall, 5000, null);
-  } catch (e) {
-    console.error('[puter.kvGet] error:', e);
+    const value = localStorage.getItem(PREFIX + key);
+    return value === null ? null : (JSON.parse(value) as T);
+  } catch {
     return null;
   }
 }
 
 export async function kvSet<T>(key: string, value: T): Promise<boolean> {
-  const puter = await waitForPuter();
-  if (!puter) return false;
+  if (typeof window === "undefined") return false;
   try {
-    const apiCall = puter.kv.set(key, JSON.stringify(value)).then(() => true).catch(() => false);
-    return await withTimeout(apiCall, 5000, false);
-  } catch (e) {
-    console.error('[puter.kvSet] error:', e);
-    return false;
-  }
-}
-
-export async function kvDelete(key: string): Promise<boolean> {
-  const puter = await waitForPuter();
-  if (!puter) return false;
-  try {
-    const apiCall = puter.kv.del(key).then(() => true).catch(() => false);
-    return await withTimeout(apiCall, 5000, false);
-  } catch (e) {
-    console.error('[puter.kvDelete] error:', e);
-    return false;
-  }
-}
-
-export async function kvList(prefix: string): Promise<string[]> {
-  const puter = await waitForPuter();
-  if (!puter) return [];
-  try {
-    const apiCall = puter.kv.list(prefix + "*").then((result) => {
-      return (result as { key: string }[]).map((r) => r.key);
-    }).catch(() => []);
-    return await withTimeout(apiCall, 5000, []);
-  } catch (e) {
-    console.error('[puter.kvList] error:', e);
-    return [];
-  }
-}
-
-// ─── File Storage ─────────────────────────────────────────────────────────────
-
-export async function uploadFile(
-  path: string,
-  content: Blob | string
-): Promise<string | null> {
-  const puter = await waitForPuter();
-  if (!puter) return null;
-  try {
-    const file = await puter.fs.write(path, content);
-    return (file as { path: string }).path;
-  } catch {
-    return null;
-  }
-}
-
-export async function readFile(path: string): Promise<Blob | null> {
-  const puter = await waitForPuter();
-  if (!puter) return null;
-  try {
-    const file = await puter.fs.read(path);
-    return file as Blob;
-  } catch {
-    return null;
-  }
-}
-
-export async function deleteFile(path: string): Promise<boolean> {
-  const puter = await waitForPuter();
-  if (!puter) return false;
-  try {
-    await puter.fs.delete(path);
+    localStorage.setItem(PREFIX + key, JSON.stringify(value));
     return true;
   } catch {
     return false;
   }
 }
 
-// ─── AI Proxy ────────────────────────────────────────────────────────────────
-
-export async function aiChat(
-  prompt: string,
-  options?: { model?: string; maxTokens?: number }
-): Promise<string | null> {
-  const puter = await waitForPuter();
-  if (!puter) return null;
+export async function kvDelete(key: string): Promise<boolean> {
+  if (typeof window === "undefined") return false;
   try {
-    const response = await puter.ai.chat(prompt, {
-      model: options?.model ?? "claude-3-5-sonnet",
-    });
-    const message = response as { message?: { content?: string }; content?: string };
-    return message?.message?.content ?? message?.content ?? null;
+    localStorage.removeItem(PREFIX + key);
+    return true;
   } catch {
-    return null;
+    return false;
+  }
+}
+
+export async function kvList(prefix: string): Promise<string[]> {
+  if (typeof window === "undefined") return [];
+  try {
+    return Object.keys(localStorage)
+      .filter((key) => key.startsWith(PREFIX + prefix))
+      .map((key) => key.slice(PREFIX.length));
+  } catch {
+    return [];
   }
 }
 
 // ─── Project CRUD (KV-backed) ─────────────────────────────────────────────────
 
 const PROJECT_PREFIX = "domus:project:";
-const PROJECT_INDEX_KEY = "domus:project-index";
+
+// Keep the primary record current before navigation or tab closure can cancel a timer.
+export function saveProjectSnapshot(
+  id: string,
+  updates: Pick<PuterProject, "floorPlanData" | "sceneData">,
+  workspace: string,
+): boolean {
+  try {
+    const key = PREFIX + PROJECT_PREFIX + id;
+    const raw = localStorage.getItem(key);
+    if (!raw) return false;
+    const previous = JSON.parse(raw) as PuterProject;
+    const next: PuterProject = {
+      ...previous,
+      ...updates,
+      tags: [
+        ...previous.tags.filter((tag) => !tag.startsWith("workspace-")),
+        `workspace-${workspace}`,
+      ],
+      updatedAt: new Date().toISOString(),
+    };
+    const document = readProjectDocument(next);
+    if (!document) return false;
+    localStorage.setItem(key, JSON.stringify(document));
+    // The latest pointer is only a convenience. Failure here does not undo a saved record.
+    try {
+      localStorage.setItem("domus_latest_project", JSON.stringify(next));
+    } catch {
+      /* Primary record already saved. */
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function saveProject(project: PuterProject): Promise<boolean> {
-  const [saved, indexed] = await Promise.all([
-    kvSet(`${PROJECT_PREFIX}${project.id}`, project),
-    (async () => {
-      const index = (await kvGet<string[]>(PROJECT_INDEX_KEY)) ?? [];
-      if (!index.includes(project.id)) {
-        index.unshift(project.id);
-      }
-      return kvSet(PROJECT_INDEX_KEY, index);
-    })(),
-  ]);
-  return saved && indexed;
+  const document = readProjectDocument(project);
+  return document ? kvSet(`${PROJECT_PREFIX}${project.id}`, document) : false;
 }
 
 export async function loadProject(id: string): Promise<PuterProject | null> {
-  return kvGet<PuterProject>(`${PROJECT_PREFIX}${id}`);
+  const current = await kvGet<unknown>(`${PROJECT_PREFIX}${id}`);
+  if (current !== null) { const document = readProjectDocument(current); return document?.id === id ? document : null; }
+  // Recover an existing local backup by exact ID. Never substitute the latest unrelated plan.
+  try {
+    const raw = localStorage.getItem(`domus_backup_project_${id}`);
+    if (!raw) return null;
+    const backup = readProjectDocument(JSON.parse(raw));
+    if (!backup) return null;
+    if (
+      backup.id !== id ||
+      !Array.isArray(backup.tags) ||
+      typeof backup.updatedAt !== "string"
+    )
+      return null;
+    await saveProject(backup);
+    return backup;
+  } catch {
+    return null;
+  }
 }
 
 export async function listProjects(): Promise<PuterProject[]> {
-  const index = (await kvGet<string[]>(PROJECT_INDEX_KEY)) ?? [];
-  const projects = await Promise.all(index.map((id) => loadProject(id)));
-  return projects.filter((p): p is PuterProject => p !== null);
+  try {
+    const legacyIds = Object.keys(localStorage)
+      .filter((key) => key.startsWith("domus_backup_project_"))
+      .map((key) => key.slice("domus_backup_project_".length));
+    await Promise.all(legacyIds.map(loadProject));
+  } catch {
+    /* Storage may be unavailable. */
+  }
+  const keys = await kvList(PROJECT_PREFIX);
+  const projects = await Promise.all(
+    keys.map((key) => loadProject(key.slice(PROJECT_PREFIX.length))),
+  );
+  return projects
+    .filter((p): p is PuterProject => p !== null)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function deleteProject(id: string): Promise<boolean> {
-  const [deleted, deindexed] = await Promise.all([
-    kvDelete(`${PROJECT_PREFIX}${id}`),
-    (async () => {
-      const index = (await kvGet<string[]>(PROJECT_INDEX_KEY)) ?? [];
-      const updated = index.filter((i) => i !== id);
-      return kvSet(PROJECT_INDEX_KEY, updated);
-    })(),
-  ]);
-  return deleted && deindexed;
+  const removed = await kvDelete(`${PROJECT_PREFIX}${id}`);
+  if (!removed) return false;
+  try {
+    localStorage.removeItem(`domus_backup_project_${id}`);
+    const latest = localStorage.getItem("domus_latest_project");
+    if (latest && JSON.parse(latest).id === id)
+      localStorage.removeItem("domus_latest_project");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function updateProjectVisibility(
   id: string,
-  isPublic: boolean
+  isPublic: boolean,
 ): Promise<boolean> {
   const project = await loadProject(id);
   if (!project) return false;
-  return saveProject({ ...project, isPublic, updatedAt: new Date().toISOString() });
+  return saveProject({
+    ...project,
+    isPublic,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 // ─── Community (public projects) ─────────────────────────────────────────────
@@ -274,7 +191,5 @@ export async function unpublishProject(id: string): Promise<boolean> {
 }
 
 export async function listCommunityProjects(): Promise<PuterProject[]> {
-  const index = (await kvGet<string[]>(COMMUNITY_INDEX_KEY)) ?? [];
-  const projects = await Promise.all(index.map((id) => loadProject(id)));
-  return projects.filter((p): p is PuterProject => p !== null && p.isPublic);
+  return (await listProjects()).filter((project) => project.isPublic);
 }

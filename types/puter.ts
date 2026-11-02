@@ -36,6 +36,8 @@ export interface ProjectStats {
 }
 
 export interface PuterProject {
+  schemaVersion?: 1;
+  units?: { plan: "ft"; openings: "in"; scene: "m" };
   id: string;
   ownerId: string;
   ownerUsername: string;
@@ -55,6 +57,14 @@ export interface PuterProject {
 
 // ─── Floor Plan ───────────────────────────────────────────────────────────────
 
+export type FloorMaterialType =
+  | "hardwood"
+  | "tile"
+  | "marble"
+  | "carpet"
+  | "concrete"
+  | "terrazzo";
+
 export interface Room {
   id: string;
   type: RoomType;
@@ -66,10 +76,11 @@ export interface Room {
   wallIds?: string[]; // References to walls defining this room boundary
   noTexture?: boolean;
   polygon?: Vec2D[];
-  floorMaterial?: string;
+  floorMaterial?: FloorMaterialType | string;
 }
 
 export type RoomType =
+  | "unassigned"
   | "bedroom"
   | "bathroom"
   | "living"
@@ -89,6 +100,8 @@ export interface Wall {
   thickness: number; // inches
   height: number; // feet
   isLoadBearing: boolean;
+  color?: string;
+  materialId?: string;
 }
 
 export type DoorType = "single" | "double" | "sliding" | "pocket" | "bifold";
@@ -137,7 +150,12 @@ export interface FloorPlanParameters {
   features: string[];
 }
 
+export interface BlueprintReference {
+  imageDataUrl: string; widthPixels: number; heightPixels: number; pixelsPerFoot: number; opacity: number;
+}
+
 export interface FloorPlanLayout {
+  blueprint?: BlueprintReference;
   id: string;
   parameters: FloorPlanParameters;
   rooms: Room[];
@@ -193,6 +211,7 @@ export interface Material {
   texture: PbrTexture;
   roughness: number;
   metalness: number;
+  color?: string;
   generatedAt: string;
 }
 
@@ -209,14 +228,21 @@ export interface SceneObject {
   gltfPath?: string;
   thumbnailUrl?: string | undefined;
   attachmentType?: "floor" | "ceiling" | "surface" | "wall";
+  storeyId?: string;
+  dimensions?: { width: number; height: number; depth: number };
 }
 
 export interface SceneSnapshot {
+  materials?: Record<string, Material>;
   id: string;
   objects: SceneObject[];
   cameraPosition: Vec3D;
   cameraTarget: Vec3D;
   createdAt: string;
+  storeys?: BuildingStorey[];
+  activeStoreyId?: string;
+  staircases?: Staircase[];
+  dimensionLines?: DimensionLine[];
 }
 
 // ─── Geometry Primitives ──────────────────────────────────────────────────────
@@ -292,7 +318,7 @@ export interface Staircase {
   riserHeight: number; // inches
   position: Vec3D;
   rotation: Vec3D;
-  type: "straight" | "l-shape" | "spiral";
+  type: "straight" | "l-shape" | "u-shape" | "spiral";
 }
 
 // ─── Building Storeys (Multi-floor) ──────────────────────────────────────────

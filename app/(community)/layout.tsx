@@ -11,7 +11,7 @@ export default function CommunityLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-alabaster">
+    <div className="flex flex-col md:flex-row h-dvh w-full overflow-hidden bg-alabaster">
       {/* Sidebar navigation */}
       <Sidebar />
 

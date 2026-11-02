@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { PenTool, Brain } from "lucide-react";
+import Link from "next/link";
+import PlanIllustration from "@/components/studio/PlanIllustration";
+import { PenTool, ArrowUpRight } from "lucide-react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
 import { loadProject, saveProject } from "@/lib/puter";
@@ -15,7 +17,7 @@ export default function OnboardingModal({ projectId }: OnboardingModalProps) {
     useShallow((s) => ({
       setWorkspace: s.setWorkspace,
       setFloorPlan: s.setFloorPlan,
-    }))
+    })),
   );
 
   const handleStartFromScratch = async () => {
@@ -49,10 +51,16 @@ export default function OnboardingModal({ projectId }: OnboardingModalProps) {
         if (project) {
           await saveProject({
             ...project,
-            title: project.title === "Untitled Project" ? "Manual Floor Plan" : project.title,
-            tags: [...project.tags.filter(t => !t.startsWith("workspace-")), "workspace-manual"],
+            title:
+              project.title === "Untitled Project"
+                ? "Manual Floor Plan"
+                : project.title,
+            tags: [
+              ...project.tags.filter((t) => !t.startsWith("workspace-")),
+              "workspace-manual",
+            ],
             floorPlanData: layout,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           });
         }
       } catch (err) {
@@ -70,9 +78,15 @@ export default function OnboardingModal({ projectId }: OnboardingModalProps) {
         if (project) {
           await saveProject({
             ...project,
-            title: project.title === "Untitled Project" ? "AI Generated Floor Plan" : project.title,
-            tags: [...project.tags.filter(t => !t.startsWith("workspace-")), "workspace-generative"],
-            updatedAt: new Date().toISOString()
+            title:
+              project.title === "Untitled Project"
+                ? "Generated floor plan"
+                : project.title,
+            tags: [
+              ...project.tags.filter((t) => !t.startsWith("workspace-")),
+              "workspace-generative",
+            ],
+            updatedAt: new Date().toISOString(),
           });
         }
       } catch (err) {
@@ -82,66 +96,47 @@ export default function OnboardingModal({ projectId }: OnboardingModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col md:flex-row">
-      {/* Left side: branding/intro */}
-      <div className="w-full md:w-1/3 bg-alabaster border-r border-hairline p-10 flex flex-col justify-between">
+    <div className="plan-entry studio-landing">
+      <header>
+        <Link href="/editor">Back to workshop</Link>
+        <span>Make yourself at home.</span>
+      </header>
+      <div className="plan-entry-content">
         <div>
-          <h1 className="font-headline text-3xl font-bold text-charcoal tracking-tight mb-4">
-            Getting Started
+          <span className="studio-kicker">A fresh start</span>
+          <h1>
+            Every space starts
+            <br />
+            with an idea.
           </h1>
-          <p className="font-body text-sm text-stone leading-relaxed">
-            Choose how you want to begin your project. Use our proprietary generative engine to synthesize a complete floor plan, or start from a blank canvas with our professional CAD tools.
-          </p>
+          <p>How would you like to begin?</p>
+          <div className="plan-entry-choices">
+            <button type="button" onClick={handleStartFromScratch}>
+              <PenTool size={24} />
+              <span>
+                <strong>Start from scratch</strong>
+                <small>A blank canvas, ready for your first wall.</small>
+              </span>
+              <ArrowUpRight size={20} />
+            </button>
+            <button type="button" onClick={handleGenerativeAI}>
+
+              <span>
+                <strong>Help me with a layout</strong>
+                <small>
+                  Set your room requirements and explore a starting plan.
+                </small>
+              </span>
+              <ArrowUpRight size={20} />
+            </button>
+          </div>
+          <small className="plan-entry-note">
+            Saved in this browser as you work. No account needed.
+          </small>
         </div>
-      </div>
-
-      {/* Right side: Options grid */}
-      <div className="w-full md:w-2/3 p-10 flex items-center justify-center bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full">
-          {/* Start from Scratch */}
-          <button
-            onClick={handleStartFromScratch}
-            className="group relative p-8 bg-white border border-hairline rounded-2xl flex flex-col items-center justify-center text-center gap-4 hover:border-indigo hover:shadow-card transition-all duration-300 outline-none"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-indigo-light text-indigo flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-              <PenTool size={32} strokeWidth={1.5} />
-            </div>
-            <div>
-              <h3 className="font-jakarta text-lg font-bold text-charcoal mb-2">
-                Start from scratch
-              </h3>
-              <p className="font-body text-xs text-stone">
-                Design your project manually using a 2D and 3D editor from a blank canvas.
-              </p>
-            </div>
-            <div className="mt-4 px-6 py-2.5 bg-indigo text-white font-bold text-xs rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
-              Open Editor
-            </div>
-          </button>
-
-          {/* AI Generator */}
-          <button
-            onClick={handleGenerativeAI}
-            className="group relative p-8 bg-white border border-hairline rounded-2xl flex flex-col items-center justify-center text-center gap-4 hover:border-teal hover:shadow-card transition-all duration-300 outline-none"
-          >
-            <div className="absolute top-4 right-4 px-2.5 py-1 bg-gradient-to-r from-indigo to-teal text-white text-[9px] font-bold uppercase tracking-wider rounded-lg">
-              Popular
-            </div>
-            <div className="w-16 h-16 rounded-2xl bg-teal/10 text-teal flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-              <Brain size={32} strokeWidth={1.5} />
-            </div>
-            <div>
-              <h3 className="font-jakarta text-lg font-bold text-charcoal mb-2">
-                Domus AI Generator
-              </h3>
-              <p className="font-body text-xs text-stone">
-                Specify constraints and let our spatial AI generate highly optimized layouts instantly.
-              </p>
-            </div>
-            <div className="mt-4 px-6 py-2.5 bg-teal text-white font-bold text-xs rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
-              Launch Wizard
-            </div>
-          </button>
+        <div className="plan-entry-drawing">
+          <PlanIllustration />
+          <span>A few lines. A whole new possibility.</span>
         </div>
       </div>
     </div>

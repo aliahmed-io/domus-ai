@@ -65,6 +65,10 @@ describe("Algorithmic Blueprint Vectorizer & Scale Calibration", () => {
     expect(result.confidence).toBeGreaterThan(50);
     expect(result.layout.walls.length).toBeGreaterThanOrEqual(4);
     expect(result.totalAreaSqFt).toBeGreaterThan(0);
+    expect(result.layout.doors).toEqual([]);
+    expect(result.layout.windows).toEqual([]);
+    expect(result.layout.parameters.bedrooms).toBe(0);
+    expect(result.layout.parameters.bathrooms).toBe(0);
   });
 
   it("correctly applies calibration scale ruler to convert pixels to real-world feet", async () => {

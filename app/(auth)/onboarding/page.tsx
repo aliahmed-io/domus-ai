@@ -47,7 +47,7 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     setIsFinishing(true);
     try {
-      // Save user onboarding details to Puter cloud KV storage
+      // Save first-use preferences in this browser
       await kvSet("domus:user-onboarding", {
         role,
         template,
@@ -224,7 +224,7 @@ export default function OnboardingPage() {
                       Enable Cloud Sync
                     </span>
                     <span className="font-body text-[10px] text-stone">
-                      Sync spatial metadata back to Puter KV store automatically.
+                      Save project details in this browser as you work.
                     </span>
                   </div>
                   <div className="w-10 h-6 bg-indigo rounded-full flex items-center justify-end p-0.5 cursor-pointer">

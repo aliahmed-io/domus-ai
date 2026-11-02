@@ -3,25 +3,35 @@
 import React, { useMemo } from "react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
+import RoomSurface from "./RoomSurface";
 import { feetToMeters } from "@/lib/utils";
 
 export default function RoofMesh() {
-  const { floorPlanLayout, showRoof, roofType } = useEditorStore(
+  const { floorPlanLayout, showRoof, roofType, storeys } = useEditorStore(
     useShallow((s) => ({
       floorPlanLayout: s.floorPlanLayout,
       showRoof: s.showRoof,
       roofType: s.roofType,
+      storeys: s.storeys,
     }))
   );
 
   const roofData = useMemo(() => {
-    if (!floorPlanLayout || floorPlanLayout.walls.length === 0) return null;
+    const visibleStoreys = (storeys || []).filter((st) => st.isVisible !== false);
+    const topStorey =
+      visibleStoreys.length > 0
+        ? visibleStoreys.reduce((prev, curr) => (curr.elevation >= prev.elevation ? curr : prev))
+        : null;
+    const targetLayout = topStorey ? topStorey.floorPlanLayout : floorPlanLayout;
+    const topElevMeters = topStorey ? feetToMeters(topStorey.elevation) : 0;
+
+    if (!targetLayout || targetLayout.walls.length === 0) return null;
 
     // Find perimeter bounding box from walls
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     let maxWallHeight = 0;
 
-    floorPlanLayout.walls.forEach((w) => {
+    targetLayout.walls.forEach((w) => {
       const sx = feetToMeters(w.start.x);
       const sy = feetToMeters(w.start.y);
       const ex = feetToMeters(w.end.x);
@@ -46,17 +56,22 @@ export default function RoofMesh() {
       cz,
       width,
       depth,
-      wallHeight: maxWallHeight || 3.0,
+      rooms: targetLayout.rooms,
+      wallHeight: topElevMeters + (maxWallHeight || 3.0),
       minX,
       maxX,
       minY,
       maxY,
     };
-  }, [floorPlanLayout]);
+  }, [floorPlanLayout, storeys]);
 
   if (!showRoof || !roofData) return null;
 
   const { cx, cz, width, depth, wallHeight } = roofData;
+  const coveredArea = roofData.rooms.reduce((sum, room) => sum + room.area * .3048 * .3048, 0);
+  if (roofData.rooms.length && coveredArea < width * depth - .05) {
+    return <group>{roofData.rooms.map(room => <RoomSurface key={room.id} room={room} thickness={.15} top={wallHeight} color="#8b8072" />)}</group>;
+  }
   const overhang = 0.4; // 400mm architectural eave overhang
   const totalW = width + overhang * 2;
   const totalD = depth + overhang * 2;
