@@ -1,0 +1,159 @@
+[
+  {
+    "route": "/",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Domus | Domus",
+    "heading": "Architectural Intelligence.",
+    "overflow": false,
+    "text": "scan. Replace with AI-selected or custom 3D assets matching your aesthetic.\n\nBuilt with Domus\n\nSee how leading firms leverage our platform.\n\nExplore the Atrium Tower\nFULL SUITE PIPELINE\nThe Atrium Tower\n\nGenerated entirely in Domus 2.0\n\nReady to build the future?\n\nJoin thousands of architects and designers shaping tomorrow's spaces today.\n\nStart Designing Free\nView Pricing\nDomus\n\nDesigning the future of space, one room at a time.\n\nProduct\nFloor Plan Editor\nBIM Lift Engine\nShowcase\nPricing\nChangelog\nCompany\nAbout\nBlog\nCommunity\nContact\nLegal\nPrivacy Policy\nTerms of Service\nCookie Policy\nGDPR Rights\nStay in the loop\n\nSpatial intelligence updates, monthly.\n\nEmail address\nSubscribe\n\n— No spam. Unsubscribe anytime.\n\n© 2026 Domus. All rights reserved.\n\nCreated with spatial precision by Ali Ahmed"
+  },
+  {
+    "route": "/editor",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Spatial CAD Studio",
+    "heading": "Spatial CAD Studio",
+    "overflow": false,
+    "text": "s\nBilling\nHelp\nNew Project\nCollapse\nSPATIAL ENGINEERING HUB\nSpatial CAD Studio\n\nSelect a specialized generative module below to start building high-performance spatial digital twins.\n\nAI Floor Plan\n\nGenerate complete multi-room architectural spatial layouts using GNN-driven area optimization.\n\nLaunch Tool\nBIM Lift\n\nLift 2D blueprints or hand sketches into extruded 3D BIM spaces, running full BOM reports client-side.\n\nLaunch Tool\nAR Room Scanner\n\nUse WebXR passthrough on mobile devices to map exact room dimensions and output 3D spatial shells.\n\nLaunch Tool\nMaterial Lab\n\nReskin 3D geometries with generative seamless PBR texture layers mapped via text-prompts.\n\nLaunch Tool\nFurniture Swap\n\nDetect furniture placements and insert responsive, cached high-performance DRACO GLB assets.\n\nLaunch Tool"
+  },
+  {
+    "route": "/floor-plan",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Spatial Workspace | Domus | Domus",
+    "overflow": false,
+    "text": "Skip to content\nDomus\n\nWORKSPACE\n\nDashboard\nEditor\nCommunity\n\nTOOLS\n\nFloor Plan\nBIM Lift\nAR Map\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\nInitializing CAD Workspace\n\nFetching spatial project details from Puter cloud KV..."
+  },
+  {
+    "route": "/dashboard",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "My Workspace | Domus",
+    "heading": "Welcome Back",
+    "overflow": false,
+    "text": "Skip to content\nDomus\n\nWORKSPACE\n\nDashboard\nEditor\nCommunity\n\nTOOLS\n\nFloor Plan\nBIM Lift\nAR Map\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\nWORKSPACE OVERVIEW\nWelcome Back\n\nCreate, manage, and render your unified spatial intelligence environments.\n\nNew Project\n\nTOTAL PROJECTS\n\n0\n\nAI FLOOR PLANS\n\n0\n\nBIM LIFTERS\n\n0\n\nAR SCANS\n\n0\nAll Projects\nFloor Plans\nBIM Models\nAR Scans\nMaterial Labs\nFurniture swaps\nActive Session • Cloud Sync ON"
+  },
+  {
+    "route": "/settings",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Workspace | Domus | Domus",
+    "heading": "Settings",
+    "overflow": false,
+    "text": "\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\nSettings\n\nConfigure your professional identity, design defaults, and developer credentials.\n\nProfile Info\nAccount Security\nNotifications\nPrivacy & Auth\nBilling & Plans\nAPI Credentials\nDanger Zone\nProfile Information\n\nThis information is displayed publicly on your community discovery profile.\n\nAH\n\nAvatar Initial\n\nPuter identity sync\n\nDisplay Name\nUsername\n@\nBio (Max 150 characters)\nWebsite\nLocation\nPROFESSIONAL CREDENTIALS\n\nSet up your industry context to fine-tune AI assistant outputs.\n\nProfessional Role\nArchitect\nInterior Designer\n3D Visualizer\nBIM Engineer\nSpatial Researcher\nFirm / Studio Name\nYears of Spatial Experience\n8 years\nSpecializations & Tags\nBIM MODELING\n×\nGENERATIVE INTERIORS\n×\nWEBXR PROTOTYPING\n×\nAdd"
+  },
+  {
+    "route": "/community",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Community Discovery Hub | Domus",
+    "heading": "Spatial Discovery Feed",
+    "overflow": false,
+    "text": "BIM Lift\nAR Map\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\nDISCOVER COMMUNITY\nSpatial Discovery Feed\n\nBrowse, inspect, and fork production-ready digital twins created by the global design community.\n\nTRENDING THIS WEEK\n01\nHelix Residential Tower\n\nby @zaha_fans • 2.4k views\n\n02\nSustainable Timber Loft\n\nby @forestBIM • 1.9k views\n\n03\nMinimalist Studio 12\n\nby @mikaelarch • 1.5k views\n\n04\nThe Oak Residence\n\nby @sofiadesigns • 1.2k views\n\n05\nGlasshouse Pavillion\n\nby @k_spatial • 980 views\n\nTOP SPATIAL ARTISTS\nSofia Gonzalez\n\n@sofiadesigns • 1.4k followers\n\nFollow\nMikael Lindqvist\n\n@mikaelarch • 920 followers\n\nFollow\nBIM Studio Pro\n\n@forestBIM • 810 followers\n\nFollow\nPOPULAR TAGS\n#BIM MODELS\n#GENERATIVE\n#LIDAR SCANS\n#WEBXR CAD\n#COST SHEETS\n#IFC EXPORT\n#TOPOLOGIES"
+  },
+  {
+    "route": "/contact",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Contact Us | Domus | Domus",
+    "heading": "Contact Spatial Engineering",
+    "overflow": false,
+    "text": "ng, or volume scanning pipelines? Write to our developer network.\n\nDeveloper Support\nGeneral Inquiries\n\ndpo@domus.ai\n\nCompliance Office\n\ndpo@domus.ai\n\nSend a Message\n\nSubmit your inquiry and our engineering team will get back to you.\n\nYour Name\nEmail Address\nInquiry Subject\nGeneral\nGenerative APIs (TRELLIS)\nVolume Scans (WebXR)\nStudio Licensing\nMessage Details\nSend Message\nDomus\n\nDesigning the future of space, one room at a time.\n\nProduct\nFloor Plan Editor\nBIM Lift Engine\nShowcase\nPricing\nChangelog\nCompany\nAbout\nBlog\nCommunity\nContact\nLegal\nPrivacy Policy\nTerms of Service\nCookie Policy\nGDPR Rights\nStay in the loop\n\nSpatial intelligence updates, monthly.\n\nEmail address\nSubscribe\n\n— No spam. Unsubscribe anytime.\n\n© 2026 Domus. All rights reserved.\n\nCreated with spatial precision by Ali Ahmed"
+  },
+  {
+    "route": "/bim-lift",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Spatial Workspace | Domus | Domus",
+    "heading": "BIM Extruder Studio",
+    "overflow": false,
+    "text": "Skip to content\nDomus\n\nWORKSPACE\n\nDashboard\nEditor\nCommunity\n\nTOOLS\n\nFloor Plan\nBIM Lift\nAR Map\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\nBIM Extruder Studio\n\nExtract 3D digital twins from flat blueprint sketches.\n\nSELECT BLUEPRINT SKETCH\n\nDrag blueprint here\n\nSupports PNG, JPG, or PDF\n\nBROWSE FILES\nCalibration Scale\n14 ft\n\nCoohom-style reference length: Set known dimension for millimeter accuracy.\n\nEXTRUSION HEIGHT\n9 ft\nAlgorithmic Vectorize (Instant)\nEnhance with Vision AI\nBIM Extruder Viewport\nWebGL Ready\nWebGL Viewport Ready\n\nUpload a blueprint sketch on the left and click “Algorithmic Vectorize” to build your 3D digital twin.\n\nExtrusion Output\nBIM MATERIAL ESTIMATION\n\nUpload blueprint sketch to calculate parameters and extrude 3D model."
+  },
+  {
+    "route": "/material-lab",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Spatial Workspace | Domus | Domus",
+    "heading": "Material Lab",
+    "overflow": false,
+    "text": "Skip to content\nDomus\n\nWORKSPACE\n\nDashboard\nEditor\nCommunity\n\nTOOLS\n\nFloor Plan\nBIM Lift\nAR Map\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\nMaterial Lab\n\nAuthor seamless PBR shaders and apply them directly to your BIM geometry.\n\nARCHITECTURAL PBR PRESETS\nAlabaster Drywall\nWalnut Trim\nForest Siding\nOak Herringbone\nObsidian Slate\nPBR SURFACE CALIBRATION\nSURFACE ROUGHNESS\n0.35\nMETALLIC REFLECTANCE\n0.15\nAI TEXTURE SYNTHESIZER (POLYHAVEN + TRELLIS)\nSynthesize Material\nSPHERE\nWALL\nCUBE\nPBR Shader Preview\nMaterial Outputs\nACTIVE MATERIAL NODE\nShader Name\nAlabaster Drywall\nRoughness Factor\n0.35\nMetalness Factor\n0.15\nChannels\nAlbedo, Norm, Rough\nSHADER MAPS ACTIVE IN CANVAS\nApply To All Project Walls\nReturn to CAD Studio"
+  },
+  {
+    "route": "/furniture",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Spatial Workspace | Domus | Domus",
+    "heading": "Furniture Studio",
+    "overflow": false,
+    "text": "t\nDrop photo of furniture here\nPNG, JPG, WebP up to 10MB\nSynthesize 3D Model from Photo\nMATCHED SKU PURCHASE READY\nQUOTA REMAINING: 5/5 HR\nDIGITAL ASSET CATALOG\nSøren Lounge Chair\n\nSeating• Local GLB Mesh\n\nNouveau Fabric Sofa\n\nSeating• Local GLB Mesh\n\nWalnut Dining Block\n\nTables• Local GLB Mesh\n\nBrushed Dome Floor Lamp\n\nLighting• Local GLB Mesh\n\nSlated Oak Sideboard\n\nStorage• Local GLB Mesh\n\nArchitectural Bookcase\n\nStorage• Local GLB Mesh\n\nMonstera Floor Plant\n\nDecor• Local GLB Mesh\n\nDrag cards above and drop them anywhere in the viewport!\nImport Custom .GLB / .GLTF\nDigital Twin Asset Placer Viewport\nSynced with CAD Store (0 items)\nPlaced Scene Assets\nACTIVE PROJECT INVENTORY (0)\n\nDrag cards from the catalog or synthesize a 3D model to populate your project scene.\n\nOpen in 2D/3D CAD Studio"
+  },
+  {
+    "route": "/ar-map",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Spatial Workspace | Domus | Domus",
+    "heading": "AR Map Scanner",
+    "overflow": false,
+    "text": " and space shells.\n\nON-DEVICE LIDAR VISION\nGPU Core\nWebcam Feed Required\n\nRequired to scan physical items locally and extract 3D coordinates.\n\nGrant Camera Access\nON-DEVICE PRIVACY GUARD\n\nAll video frames are analyzed locally on your device GPU via TensorFlow.js. Zero images or video feeds are ever sent over the network.\n\nWEBXR SCANNING TARGET\n\nStart WebXR scanner session or camera detection to extract room boundaries.\n\nStart WebXR Scan\nWebXR Spatial Twin Visualizer\nWebGL Ready\nXR Point Cloud empty\n\nStart scanning your environment or allow camera detection on the left sidebar controls to register planes in WebGL space.\n\nScanning Diagnostics\nWEBXR ANCHOR SYNC\n\nRegistered coordinates are synchronized to Puter KV store automatically on session exit.\n\nAR Mapping: Active\nSave Twin to CAD Editor"
+  },
+  {
+    "route": "/review-missing-page",
+    "mobile": false,
+    "status": 200,
+    "errors": [],
+    "title": "Domus — Unified Spatial Intelligence Platform",
+    "overflow": false,
+    "text": "Skip to content\nDomus\n\nWORKSPACE\n\nDashboard\nEditor\nCommunity\n\nTOOLS\n\nFloor Plan\nBIM Lift\nAR Map\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\n\nAccessing spatial coordinate registry..."
+  },
+  {
+    "route": "/",
+    "mobile": true,
+    "status": 200,
+    "errors": [],
+    "title": "Domus | Domus",
+    "heading": "Architectural Intelligence.",
+    "overflow": false,
+    "text": "scan. Replace with AI-selected or custom 3D assets matching your aesthetic.\n\nBuilt with Domus\n\nSee how leading firms leverage our platform.\n\nExplore the Atrium Tower\nFULL SUITE PIPELINE\nThe Atrium Tower\n\nGenerated entirely in Domus 2.0\n\nReady to build the future?\n\nJoin thousands of architects and designers shaping tomorrow's spaces today.\n\nStart Designing Free\nView Pricing\nDomus\n\nDesigning the future of space, one room at a time.\n\nProduct\nFloor Plan Editor\nBIM Lift Engine\nShowcase\nPricing\nChangelog\nCompany\nAbout\nBlog\nCommunity\nContact\nLegal\nPrivacy Policy\nTerms of Service\nCookie Policy\nGDPR Rights\nStay in the loop\n\nSpatial intelligence updates, monthly.\n\nEmail address\nSubscribe\n\n— No spam. Unsubscribe anytime.\n\n© 2026 Domus. All rights reserved.\n\nCreated with spatial precision by Ali Ahmed"
+  },
+  {
+    "route": "/editor",
+    "mobile": true,
+    "status": 200,
+    "errors": [],
+    "title": "Spatial CAD Studio",
+    "heading": "Spatial CAD Studio",
+    "overflow": false,
+    "text": "s\nBilling\nHelp\nNew Project\nCollapse\nSPATIAL ENGINEERING HUB\nSpatial CAD Studio\n\nSelect a specialized generative module below to start building high-performance spatial digital twins.\n\nAI Floor Plan\n\nGenerate complete multi-room architectural spatial layouts using GNN-driven area optimization.\n\nLaunch Tool\nBIM Lift\n\nLift 2D blueprints or hand sketches into extruded 3D BIM spaces, running full BOM reports client-side.\n\nLaunch Tool\nAR Room Scanner\n\nUse WebXR passthrough on mobile devices to map exact room dimensions and output 3D spatial shells.\n\nLaunch Tool\nMaterial Lab\n\nReskin 3D geometries with generative seamless PBR texture layers mapped via text-prompts.\n\nLaunch Tool\nFurniture Swap\n\nDetect furniture placements and insert responsive, cached high-performance DRACO GLB assets.\n\nLaunch Tool"
+  },
+  {
+    "route": "/floor-plan",
+    "mobile": true,
+    "status": 200,
+    "errors": [],
+    "title": "Spatial Workspace | Domus | Domus",
+    "overflow": false,
+    "text": "Skip to content\nDomus\n\nWORKSPACE\n\nDashboard\nEditor\nCommunity\n\nTOOLS\n\nFloor Plan\nBIM Lift\nAR Map\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\nInitializing CAD Workspace\n\nFetching spatial project details from Puter cloud KV..."
+  },
+  {
+    "route": "/settings",
+    "mobile": true,
+    "status": 200,
+    "errors": [],
+    "title": "Workspace | Domus | Domus",
+    "heading": "Settings",
+    "overflow": false,
+    "text": "\nMaterial Lab\nFurniture\n\nACCOUNT\n\nSettings\nBilling\nHelp\nNew Project\nCollapse\nSettings\n\nConfigure your professional identity, design defaults, and developer credentials.\n\nProfile Info\nAccount Security\nNotifications\nPrivacy & Auth\nBilling & Plans\nAPI Credentials\nDanger Zone\nProfile Information\n\nThis information is displayed publicly on your community discovery profile.\n\nAH\n\nAvatar Initial\n\nPuter identity sync\n\nDisplay Name\nUsername\n@\nBio (Max 150 characters)\nWebsite\nLocation\nPROFESSIONAL CREDENTIALS\n\nSet up your industry context to fine-tune AI assistant outputs.\n\nProfessional Role\nArchitect\nInterior Designer\n3D Visualizer\nBIM Engineer\nSpatial Researcher\nFirm / Studio Name\nYears of Spatial Experience\n8 years\nSpecializations & Tags\nBIM MODELING\n×\nGENERATIVE INTERIORS\n×\nWEBXR PROTOTYPING\n×\nAdd"
+  }
+]
