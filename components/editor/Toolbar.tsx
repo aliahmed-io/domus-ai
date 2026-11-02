@@ -243,8 +243,6 @@ export default function Toolbar({
                         setTool(item.id);
                         setSelectedObject(null);
                         if (item.id === "place-furniture") setCatalogOpen(true);
-                        if (item.id !== "place-furniture")
-                          useEditorStore.getState().setMode("2d");
                       }}
                     >
                       {item.label}

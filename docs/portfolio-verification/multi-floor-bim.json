@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Copy floor plan, add upper-floor furniture, save and reload without moving ground-floor furniture",
+    "Place stairs connected to the actual upper floor",
+    "Download two-floor IFC through the editor and open it with an independent reader",
+    "Delete an upper floor with its furniture and stairs, then restore all of them through undo",
+    "Trace the bundled blueprint, hand it to the CAD editor, save and reload the resulting walls"
+  ],
+  "blueprintWallCount": 6,
+  "uncaughtErrors": []
+}

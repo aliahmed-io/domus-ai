@@ -5,7 +5,8 @@ import type {
   Door,
   Window2D,
 } from "@/types/puter";
-import { feetToMeters } from "@/lib/utils";
+// Preserve geometric precision in exported model coordinates.
+const feetToMeters = (feet: number) => feet * 0.3048;
 
 /** IFC4 export. Regression fixtures are read and meshed with web-ifc; universal CAD compatibility is not assumed. */
 export function generateFloorPlanIFC(

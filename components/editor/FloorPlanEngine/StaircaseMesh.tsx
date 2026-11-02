@@ -3,12 +3,12 @@
 import React from "react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useShallow } from "zustand/react/shallow";
-import { feetToMeters } from "@/lib/utils";
 
 export default function StaircaseMesh() {
-  const { staircases, selectedObjectId, setSelectedObject } = useEditorStore(
+  const { staircases, storeys, selectedObjectId, setSelectedObject } = useEditorStore(
     useShallow((s) => ({
       staircases: s.staircases,
+      storeys: s.storeys,
       selectedObjectId: s.selectedObjectId,
       setSelectedObject: s.setSelectedObject,
     }))
@@ -16,9 +16,9 @@ export default function StaircaseMesh() {
 
   return (
     <group>
-      {staircases.map((stair) => {
-        const riserMeters = feetToMeters(stair.riserHeight / 12);
-        const widthMeters = feetToMeters(stair.width / 12);
+      {staircases.filter(stair => storeys.some(level => level.id === stair.startStoreyId && level.isVisible !== false) && storeys.some(level => level.id === stair.endStoreyId && level.isVisible !== false)).map((stair) => {
+        const riserMeters = stair.riserHeight * 0.0254;
+        const widthMeters = stair.width * 0.0254;
         const treadDepthMeters = 0.28; // standard 11 inch tread depth (in meters)
         const isSelected = selectedObjectId === stair.id;
         const treadColor = isSelected ? "#4F46E5" : "#8C7662";
@@ -78,7 +78,7 @@ export default function StaircaseMesh() {
                 {steps.map((_, idx) => {
                   const stepHeight = 0.04;
                   if (idx < halfCount) {
-                    const py = idx * riserMeters;
+                    const py = (idx + 1) * riserMeters;
                     const pz = -idx * treadDepthMeters;
                     return (
                       <mesh key={idx} position={[0, py, pz]} castShadow receiveShadow>
@@ -117,7 +117,7 @@ export default function StaircaseMesh() {
                 {steps.map((_, idx) => {
                   const stepHeight = 0.04;
                   if (idx < halfCount) {
-                    const py = idx * riserMeters;
+                    const py = (idx + 1) * riserMeters;
                     const pz = -idx * treadDepthMeters;
                     return (
                       <mesh key={idx} position={[0, py, pz]} castShadow receiveShadow>
@@ -159,7 +159,7 @@ export default function StaircaseMesh() {
                   const stepLength = treadDepthMeters;
 
                   const px = 0;
-                  const py = idx * riserMeters;
+                  const py = (idx + 1) * riserMeters;
                   const pz = -idx * treadDepthMeters;
 
                   const rx = 0;
@@ -193,29 +193,16 @@ export default function StaircaseMesh() {
                   );
                 })}
 
-                {/* Handrail on the left */}
-                <mesh
-                  position={[
-                    -widthMeters / 2 - 0.05,
-                    (stair.riserCount * riserMeters) / 2,
-                    -(stair.riserCount * treadDepthMeters) / 2,
-                  ]}
-                >
-                  <cylinderGeometry args={[0.02, 0.02, stair.riserCount * 0.35, 8]} />
-                  <meshStandardMaterial color="#C2A585" metalness={0.9} roughness={0.1} />
-                </mesh>
-
-                {/* Handrail on the right */}
-                <mesh
-                  position={[
-                    widthMeters / 2 + 0.05,
-                    (stair.riserCount * riserMeters) / 2,
-                    -(stair.riserCount * treadDepthMeters) / 2,
-                  ]}
-                >
-                  <cylinderGeometry args={[0.02, 0.02, stair.riserCount * 0.35, 8]} />
-                  <meshStandardMaterial color="#C2A585" metalness={0.9} roughness={0.1} />
-                </mesh>
+                {[-1, 1].map(side => {
+                  const rise = (stair.riserCount - 1) * riserMeters;
+                  const run = (stair.riserCount - 1) * treadDepthMeters;
+                  return <mesh key={side}
+                    position={[side * (widthMeters / 2 + 0.03), riserMeters + rise / 2 + 0.85, -run / 2]}
+                    rotation={[-Math.atan2(run, rise), 0, 0]}>
+                    <cylinderGeometry args={[0.025, 0.025, Math.hypot(rise, run), 8]} />
+                    <meshStandardMaterial color="#8C7662" metalness={0.4} roughness={0.4} />
+                  </mesh>;
+                })}
               </>
             )}
           </group>

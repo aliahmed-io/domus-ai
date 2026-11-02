@@ -1,4 +1,5 @@
 "use client";
+import { copyFloorPlan } from "@/lib/building-levels";
 
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
@@ -290,6 +291,7 @@ export const useEditorStore = create<EditorState>()(
 
       setTool(tool) {
         set((state) => {
+          if (["draw-wall", "add-room", "add-door", "add-window", "add-stair", "measure"].includes(tool)) state.mode = "2d";
           state.tool = tool;
         });
       },
@@ -618,6 +620,7 @@ export const useEditorStore = create<EditorState>()(
       },
 
       setActiveStoreyId(id) {
+        if (!get().storeys.some(s => s.id === id)) return;
         set((state) => {
           if (state.activeStoreyId && state.floorPlanLayout) {
             const currentStorey = state.storeys.find(
@@ -648,13 +651,13 @@ export const useEditorStore = create<EditorState>()(
           }
           const nextElevation =
             state.storeys.length > 0
-              ? Math.max(...state.storeys.map((s) => s.elevation)) + 10
+              ? Math.max(...state.storeys.map((s) => s.elevation + (s.height ?? 10)))
               : 10;
           const levelNum = state.storeys.length + 1;
           const newStoreyId = `storey-${Date.now().toString(36)}-${levelNum}`;
           const newLayout: FloorPlanLayout =
             copyFromActive && state.floorPlanLayout
-              ? JSON.parse(JSON.stringify(state.floorPlanLayout))
+              ? copyFloorPlan(JSON.parse(JSON.stringify(state.floorPlanLayout)))
               : {
                   id: `fp-${Date.now().toString(36)}`,
                   parameters: state.floorPlanLayout?.parameters || {
@@ -702,6 +705,9 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           if (state.storeys.length <= 1) return;
           state.storeys = state.storeys.filter((s) => s.id !== id);
+          state.sceneObjects = state.sceneObjects.filter(o => o.storeyId !== id);
+          state.staircases = state.staircases.filter(s => s.startStoreyId !== id && s.endStoreyId !== id);
+          state.selectedObjectId = null;
           if (state.activeStoreyId === id) {
             state.activeStoreyId = state.storeys[0]?.id || "";
             state.floorPlanLayout = state.storeys[0]?.floorPlanLayout || null;
@@ -821,6 +827,7 @@ export const useEditorStore = create<EditorState>()(
             state.storeys = [];
             state.activeStoreyId = "";
           }
+          state.sceneObjects = state.sceneObjects.map(o => ({ ...o, storeyId: o.storeyId || state.storeys[0]?.id || "storey-1" }));
           if (extra?.staircases) {
             state.staircases = extra.staircases;
           }

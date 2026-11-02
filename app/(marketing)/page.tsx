@@ -91,33 +91,29 @@ export default function MarketingPage() {
           ))}
         </div>
       </section>
-      <section className="landing-inspiration">
-        <div className="inspiration-image">
-          <Image
-            src="/cascade_penthouse.png"
-            alt="Bright loft with natural materials and soft daylight"
-            fill
-            sizes="(max-width: 750px) 100vw, 55vw"
-          />
+      <section className="landing-inspiration" aria-labelledby="inspiration-title">
+        <div className="inspiration-copy">
+          <h2 id="inspiration-title">Good spaces<br />start with you.</h2>
+          <p>A quiet corner. A bigger table. A place to call your own. Make room for the way you live.</p>
+          <Link href="/editor" className="studio-button">Start your next room</Link>
         </div>
-        <div>
-          <span className="studio-kicker">A little inspiration</span>
-          <h2>
-            Less guesswork.
-            <br />
-            More possibility.
-          </h2>
-          <p>
-            Try the room before you change the room. Play with a layout, swap a
-            finish, and keep the ideas you love.
-          </p>
-          <Link href="/editor" className="studio-button">
-            Make something yours
-          </Link>
-          <small>
-            Interior images are inspiration, not generated project results.
-          </small>
-        </div>
+        <figure className="inspiration-study">
+          <div className="inspiration-image">
+            <Image
+              src="/oak_residence.png"
+              alt="Oak living room with a linen sofa, stone fireplace, and garden light"
+              fill
+              sizes="(max-width: 750px) 90vw, 45vw"
+            />
+          </div>
+          <div className="inspiration-palette" aria-label="Room palette: oak, linen, and clay">
+            <span className="inspiration-swatch swatch-oak" />
+            <span className="inspiration-swatch swatch-linen" />
+            <span className="inspiration-swatch swatch-clay" />
+            <span>Oak. Linen. A little daylight.</span>
+          </div>
+          <figcaption>Interior inspiration for your next idea.</figcaption>
+        </figure>
       </section>
     </main>
   );

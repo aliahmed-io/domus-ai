@@ -82,7 +82,7 @@ The earlier walkthrough did not prove all 3D modes or AI entry points. The follo
 | Repeated brain/CPU symbols and artificial badges | 2 | Remove decorative AI symbols, neural labels, duplicated arrows, and excessive depth | Source and rendered UI reviewed |
 | Inspector fields and catalog cards were awkward with a keyboard | 4 | Associate labels with controls, guard invalid numeric edits, separate native place/favorite actions | TypeScript and lint; browser catalog interaction and React diagnostics |
 
-The final built-app checks pass. The current suite has 77 passing tests across 22 files. Final built-app results are recorded in [feature acceptance](portfolio-verification/feature-acceptance.json), [3D controls](portfolio-verification/3d-control-audit.json), and the [portfolio walkthrough](portfolio-verification/results.json). The missing-model test deliberately injects a 404; its expected errors are recorded separately from unexpected page errors.
+The final built-app checks pass. The current suite has 83 passing tests across 23 files. Final built-app results are recorded in [feature acceptance](portfolio-verification/feature-acceptance.json), [3D controls](portfolio-verification/3d-control-audit.json), and the [portfolio walkthrough](portfolio-verification/results.json). The missing-model test deliberately injects a 404; its expected errors are recorded separately from unexpected page errors.
 
 The editor follows a common commercial pattern: keep 2D/3D prominent, group catalog actions, and put less-used view controls together. References: [Planner 5D navigation](https://support.planner5d.com/en/articles/5876772-how-to-navigate-through-planner-5d), [RoomSketcher toolbar guide](https://help.roomsketcher.com/hc/en-us/articles/14476178785437-Toolbar-Buttons-and-Options).
 
@@ -96,12 +96,34 @@ The 3D implementation follows the documented camera and local lighting APIs: [Dr
 - Arbitrary messy blueprint recognition needs representative drawings and acceptance criteria.
 - Full IFC/CAD compatibility still needs selected external applications and round trips.
 - Pitched roof previews support rectangular outlines. Other footprints show a flat cover and the inspector explains this limit.
-- Large editor components and remaining React diagnostics remain a cleanup backlog. The latest React Doctor score improved from 57 to 60, with 19 findings and no errors. The app does not have a clean diagnostic bill of health.
+- Large editor components and remaining React diagnostics remain a cleanup backlog. The broader follow-up React Doctor scan reports 55 with 41 warnings and no errors. The scan of this follow-up against the last reviewed commit reports no new findings. The app does not have a clean diagnostic bill of health.
 
 
-Final review evidence: [accepted scope and known limits](portfolio-verification/final-review.json). TypeScript, lint, the optimized build, and all 77 tests pass. The complete built-app walkthrough and the targeted feature checks pass. The screenshot review includes both the editor and the landing/workshop pages. The only model-loading error in the negative test is the deliberately injected missing file, which is visibly reported in the scene.
+Final review evidence: [accepted scope and known limits](portfolio-verification/final-review.json). TypeScript, lint, the optimized build, and all 83 tests pass. The complete built-app walkthrough and the targeted feature checks pass. The screenshot review includes both the editor and the landing/workshop pages. The only model-loading error in the negative test is the deliberately injected missing file, which is visibly reported in the scene.
 
 
 The final 2D screenshot review also removed the old help overlay and fixed drawing framing after screen-size changes. New plans fit on screen; a panned view keeps its center when the canvas resizes. Fit plan to screen is available under Tools. Wall dimensions can be enabled in View settings, and editing handles appear only when relevant. A viewport regression test and rendered-canvas checks cover centering.
 
 The final walkthrough also caught drawing clicks intercepted by existing room and furniture shapes. Selection hit testing now runs only in selection mode, so wall drawing and measurement can reach the canvas over existing geometry. The browser regression draws inside a room and checks undo. The final 2D opening symbols use the neutral palette.
+
+
+### Follow-up: landing section, BIM, furniture, and multiple floors
+
+The old enclosed inspiration card was replaced with larger type, an open layout, a warm oak interior study, and physical-looking material swatches. Desktop and phone screenshots were reviewed.
+
+The multi-floor checks found and fixed issues missed in the earlier walkthrough:
+
+- 2D furniture now belongs to its own floor. Older records are assigned to their original ground floor.
+- Copying a floor plan creates independent wall, opening, room, and plan IDs. Furniture is not copied, as the interface explains.
+- Deleting a floor removes its furniture and connecting stairs. Undo restores them together.
+- A new level starts above the highest floor using its actual height.
+- Stairs connect to the next actual floor. Their total rise matches the floor elevation gap. Add an upper floor before placing stairs.
+- Drawing tools no longer reset to selection when launched from the Tools menu, and can switch from 3D into 2D.
+- Stair tread height, sloped handrails, and slab openings now follow the stair run and rotation. Nonstraight openings are approximate bounding shapes.
+- Catalog furniture starts at the living room center and is selected for adjustment. Placement does not check clearances or prevent overlap.
+- 3D framing includes the visible floor stack. Walkthrough eye height follows the active floor.
+- IFC export preserves coordinate precision. An independent reader opens and meshes two floors.
+
+Evidence: [multi-floor and BIM browser walkthrough](portfolio-verification/multi-floor-bim.json). The bundled blueprint traces into six walls, opens in the editor, saves, and reloads. Browser checks also cover floor copying, upper-floor furniture, stair connections, two-floor IFC download, floor deletion, and undo. There are 83 passing regression tests across 23 files.
+
+This does **not** establish that every feature is complete. Live AI recognition on arbitrary drawings remains untested without provider credentials. IFC currently exports walls, doors, windows, and rectangular floor slabs. It does not export furniture, stairs, or stair openings, and slab outlines need further work for irregular footprints. This is a limited BIM export, not a complete building model. Real headset/camera use, full touch drafting, and external CAD round trips still need separate verification. The stair models remain editable previews rather than building-code checks.

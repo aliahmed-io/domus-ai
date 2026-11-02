@@ -1,4 +1,5 @@
 "use client";
+import { stairOpening } from "@/lib/building-levels";
 import { RepeatWrapping, SRGBColorSpace } from "three";
 import { useTexture } from "@react-three/drei";
 import { useMemo, useEffect } from "react";
@@ -80,21 +81,16 @@ export default function RoomSurface({
       {stairs.length ? (
         <Geometry computeVertexNormals>
           <Base geometry={geometry} />
-          {stairs.map((stair) => (
-            <Subtraction
+          {stairs.map((stair) => {
+            const opening = stairOpening(stair);
+            return <Subtraction
               key={stair.id}
-              position={[stair.position.x, -thickness / 2, stair.position.z]}
+              position={[opening.x, -thickness / 2, opening.z]}
               rotation={[0, stair.rotation.y, 0]}
             >
-              <boxGeometry
-                args={[
-                  (stair.width / 12) * 0.3048 + 0.1,
-                  thickness * 3,
-                  stair.riserCount * 0.28 + 0.1,
-                ]}
-              />
-            </Subtraction>
-          ))}
+              <boxGeometry args={[opening.width, thickness * 3, opening.depth]} />
+            </Subtraction>;
+          })}
         </Geometry>
       ) : (
         <primitive object={geometry} attach="geometry" />

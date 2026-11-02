@@ -81,7 +81,8 @@ function FirstPersonWalkController() {
   const keys = React.useRef<Record<string, boolean>>({});
   const initializedRef = React.useRef(false);
   const moveSpeed = 4.0;
-  const eyeHeight = 1.7; // ~5.5 ft architectural eye level
+  const activeFloor = useEditorStore(s => s.storeys.find(level => level.id === s.activeStoreyId));
+  const eyeHeight = 1.7 + feetToMeters(activeFloor?.elevation ?? 0);
 
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -177,7 +178,7 @@ function SceneCamera({
   const zoom = Math.min(size.width, size.height) / Math.max(span * 1.5, 10);
   const position: [number, number, number] = [
     center[0] + span * 1.1 * Math.max(1, size.height / size.width),
-    span * 1.3 * Math.max(1, size.height / size.width),
+    center[1] + span * 1.3 * Math.max(1, size.height / size.width),
     center[2] + span * 1.1 * Math.max(1, size.height / size.width),
   ];
   return orthographic ? (
@@ -222,9 +223,13 @@ export default function EditorCanvas({
   const xrScale = useEditorStore((s) => s.xrScale);
 
   const layout = useEditorStore((state) => state.floorPlanLayout);
+  const storeys = useEditorStore((state) => state.storeys);
   const framing = React.useMemo(() => {
-    const points =
-      layout?.walls.flatMap((wall) => [wall.start, wall.end]) ?? [];
+    const visible = storeys.filter(level => level.isVisible !== false);
+    const points = visible.length
+      ? visible.flatMap(level => level.floorPlanLayout.walls.flatMap(wall => [wall.start, wall.end]))
+      : layout?.walls.flatMap(wall => [wall.start, wall.end]) ?? [];
+    const height = feetToMeters(Math.max(0, ...visible.map(level => level.elevation + (level.height ?? 10))));
     if (!points.length)
       return { center: [0, 0, 0] as [number, number, number], span: 8 };
     const xs = points.map((point) => feetToMeters(point.x));
@@ -234,14 +239,14 @@ export default function EditorCanvas({
       minZ = Math.min(...zs),
       maxZ = Math.max(...zs);
     return {
-      center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [
+      center: [(minX + maxX) / 2, visible.length > 1 ? height / 2 : 0, (minZ + maxZ) / 2] as [
         number,
         number,
         number,
       ],
-      span: Math.max(maxX - minX, maxZ - minZ, 4),
+      span: Math.max(maxX - minX, maxZ - minZ, height, 4),
     };
-  }, [layout]);
+  }, [layout, storeys]);
 
   // Initialize WebRTC Y.js Multiplayer Synchronization
   useMultiplayerSync();

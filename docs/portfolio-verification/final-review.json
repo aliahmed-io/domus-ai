@@ -2,7 +2,7 @@
   "date": "2026-11-02",
   "target": "Built app at http://127.0.0.1:3131",
   "softwareChecks": [
-    "77 regression tests",
+    "83 regression tests",
     "TypeScript",
     "Lint with no warnings",
     "Optimized build",
@@ -16,7 +16,12 @@
     "PDF and DXF downloads",
     "Gallery geometry",
     "Measured blueprint reference reload",
-    "Drawing inside existing rooms, undo and redo"
+    "Drawing inside existing rooms, undo and redo",
+    "Two-floor furniture separation and reload",
+    "Real stair destination, total rise and rotated opening",
+    "Floor deletion and undo with dependent objects",
+    "Two-floor IFC download opened by independent reader",
+    "Sample blueprint traced to six saved and reloaded walls"
   ],
   "visualReview": {
     "accepted": [
@@ -41,13 +46,16 @@
     "Live AI visual quality without provider credentials",
     "Physical headsets and measured room scanning",
     "External CAD round trips",
-    "Full real-device touch drafting"
+    "Full real-device touch drafting",
+    "Live AI blueprint recognition on arbitrary drawings",
+    "Furniture, stairs, openings in slabs and exact irregular slabs are not included in IFC export"
   ],
   "evidence": [
     "results.json",
     "feature-acceptance.json",
     "3d-control-audit.json",
     "calibration-results.json",
-    "diagnostics.json"
+    "diagnostics.json",
+    "multi-floor-bim.json"
   ]
 }

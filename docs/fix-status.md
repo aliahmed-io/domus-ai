@@ -89,4 +89,4 @@ The [root fix report](architecture-root-fixes.md) supersedes older notes above a
 The landing page and workshop now use the requested brown clay style. Updated desktop and mobile images are linked in the README. Real measurement, arbitrary blueprint recognition, live AI quality, full external CAD round trips, touch drafting, and the remaining React/accessibility findings are still separate work.
 
 
-The final built-app revision passes 77 tests, TypeScript, lint without warnings, and the optimized build. The targeted model/layout checks and the complete portfolio walkthrough also pass. React Doctor 0.9.22 reports 60/100 with 19 findings and no errors. The [final review](portfolio-verification/final-review.json) records the accepted visual scope and external checks still needed.
+The final built-app revision passes 83 tests, TypeScript, lint without warnings, and the optimized build. The targeted model/layout checks and the complete portfolio walkthrough also pass. React Doctor 0.9.22 reports 60/100 with 19 findings and no errors. The [final review](portfolio-verification/final-review.json) records the accepted visual scope and external checks still needed.

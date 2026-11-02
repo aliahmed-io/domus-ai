@@ -1,7 +1,7 @@
 {
   "tests": {
-    "passed": 77,
-    "files": 22
+    "passed": 83,
+    "files": 23
   },
   "typescript": "passed",
   "lint": "passed with no warnings",
@@ -9,10 +9,11 @@
   "reactDoctor": {
     "version": "0.9.22",
     "baselineScore": 57,
-    "finalScore": 60,
-    "findings": 19,
+    "finalScore": 55,
+    "findings": 41,
     "errors": 0,
-    "status": "Needs work"
+    "status": "Needs work",
+    "followupFindingsAgainstPriorCommit": 0
   },
   "notes": [
     "The remaining diagnostic findings are not all resolved.",

@@ -129,3 +129,8 @@ Layout alternatives contain different geometry. Generated plans are checked for 
 Optional live model generation requires REPLICATE_API_KEY, ENABLE_PAID_GENERATION=true, and REPLICATE_TRELLIS_VERSION from the [documented firtoz/trellis images-input model](https://replicate.com/firtoz/trellis/api/schema). Catalog searches remain local when a provider is configured. OPENAI_API_KEY enables optional layout and calibrated blueprint analysis. No provider keys are configured in the reviewed local setup, so real AI output quality is not yet verified.
 
 See the [current issue table](docs/portfolio-issues.md#follow-up-fixes-and-final-review) for the final verification scope and remaining device, recognition, and CAD work.
+
+
+The latest follow-up checks floor copying, furniture on separate floors, stair connections, deletion with undo, and a two-floor IFC file opened by an independent reader. The bundled blueprint traces into six walls and survives a save and reload. See [the verification record](docs/portfolio-verification/multi-floor-bim.json). IFC export currently includes walls, doors, windows, and rectangular slabs. Furniture, stairs, stair openings, and exact irregular slab outlines are not yet included.
+
+![Updated landing inspiration section](docs/screenshots/home-inspiration.png)

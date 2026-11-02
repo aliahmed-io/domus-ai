@@ -595,7 +595,9 @@ export default function CatalogPanel() {
     thumbnailUrl?: string;
     attachmentType?: "floor" | "ceiling" | "surface" | "wall";
   }) => {
-    const randomOffset = () => (Math.random() - 0.5) * 4;
+    const room = floorPlanLayout?.rooms.find(r => r.type === "living") || floorPlanLayout?.rooms[0];
+    const x = room ? (room.bounds.x + room.bounds.width / 2) * 0.3048 : 0;
+    const z = room ? (room.bounds.y + room.bounds.height / 2) * 0.3048 : 0;
 
     // Altitude calculation based on attachment type:
     // 1. "floor" (carpets/rugs): sits right above floor slab at 0.005m (prevents z-fighting with floor)
@@ -628,7 +630,7 @@ export default function CatalogPanel() {
           ? "light"
           : "furniture",
       name: item.name,
-      position: { x: randomOffset(), y: yPos, z: randomOffset() },
+      position: { x, y: yPos, z },
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
       gltfPath: item.modelUrl,
@@ -638,6 +640,7 @@ export default function CatalogPanel() {
     };
 
     addSceneObject(newObj);
+    useEditorStore.getState().setSelectedObject(newObj.id);
     toast.success(
       `Placed ${item.name} (${item.attachmentType || "floor"}) in scene!`,
     );

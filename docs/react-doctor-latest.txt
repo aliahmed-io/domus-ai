@@ -1,4 +1,4 @@
-Scanning changes: main → origin/main
+Scanning changes: codex/portfolio-editor-review → origin/main
 
 
 Agent guidance
@@ -16,16 +16,16 @@ Agent guidance
   - For confirmed issues that cannot be fixed now, create GitHub issues with the rule, file/line, confidence, impact, and proposed fix.
   - If a fix needs an API, UX, or architecture decision, stop and ask before editing.
 
-✔ Scanned 69 files in 15.0s
+✔ Scanned 125 files in 34.7s
 
 React Doctor — domus-ai
-Score: 60 / 100 Needs work
+Score: 55 / 100 Critical
 
-19 issues
-Maintainability: 4 warnings
-Bugs: 10 warnings
-Accessibility: 3 warnings
-Performance: 2 warnings
+41 issues
+Maintainability: 18 warnings
+Bugs: 16 warnings
+Accessibility: 4 warnings
+Performance: 3 warnings
 
 ⚠ Large component is hard to read and change ×2
   react-doctor/no-giant-component
@@ -54,11 +54,23 @@ Performance: 2 warnings
 ⚠ fetch Response consumed without status check
   react-doctor/no-fetch-response-used-without-status-check
   app/(editor)/material-lab/page.tsx:75
-⚠ Label missing associated control
+⚠ Label missing associated control ×2
   react-doctor/label-has-associated-control
   app/(editor)/material-lab/page.tsx:181
-⚠ Unguarded numeric parse of an input value ×7
+  components/editor/ViewSettings.tsx:103
+⚠ Data passed to parent via effect
+  react-doctor/no-pass-data-to-parent
+  components/editor/BlueprintCalibration.tsx:29
+⚠ Live state pushed to parent via effect
+  react-doctor/no-pass-live-state-to-parent
+  components/editor/BlueprintCalibration.tsx:29
+⚠ Parent kept in sync with a callback effect
+  react-doctor/no-prop-callback-in-effect
+  components/editor/BlueprintCalibration.tsx:29
+⚠ Unguarded numeric parse of an input value ×9
   react-doctor/no-unguarded-numeric-input-parse
+  components/editor/BlueprintCalibration.tsx:102
+  components/editor/BlueprintCalibration.tsx:123
   components/editor/PropertiesPanel.tsx:354
   components/editor/PropertiesPanel.tsx:400
   components/editor/PropertiesPanel.tsx:443
@@ -66,11 +78,33 @@ Performance: 2 warnings
   components/editor/PropertiesPanel.tsx:584
   components/editor/PropertiesPanel.tsx:927
   components/editor/PropertiesPanel.tsx:956
-  Full diagnostics written to C:\Users\aliha\AppData\Local\Temp\react-doctor-e03c0d7f-260f-4443-bc8f-30f21b626dc4
+⚠ Loading flag reset outside finally
+  react-doctor/no-loading-flag-reset-outside-finally
+  components/studio/DemoProjectButton.tsx:23
+⚠ array.find() inside a loop
+  react-doctor/js-index-maps
+  lib/export/plan-page.ts:52
+⚠ Zod 3 schema API breaks in Zod 4 ×14
+  react-doctor/zod-v4-no-deprecated-schema-apis
+  lib/project-document.ts:19
+  lib/project-document.ts:21
+  lib/project-document.ts:30
+  lib/project-document.ts:38
+  lib/project-document.ts:57
+  lib/project-document.ts:61
+  lib/project-document.ts:73
+  lib/project-document.ts:91
+  lib/project-document.ts:98
+  lib/project-document.ts:112
+  lib/project-document.ts:116
+  lib/project-document.ts:125
+  lib/project-document.ts:139
+  lib/project-document.ts:166
+  Full diagnostics written to C:\Users\aliha\AppData\Local\Temp\react-doctor-1067cfd2-8b1f-4268-b392-29987136f3ae
 
   ────────────────────────────────────────────────────────────
 
-  Share: https://react.doctor/share?p=domus-ai&s=60&w=19&f=7
+  Share: https://react.doctor/share?p=domus-ai&s=55&w=41&f=12
   Tell others how you did on socials
 
   Docs: https://react.doctor/docs

@@ -1,4 +1,5 @@
 "use client";
+import { belongsToFloor, stairsToNextFloor } from "@/lib/building-levels";
 
 import { fitPlanViewport } from "@/lib/plan-viewport";
 import BlueprintUnderlay from "./BlueprintUnderlay";
@@ -26,7 +27,6 @@ import type {
   SceneObject,
   Door,
   Window2D,
-  Staircase,
 } from "@/types/puter";
 import {
   snapCloseWallEndpoints,
@@ -1251,21 +1251,11 @@ export default function BlueprintCanvas2D() {
         toast.info("Click directly onto a wall to insert an opening.");
       }
     } else if (tool === "add-stair") {
-      const activeStorey = storeys.find((s) => s.id === activeStoreyId);
-      const elevationM = activeStorey
-        ? feetToMeters(activeStorey.elevation)
-        : 0;
-      const newStair: Staircase = {
-        id: generateElementId("stair"),
-        startStoreyId: activeStoreyId || "storey-1",
-        endStoreyId: "storey-2",
-        width: 36, // 36 inches
-        riserCount: 14,
-        riserHeight: 7.7,
-        position: { x: ptMeters.x, y: elevationM, z: ptMeters.y },
-        rotation: { x: 0, y: 0, z: 0 },
-        type: "straight",
-      };
+      const newStair = stairsToNextFloor(storeys, activeStoreyId, ptMeters.x, ptMeters.y);
+      if (!newStair) {
+        toast.info("Add an upper floor in View settings before placing stairs.");
+        return;
+      }
       addStaircase(newStair);
       setSelectedObject(newStair.id);
       toast.success("Staircase placed into layout!");
@@ -2158,7 +2148,7 @@ export default function BlueprintCanvas2D() {
               })}
 
               {/* Draw Furniture */}
-              {sceneObjects.map((obj) => {
+              {sceneObjects.filter(obj => belongsToFloor(obj, activeStoreyId, storeys[0]?.id)).map((obj) => {
                 const isSelected = selectedObjectId === obj.id;
                 const name = obj.name.toLowerCase();
                 let width = 0.8;
@@ -2980,7 +2970,7 @@ export default function BlueprintCanvas2D() {
               })}
 
               {/* ── Architectural 2D Staircases (Draggable, Rotatable & Multi-Type) ── */}
-              {(staircases || []).map((stair) => {
+              {staircases.filter(stair => stair.startStoreyId === activeStoreyId || stair.endStoreyId === activeStoreyId).map((stair) => {
                 const widthM = feetToMeters(stair.width / 12);
                 const riserDepthM = 0.28;
                 const lengthM = stair.riserCount * riserDepthM;
